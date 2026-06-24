@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/wachafit
+    username: wachafit
+    password: wachafit
+  mail:
+    host: localhost
+    port: 1025
+
+jwt:
+  secret: dev-secret-32-chars-minimum-okay
+  expiration: 3600
+
+app:
+  frontend-url: http://localhost:5173
