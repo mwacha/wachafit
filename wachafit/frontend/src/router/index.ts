@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { roleDashboards, publicAuthPaths } from '@/utils/roleRoutes'
 import type { Role } from '@/types/api'
 
 declare module 'vue-router' {
@@ -39,11 +40,10 @@ const router = createRouter({
 
 router.beforeEach(to => {
   const auth = useAuthStore()
-  const dashboards: Record<Role, string> = { ADMIN: '/admin', TRAINER: '/trainer', STUDENT: '/student' }
 
-  // Authenticated user hitting public auth pages → redirect to dashboard
-  if ((to.path === '/login' || to.path === '/register') && auth.isAuthenticated) {
-    return dashboards[auth.role!]
+  // Authenticated user on any public-auth path → redirect to their dashboard
+  if (publicAuthPaths.includes(to.path) && auth.isAuthenticated) {
+    return auth.role ? roleDashboards[auth.role] : '/login'
   }
 
   // Protected route, not authenticated → login

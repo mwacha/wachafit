@@ -42,6 +42,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { roleDashboards } from '@/utils/roleRoutes'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
@@ -76,8 +77,8 @@ async function handleRegister() {
   }
   loading.value = true
   try {
-    await auth.register(name.value, email.value, password.value)
-    router.push('/student') // register always creates STUDENT
+    const result = await auth.register(name.value, email.value, password.value)
+    router.push(roleDashboards[result.role])
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao criar conta. Tente novamente.'
   } finally {

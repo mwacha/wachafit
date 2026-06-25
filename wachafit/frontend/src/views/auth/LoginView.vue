@@ -35,7 +35,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import type { Role } from '@/types/api'
+import { roleDashboards } from '@/utils/roleRoutes'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
@@ -48,8 +48,6 @@ const password = ref('')
 const errorMessage = ref('')
 const loading = ref(false)
 
-const dashboards: Record<Role, string> = { ADMIN: '/admin', TRAINER: '/trainer', STUDENT: '/student' }
-
 async function handleLogin() {
   errorMessage.value = ''
   if (!email.value || !password.value) {
@@ -59,7 +57,7 @@ async function handleLogin() {
   loading.value = true
   try {
     const result = await auth.login(email.value, password.value)
-    router.push(dashboards[result.role])
+    router.push(roleDashboards[result.role])
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao fazer login. Tente novamente.'
   } finally {
