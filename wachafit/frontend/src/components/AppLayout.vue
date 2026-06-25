@@ -2,26 +2,35 @@
   <div class="app-shell">
     <!-- Sidebar -->
     <aside class="sidebar" role="navigation" aria-label="Navegação principal">
-      <div class="sidebar-logo" title="WachaFit">
+      <button class="sidebar-logo" :title="`WachaFit — ir para dashboard`" @click="goHome">
         <span class="logo-w">W</span>
-      </div>
+      </button>
 
       <nav class="sidebar-nav">
         <button
           v-for="item in navItems"
           :key="item.key"
           class="nav-item"
-          :class="{ active: currentSection === item.key }"
-          :title="item.label"
-          :aria-label="item.label"
-          @click="currentSection = item.key"
+          :class="{
+            active: isActiveItem(item),
+            disabled: !item.route,
+          }"
+          :title="item.route ? item.label : `${item.label} — Em breve`"
+          :aria-label="item.route ? item.label : `${item.label} (em breve)`"
+          :disabled="!item.route"
+          @click="item.route && navigateTo(item.route)"
         >
           <i :class="`pi pi-${item.icon}`" />
         </button>
       </nav>
 
       <div class="sidebar-footer">
-        <button class="user-avatar" :title="auth.role ?? ''" :aria-label="`Usuário: ${auth.role}`">
+        <button
+          class="user-avatar"
+          :title="`${auth.role} — clique para sair`"
+          :aria-label="`Usuário ${auth.role}, clique para sair`"
+          @click="handleLogout"
+        >
           {{ userInitial }}
         </button>
       </div>
@@ -59,24 +68,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { roleDashboards } from '@/utils/roleRoutes'
 import Button from 'primevue/button'
 
 const auth = useAuthStore()
 const router = useRouter()
-const currentSection = ref('home')
+const route = useRoute()
 const currentTime = ref('')
 let timer: ReturnType<typeof setInterval>
 
+// route=null means "em breve" (Etapa 2+)
 const navItems = [
-  { key: 'home',     icon: 'home',      label: 'Dashboard' },
-  { key: 'users',    icon: 'users',     label: 'Alunos' },
-  { key: 'calendar', icon: 'calendar',  label: 'Agenda' },
-  { key: 'activity', icon: 'bolt',      label: 'Treinos' },
-  { key: 'chart',    icon: 'chart-bar', label: 'Relatórios' },
+  { key: 'home',     icon: 'home',      label: 'Dashboard',  route: () => dashboardRoute() },
+  { key: 'users',    icon: 'users',     label: 'Alunos',     route: null },
+  { key: 'calendar', icon: 'calendar',  label: 'Agenda',     route: null },
+  { key: 'activity', icon: 'bolt',      label: 'Treinos',    route: null },
+  { key: 'chart',    icon: 'chart-bar', label: 'Relatórios', route: null },
 ]
+
+function dashboardRoute() {
+  return auth.role ? roleDashboards[auth.role] : '/login'
+}
+
+function isActiveItem(item: typeof navItems[0]) {
+  if (item.key === 'home') {
+    return auth.role ? route.path === roleDashboards[auth.role] : false
+  }
+  return false
+}
+
+function navigateTo(routeFn: () => string) {
+  router.push(routeFn())
+}
+
+function goHome() {
+  router.push(dashboardRoute())
+}
 
 const userInitial = computed(() => auth.role?.charAt(0) ?? 'U')
 
@@ -131,7 +161,8 @@ function handleLogout() {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   margin-bottom: 20px;
-  cursor: default;
+  cursor: pointer;
+  border: none;
 }
 .logo-w {
   font-family: var(--font-display);
@@ -158,9 +189,13 @@ function handleLogout() {
   font-size: 18px;
   transition: background 0.15s, color 0.15s;
 }
-.nav-item:hover { background: rgba(255,255,255,0.05); color: var(--neutral-300); }
+.nav-item:not(.disabled):hover { background: rgba(255,255,255,0.05); color: var(--neutral-300); }
 .nav-item.active { background: var(--blue-500); color: #fff; }
 .nav-item:focus-visible { outline: 2px solid var(--blue-400); outline-offset: 2px; }
+.nav-item.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
 
 .sidebar-footer { margin-top: auto; padding-top: 12px; }
 
