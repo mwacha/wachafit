@@ -4,6 +4,7 @@ import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.auth.dto.LoginResponse;
 import com.github.mwacha.wachafit.auth.dto.RegisterRequest;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.shared.exception.UnauthorizedException;
 import com.github.mwacha.wachafit.shared.security.JwtUtil;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
@@ -86,7 +87,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("ghost@example.com", "pass")))
-            .isInstanceOf(BusinessException.class)
+            .isInstanceOf(UnauthorizedException.class)
             .hasMessageContaining("inválidas");
     }
 
@@ -96,7 +97,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail("inactive@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("inactive@example.com", "pass")))
-            .isInstanceOf(BusinessException.class)
+            .isInstanceOf(UnauthorizedException.class)
             .hasMessageContaining("inativo");
     }
 
@@ -106,7 +107,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("user@example.com", "wrong")))
-            .isInstanceOf(BusinessException.class)
+            .isInstanceOf(UnauthorizedException.class)
             .hasMessageContaining("inválidas");
     }
 

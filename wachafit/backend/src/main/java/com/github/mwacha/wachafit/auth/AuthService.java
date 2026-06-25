@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.auth;
 
 import com.github.mwacha.wachafit.auth.dto.*;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.shared.exception.UnauthorizedException;
 import com.github.mwacha.wachafit.shared.security.JwtUtil;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
@@ -53,19 +54,19 @@ public class AuthService {
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(Role.STUDENT);
-        userRepository.save(user);
-        String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.getRole().name(), user.getId().toString());
+        User saved = userRepository.save(user);
+        String token = jwtUtil.generateToken(saved);
+        return new LoginResponse(token, saved.getRole().name(), saved.getId().toString());
     }
 
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-            .orElseThrow(() -> new BusinessException("Credenciais inválidas"));
+            .orElseThrow(() -> new UnauthorizedException("Credenciais inválidas"));
         if (!user.isActive()) {
-            throw new BusinessException("Usuário inativo");
+            throw new UnauthorizedException("Usuário inativo");
         }
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new BusinessException("Credenciais inválidas");
+            throw new UnauthorizedException("Credenciais inválidas");
         }
         String token = jwtUtil.generateToken(user);
         return new LoginResponse(token, user.getRole().name(), user.getId().toString());
@@ -100,8 +101,7 @@ public class AuthService {
         }
         User user = resetToken.getUser();
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-        userRepository.save(user);
         resetToken.setUsed(true);
-        tokenRepository.save(resetToken);
+        // Both entities are managed within this transaction; Hibernate dirty-checks flush at commit.
     }
 }

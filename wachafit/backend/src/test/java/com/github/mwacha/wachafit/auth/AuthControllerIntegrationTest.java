@@ -74,7 +74,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void login_withWrongPassword_shouldReturn409() throws Exception {
+    void login_withWrongPassword_shouldReturn401() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
@@ -85,7 +85,7 @@ class AuthControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new LoginRequest("carol@test.com", "wrongpassword"))))
-            .andExpect(status().isConflict())
+            .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.message").value("Credenciais inválidas"));
     }
 }
