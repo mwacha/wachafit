@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -35,11 +36,11 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    private Instant createdAt;
 
     @Override public String getUsername() { return email; }
-    @Override public String getPassword() { return passwordHash; }
+    @Override @JsonIgnore public String getPassword() { return passwordHash; }
     @Override public boolean isEnabled() { return active; }
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
@@ -47,6 +48,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (role == null) return List.of();
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 

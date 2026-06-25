@@ -5,5 +5,5 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role          VARCHAR(20) NOT NULL,
     active        BOOLEAN NOT NULL DEFAULT true,
-    created_at    TIMESTAMP NOT NULL DEFAULT now()
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
