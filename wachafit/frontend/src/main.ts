@@ -10,9 +10,8 @@ import { setRouter } from './services/api'
 const app = createApp(App)
 
 app.use(createPinia())
+setRouter(router) // must be before app.use(router) to handle 401s during initial navigation
 app.use(router)
 app.use(PrimeVue, { theme: { preset: Aura } })
-
-setRouter(router)
 
 app.mount('#app')
