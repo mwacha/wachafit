@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
@@ -20,7 +21,10 @@ public class JwtUtil {
         @Value("${jwt.secret}") String secret,
         @Value("${jwt.expiration}") long expirationSeconds
     ) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        if (secret.length() < 32) {
+            throw new IllegalStateException("jwt.secret must be at least 32 characters");
+        }
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationSeconds = expirationSeconds;
     }
 
@@ -44,7 +48,8 @@ public class JwtUtil {
 
     public boolean isTokenValid(String token) {
         try {
-            parseClaims(token);
+            String subject = parseClaims(token).getSubject();
+            UUID.fromString(subject); // validate subject is a UUID
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;

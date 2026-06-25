@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +19,8 @@ import java.io.IOException;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
@@ -34,13 +38,19 @@ public class JwtFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String token = extractToken(request);
         if (token != null && jwtUtil.isTokenValid(token)) {
-            String userId = jwtUtil.extractUserId(token).toString();
-            UserDetails user = userDetailsService.loadUserByUsername(userId);
-            if (user.isEnabled()) {
-                UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
+            try {
+                String userId = jwtUtil.extractUserId(token).toString();
+                UserDetails user = userDetailsService.loadUserByUsername(userId);
+                if (user.isEnabled()) {
+                    UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            } catch (Exception e) {
+                // Token was valid but user lookup failed (deleted user, DB error, malformed claim).
+                // Leave SecurityContext empty — Spring Security will return 401 via AuthenticationEntryPoint.
+                log.debug("Could not authenticate from JWT token: {}", e.getMessage());
             }
         }
         chain.doFilter(request, response);
