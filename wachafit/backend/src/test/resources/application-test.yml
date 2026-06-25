@@ -10,6 +10,11 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
 
 jwt:
   secret: test-secret-32-characters-minimum
@@ -17,6 +22,3 @@ jwt:
 
 app:
   frontend-url: http://localhost:5173
-
-spring.mail.host: localhost
-spring.mail.port: 1025
