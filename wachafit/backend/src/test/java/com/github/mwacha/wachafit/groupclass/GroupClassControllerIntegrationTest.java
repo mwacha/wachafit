@@ -3,7 +3,8 @@ package com.github.mwacha.wachafit.groupclass;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.auth.dto.RegisterRequest;
-import com.github.mwacha.wachafit.groupclass.dto.GroupClassRequest;
+import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
+import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,7 +104,7 @@ class GroupClassControllerIntegrationTest {
 
     @Test
     void create_withStudentToken_shouldReturn403() throws Exception {
-        var req = new GroupClassRequest("Yoga", null, 10, 60, trainerId);
+        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerId);
         mockMvc.perform(post("/api/classes")
             .header("Authorization", "Bearer " + studentToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -113,7 +114,7 @@ class GroupClassControllerIntegrationTest {
 
     @Test
     void create_withoutToken_shouldReturn401() throws Exception {
-        var req = new GroupClassRequest("Yoga", null, 10, 60, trainerId);
+        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerId);
         mockMvc.perform(post("/api/classes")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(req)))
@@ -122,14 +123,14 @@ class GroupClassControllerIntegrationTest {
 
     @Test
     void deactivate_withStudentToken_shouldReturn403() throws Exception {
-        mockMvc.perform(patch("/api/classes/" + UUID.randomUUID() + "/deactivate")
+        mockMvc.perform(delete("/api/classes/" + UUID.randomUUID())
             .header("Authorization", "Bearer " + studentToken))
             .andExpect(status().isForbidden());
     }
 
     @Test
     void update_withStudentToken_shouldReturn403() throws Exception {
-        var req = new GroupClassRequest("Updated", null, 5, 30, trainerId);
+        var req = new UpdateGroupClassRequest("Updated", null, 5, 30);
         mockMvc.perform(put("/api/classes/" + UUID.randomUUID())
             .header("Authorization", "Bearer " + studentToken)
             .contentType(MediaType.APPLICATION_JSON)

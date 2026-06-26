@@ -1,10 +1,12 @@
 package com.github.mwacha.wachafit.groupclass;
 
-import com.github.mwacha.wachafit.groupclass.dto.GroupClassRequest;
+import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
+import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,24 +30,31 @@ public class GroupClassController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<GroupClassResponse> create(@Valid @RequestBody GroupClassRequest req) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    public ResponseEntity<GroupClassResponse> create(
+        @Valid @RequestBody CreateGroupClassRequest req
+    ) {
         return ResponseEntity.ok(groupClassService.create(req));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
     public ResponseEntity<GroupClassResponse> update(
         @PathVariable UUID id,
-        @Valid @RequestBody GroupClassRequest req
+        @Valid @RequestBody UpdateGroupClassRequest req,
+        @AuthenticationPrincipal com.github.mwacha.wachafit.user.User currentUser
     ) {
-        return ResponseEntity.ok(groupClassService.update(id, req));
+        return ResponseEntity.ok(
+            groupClassService.updateGroupClass(id, req, currentUser.getId(), currentUser.getRole()));
     }
 
-    @PatchMapping("/{id}/deactivate")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deactivate(@PathVariable UUID id) {
-        groupClassService.deactivate(id);
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    public ResponseEntity<Void> deactivate(
+        @PathVariable UUID id,
+        @AuthenticationPrincipal com.github.mwacha.wachafit.user.User currentUser
+    ) {
+        groupClassService.deactivateGroupClass(id, currentUser.getId(), currentUser.getRole());
         return ResponseEntity.noContent().build();
     }
 }
