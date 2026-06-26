@@ -41,6 +41,12 @@ class ScheduleServiceTest {
 
         GroupClass gc = new GroupClass();
         gc.setCapacity(10);
+        // Set the GroupClass id via reflection so toResponse doesn't NPE
+        try {
+            var f = GroupClass.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(gc, UUID.randomUUID());
+        } catch (Exception e) { throw new RuntimeException(e); }
 
         when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
         when(scheduleRepository.countOverlaps(trainerId, start, end)).thenReturn(0L);
@@ -64,8 +70,7 @@ class ScheduleServiceTest {
         OffsetDateTime start = OffsetDateTime.of(2026, 7, 1, 8, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime end = start.plusHours(1);
 
-        GroupClass gc = new GroupClass();
-        when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
+        // No need to stub groupClassRepository — exception is thrown before buildSchedule is called
         when(scheduleRepository.countOverlaps(trainerId, start, end)).thenReturn(1L);
 
         assertThatThrownBy(() -> service.create(
