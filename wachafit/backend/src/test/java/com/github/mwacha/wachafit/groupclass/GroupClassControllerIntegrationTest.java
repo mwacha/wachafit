@@ -113,6 +113,37 @@ class GroupClassControllerIntegrationTest {
     }
 
     @Test
+    void create_withTrainerToken_shouldReturn201() throws Exception {
+        // Login as trainer
+        var trainerEmail = "trainer-" + UUID.randomUUID() + "@test.com";
+        mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(
+                new RegisterRequest("Trainer User", trainerEmail, "password123"))))
+            .andReturn();
+
+        var trainerUser = userRepository.findByEmail(trainerEmail).orElseThrow();
+        trainerUser.setRole(Role.TRAINER);
+        userRepository.save(trainerUser);
+
+        var result = mockMvc.perform(post("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(
+                new LoginRequest(trainerEmail, "password123"))))
+            .andReturn();
+        var body = objectMapper.readTree(result.getResponse().getContentAsString());
+        String trainerToken = body.get("token").asText();
+
+        // Create class and assert 201
+        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerUser.getId());
+        mockMvc.perform(post("/api/classes")
+            .header("Authorization", "Bearer " + trainerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isCreated());
+    }
+
+    @Test
     void create_withoutToken_shouldReturn401() throws Exception {
         var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerId);
         mockMvc.perform(post("/api/classes")

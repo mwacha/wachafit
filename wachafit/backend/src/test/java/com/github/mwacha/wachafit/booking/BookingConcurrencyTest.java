@@ -50,7 +50,6 @@ class BookingConcurrencyTest {
         r.add("jwt.secret", () -> "integration-test-secret-32-chars-ok");
         r.add("jwt.expiration", () -> "3600");
         r.add("app.frontend-url", () -> "http://localhost:5173");
-        r.add("app.cancellation-window-hours", () -> "4");
     }
 
     @Autowired BookingService bookingService;
