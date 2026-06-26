@@ -1,8 +1,11 @@
 package com.github.mwacha.wachafit.groupclass;
 
-import com.github.mwacha.wachafit.groupclass.dto.GroupClassRequest;
+import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
+import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
+import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,25 +39,13 @@ class GroupClassServiceTest {
         UUID trainerId = UUID.randomUUID();
         User trainer = buildTrainer(trainerId, "Trainer Name", "t@example.com");
 
-        GroupClass gc = new GroupClass();
-        try {
-            var f = GroupClass.class.getDeclaredField("id");
-            f.setAccessible(true);
-            f.set(gc, UUID.randomUUID());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        gc.setName("Funcional");
-        gc.setCapacity(10);
-        gc.setDurationMinutes(60);
-        gc.setTrainer(trainer);
-        gc.setActive(true);
+        GroupClass gc = buildGroupClass(UUID.randomUUID(), "Funcional", 10, 60, trainer, true);
 
         when(userRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(groupClassRepository.save(any())).thenReturn(gc);
 
         GroupClassResponse res = service.create(
-            new GroupClassRequest("Funcional", null, 10, 60, trainerId));
+            new CreateGroupClassRequest("Funcional", null, 10, 60, trainerId));
 
         assertThat(res.name()).isEqualTo("Funcional");
         assertThat(res.trainerName()).isEqualTo("Trainer Name");
@@ -65,7 +56,7 @@ class GroupClassServiceTest {
         UUID trainerId = UUID.randomUUID();
         when(userRepository.findById(trainerId)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.create(
-            new GroupClassRequest("Funcional", null, 10, 60, trainerId)))
+            new CreateGroupClassRequest("Funcional", null, 10, 60, trainerId)))
             .isInstanceOf(NotFoundException.class);
     }
 
@@ -73,17 +64,7 @@ class GroupClassServiceTest {
     void list_shouldReturnAll_whenActiveIsNull() {
         UUID trainerId = UUID.randomUUID();
         User trainer = buildTrainer(trainerId, "Trainer", "trainer@test.com");
-
-        GroupClass gc = new GroupClass();
-        try {
-            var f = GroupClass.class.getDeclaredField("id");
-            f.setAccessible(true);
-            f.set(gc, UUID.randomUUID());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        gc.setName("Yoga"); gc.setCapacity(15); gc.setDurationMinutes(45);
-        gc.setTrainer(trainer); gc.setActive(true);
+        GroupClass gc = buildGroupClass(UUID.randomUUID(), "Yoga", 15, 45, trainer, true);
 
         when(groupClassRepository.findAll()).thenReturn(List.of(gc));
 
@@ -97,17 +78,7 @@ class GroupClassServiceTest {
     void list_shouldFilterByActive_whenActiveIsTrue() {
         UUID trainerId = UUID.randomUUID();
         User trainer = buildTrainer(trainerId, "Trainer", "trainer@test.com");
-
-        GroupClass gc = new GroupClass();
-        try {
-            var f = GroupClass.class.getDeclaredField("id");
-            f.setAccessible(true);
-            f.set(gc, UUID.randomUUID());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        gc.setName("CrossFit"); gc.setCapacity(20); gc.setDurationMinutes(50);
-        gc.setTrainer(trainer); gc.setActive(true);
+        GroupClass gc = buildGroupClass(UUID.randomUUID(), "CrossFit", 20, 50, trainer, true);
 
         when(groupClassRepository.findByActive(true)).thenReturn(List.of(gc));
 
@@ -119,28 +90,18 @@ class GroupClassServiceTest {
     }
 
     @Test
-    void update_shouldReturnUpdatedResponse_whenExists() {
+    void update_shouldReturnUpdatedResponse_whenAdminUpdates() {
         UUID id = UUID.randomUUID();
         UUID trainerId = UUID.randomUUID();
         User trainer = buildTrainer(trainerId, "New Trainer", "new@test.com");
-
-        GroupClass gc = new GroupClass();
-        try {
-            var f = GroupClass.class.getDeclaredField("id");
-            f.setAccessible(true);
-            f.set(gc, id);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        gc.setName("Updated"); gc.setCapacity(8); gc.setDurationMinutes(30);
-        gc.setTrainer(trainer); gc.setActive(true);
+        GroupClass gc = buildGroupClass(id, "Original", 8, 30, trainer, true);
 
         when(groupClassRepository.findById(id)).thenReturn(Optional.of(gc));
-        when(userRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(groupClassRepository.save(any())).thenReturn(gc);
 
-        GroupClassResponse res = service.update(id,
-            new GroupClassRequest("Updated", "desc", 8, 30, trainerId));
+        GroupClassResponse res = service.updateGroupClass(id,
+            new UpdateGroupClassRequest("Updated", "desc", 8, 30),
+            UUID.randomUUID(), Role.ADMIN);
 
         assertThat(res.name()).isEqualTo("Updated");
         assertThat(res.trainerName()).isEqualTo("New Trainer");
@@ -149,33 +110,56 @@ class GroupClassServiceTest {
     @Test
     void update_shouldThrow_whenNotFound() {
         UUID id = UUID.randomUUID();
-        UUID trainerId = UUID.randomUUID();
         when(groupClassRepository.findById(id)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.update(id,
-            new GroupClassRequest("X", null, 5, 30, trainerId)))
+        assertThatThrownBy(() -> service.updateGroupClass(id,
+            new UpdateGroupClassRequest("X", null, 5, 30),
+            UUID.randomUUID(), Role.ADMIN))
             .isInstanceOf(NotFoundException.class);
     }
 
     @Test
-    void deactivate_shouldSetActiveFalse_whenExists() {
+    void update_shouldAllow_whenTrainerOwnsClass() {
+        UUID trainerId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        User trainer = buildTrainer(trainerId, "Owning Trainer", "owner@test.com");
+        GroupClass gc = buildGroupClass(classId, "Pilates", 10, 45, trainer, true);
+
+        when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
+        when(groupClassRepository.save(any())).thenReturn(gc);
+
+        GroupClassResponse res = service.updateGroupClass(classId,
+            new UpdateGroupClassRequest("Pilates Updated", null, 10, 45),
+            trainerId, Role.TRAINER);
+
+        assertThat(res.name()).isEqualTo("Pilates Updated");
+    }
+
+    @Test
+    void update_shouldThrowForbidden_whenTrainerDoesNotOwnClass() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherTrainerId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        User owner = buildTrainer(ownerId, "Owner", "owner@test.com");
+        GroupClass gc = buildGroupClass(classId, "Yoga", 10, 60, owner, true);
+
+        when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
+
+        assertThatThrownBy(() -> service.updateGroupClass(classId,
+            new UpdateGroupClassRequest("Yoga Hacked", null, 10, 60),
+            otherTrainerId, Role.TRAINER))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void deactivate_shouldSetActiveFalse_whenAdminDeactivates() {
         UUID id = UUID.randomUUID();
         User trainer = buildTrainer(UUID.randomUUID(), "T", "t@t.com");
-
-        GroupClass gc = new GroupClass();
-        try {
-            var f = GroupClass.class.getDeclaredField("id");
-            f.setAccessible(true);
-            f.set(gc, id);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        gc.setName("Pilates"); gc.setCapacity(5); gc.setDurationMinutes(60);
-        gc.setTrainer(trainer); gc.setActive(true);
+        GroupClass gc = buildGroupClass(id, "Pilates", 5, 60, trainer, true);
 
         when(groupClassRepository.findById(id)).thenReturn(Optional.of(gc));
         when(groupClassRepository.save(any())).thenReturn(gc);
 
-        service.deactivate(id);
+        service.deactivateGroupClass(id, UUID.randomUUID(), Role.ADMIN);
 
         assertThat(gc.isActive()).isFalse();
         verify(groupClassRepository).save(gc);
@@ -185,8 +169,37 @@ class GroupClassServiceTest {
     void deactivate_shouldThrow_whenNotFound() {
         UUID id = UUID.randomUUID();
         when(groupClassRepository.findById(id)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.deactivate(id))
+        assertThatThrownBy(() -> service.deactivateGroupClass(id, UUID.randomUUID(), Role.ADMIN))
             .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void deactivate_shouldAllow_whenTrainerOwnsClass() {
+        UUID trainerId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        User trainer = buildTrainer(trainerId, "Owner", "owner@test.com");
+        GroupClass gc = buildGroupClass(classId, "Spinning", 12, 50, trainer, true);
+
+        when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
+        when(groupClassRepository.save(any())).thenReturn(gc);
+
+        service.deactivateGroupClass(classId, trainerId, Role.TRAINER);
+
+        assertThat(gc.isActive()).isFalse();
+    }
+
+    @Test
+    void deactivate_shouldThrowForbidden_whenTrainerDoesNotOwnClass() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherTrainerId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        User owner = buildTrainer(ownerId, "Owner", "owner@test.com");
+        GroupClass gc = buildGroupClass(classId, "Boxing", 8, 60, owner, true);
+
+        when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
+
+        assertThatThrownBy(() -> service.deactivateGroupClass(classId, otherTrainerId, Role.TRAINER))
+            .isInstanceOf(ForbiddenException.class);
     }
 
     // --- helpers ---
@@ -203,5 +216,23 @@ class GroupClassServiceTest {
             throw new RuntimeException(e);
         }
         return u;
+    }
+
+    private GroupClass buildGroupClass(UUID id, String name, int capacity, int durationMinutes,
+                                       User trainer, boolean active) {
+        GroupClass gc = new GroupClass();
+        try {
+            var f = GroupClass.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(gc, id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        gc.setName(name);
+        gc.setCapacity(capacity);
+        gc.setDurationMinutes(durationMinutes);
+        gc.setTrainer(trainer);
+        gc.setActive(active);
+        return gc;
     }
 }

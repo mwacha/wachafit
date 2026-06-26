@@ -1,7 +1,6 @@
 package com.github.mwacha.wachafit.groupclass;
 
 import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
-import com.github.mwacha.wachafit.groupclass.dto.GroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
 import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
@@ -46,18 +45,6 @@ public class GroupClassService {
         return toResponse(groupClassRepository.save(gc));
     }
 
-    /** Legacy overload kept for service tests that still use GroupClassRequest. */
-    public GroupClassResponse create(GroupClassRequest req) {
-        User trainer = findTrainer(req.trainerId());
-        GroupClass gc = new GroupClass();
-        gc.setName(req.name());
-        gc.setDescription(req.description());
-        gc.setCapacity(req.capacity());
-        gc.setDurationMinutes(req.durationMinutes());
-        gc.setTrainer(trainer);
-        return toResponse(groupClassRepository.save(gc));
-    }
-
     public GroupClassResponse updateGroupClass(UUID id, UpdateGroupClassRequest req,
                                                UUID currentUserId, Role currentUserRole) {
         GroupClass gc = findOrThrow(id);
@@ -71,30 +58,11 @@ public class GroupClassService {
         return toResponse(groupClassRepository.save(gc));
     }
 
-    /** Legacy overload kept for service tests that still use GroupClassRequest. */
-    public GroupClassResponse update(UUID id, GroupClassRequest req) {
-        GroupClass gc = findOrThrow(id);
-        User trainer = findTrainer(req.trainerId());
-        gc.setName(req.name());
-        gc.setDescription(req.description());
-        gc.setCapacity(req.capacity());
-        gc.setDurationMinutes(req.durationMinutes());
-        gc.setTrainer(trainer);
-        return toResponse(groupClassRepository.save(gc));
-    }
-
     public void deactivateGroupClass(UUID id, UUID currentUserId, Role currentUserRole) {
         GroupClass gc = findOrThrow(id);
         if (currentUserRole == Role.TRAINER && !gc.getTrainer().getId().equals(currentUserId)) {
             throw new ForbiddenException("Access denied");
         }
-        gc.setActive(false);
-        groupClassRepository.save(gc);
-    }
-
-    /** Legacy overload kept for service tests. */
-    public void deactivate(UUID id) {
-        GroupClass gc = findOrThrow(id);
         gc.setActive(false);
         groupClassRepository.save(gc);
     }
