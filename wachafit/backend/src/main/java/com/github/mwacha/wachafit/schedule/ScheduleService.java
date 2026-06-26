@@ -4,13 +4,14 @@ import com.github.mwacha.wachafit.groupclass.GroupClass;
 import com.github.mwacha.wachafit.groupclass.GroupClassRepository;
 import com.github.mwacha.wachafit.schedule.dto.*;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.user.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalTime;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,20 +20,17 @@ import java.util.UUID;
 public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
-    private final TrainerAvailabilityRepository availabilityRepository;
     private final GroupClassRepository groupClassRepository;
 
     public ScheduleService(ScheduleRepository scheduleRepository,
-                           TrainerAvailabilityRepository availabilityRepository,
                            GroupClassRepository groupClassRepository) {
         this.scheduleRepository = scheduleRepository;
-        this.availabilityRepository = availabilityRepository;
         this.groupClassRepository = groupClassRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<ScheduleResponse> list(OffsetDateTime from, OffsetDateTime to, UUID trainerId, ScheduleType type) {
-        return scheduleRepository.findByFilters(from, to, trainerId, type == null ? null : type.name())
+    public List<ScheduleResponse> list(OffsetDateTime from, OffsetDateTime to, LocalDate date, UUID trainerId, ScheduleType type) {
+        return scheduleRepository.findByFilters(from, to, date, trainerId, type == null ? null : type.name())
             .stream().map(this::toResponse).toList();
     }
 
@@ -42,60 +40,17 @@ public class ScheduleService {
         return toResponse(scheduleRepository.save(s));
     }
 
-    public List<ScheduleResponse> createBatch(BatchScheduleRequest req) {
-        // Validate ALL slots first — fail fast before persisting any
-        List<String> conflicts = new ArrayList<>();
-        for (SlotRequest slot : req.slots()) {
-            long count = scheduleRepository.countOverlaps(req.trainerId(), slot.startsAt(), slot.endsAt());
-            if (count > 0) {
-                conflicts.add(slot.startsAt() + " - " + slot.endsAt());
-            }
-        }
-        if (!conflicts.isEmpty()) {
-            throw new BusinessException("Conflito de horário do profissional nos slots: " + String.join(", ", conflicts));
-        }
-        return req.slots().stream()
-            .map(slot -> buildSchedule(req.groupClassId(), req.trainerId(), req.type(), slot.startsAt(), slot.endsAt()))
-            .map(scheduleRepository::save)
-            .map(this::toResponse)
-            .toList();
-    }
-
-    public void cancel(UUID id, UUID requestingUserId) {
+    public void cancel(UUID id, UUID currentUserId, Role currentUserRole) {
         Schedule s = scheduleRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Schedule não encontrado: " + id));
+        if (currentUserRole == Role.TRAINER && !s.getTrainerId().equals(currentUserId)) {
+            throw new ForbiddenException("Access denied");
+        }
         if (s.getStatus() == ScheduleStatus.CANCELLED) {
             throw new BusinessException("Schedule já cancelado");
         }
         s.setStatus(ScheduleStatus.CANCELLED);
         scheduleRepository.save(s);
-    }
-
-    @Transactional(readOnly = true)
-    public AvailabilityResponse getAvailability(UUID trainerId) {
-        List<AvailabilityResponse.SlotAvailability> slots = availabilityRepository
-            .findByTrainerId(trainerId).stream()
-            .map(a -> new AvailabilityResponse.SlotAvailability(
-                a.getWeekday(), a.getStartTime().toString(), a.getEndTime().toString()))
-            .toList();
-        return new AvailabilityResponse(slots);
-    }
-
-    public AvailabilityResponse setAvailability(UUID trainerId, AvailabilityRequest req) {
-        availabilityRepository.deleteByTrainerId(trainerId);
-        List<TrainerAvailability> saved = req.slots().stream().map(slot -> {
-            TrainerAvailability a = new TrainerAvailability();
-            a.setTrainerId(trainerId);
-            a.setWeekday(slot.weekday());
-            a.setStartTime(LocalTime.parse(slot.startTime()));
-            a.setEndTime(LocalTime.parse(slot.endTime()));
-            return availabilityRepository.save(a);
-        }).toList();
-        List<AvailabilityResponse.SlotAvailability> slots = saved.stream()
-            .map(a -> new AvailabilityResponse.SlotAvailability(
-                a.getWeekday(), a.getStartTime().toString(), a.getEndTime().toString()))
-            .toList();
-        return new AvailabilityResponse(slots);
     }
 
     private void validateNoOverlap(UUID trainerId, OffsetDateTime startsAt, OffsetDateTime endsAt) {

@@ -5,6 +5,8 @@ import com.github.mwacha.wachafit.groupclass.GroupClassRepository;
 import com.github.mwacha.wachafit.schedule.dto.ScheduleRequest;
 import com.github.mwacha.wachafit.schedule.dto.ScheduleResponse;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
+import com.github.mwacha.wachafit.user.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,12 +26,11 @@ import static org.mockito.Mockito.*;
 class ScheduleServiceTest {
 
     @Mock ScheduleRepository scheduleRepository;
-    @Mock TrainerAvailabilityRepository availabilityRepository;
     @Mock GroupClassRepository groupClassRepository;
     private ScheduleService service;
 
     @BeforeEach void setUp() {
-        service = new ScheduleService(scheduleRepository, availabilityRepository, groupClassRepository);
+        service = new ScheduleService(scheduleRepository, groupClassRepository);
     }
 
     @Test
@@ -77,5 +78,59 @@ class ScheduleServiceTest {
             new ScheduleRequest(classId, trainerId, ScheduleType.CLASS, start, end)))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("conflito");
+    }
+
+    @Test
+    void cancel_trainer_canCancelOwnSchedule() {
+        UUID trainerId = UUID.randomUUID();
+        UUID scheduleId = UUID.randomUUID();
+
+        Schedule s = new Schedule();
+        s.setTrainerId(trainerId);
+        s.setStatus(ScheduleStatus.OPEN);
+        try { var f = Schedule.class.getDeclaredField("id"); f.setAccessible(true); f.set(s, scheduleId); }
+        catch (Exception e) { throw new RuntimeException(e); }
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(s));
+        when(scheduleRepository.save(any())).thenReturn(s);
+
+        assertThatCode(() -> service.cancel(scheduleId, trainerId, Role.TRAINER)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void cancel_trainer_cannotCancelOtherTrainerSchedule() {
+        UUID trainerId = UUID.randomUUID();
+        UUID otherTrainerId = UUID.randomUUID();
+        UUID scheduleId = UUID.randomUUID();
+
+        Schedule s = new Schedule();
+        s.setTrainerId(otherTrainerId);
+        s.setStatus(ScheduleStatus.OPEN);
+        try { var f = Schedule.class.getDeclaredField("id"); f.setAccessible(true); f.set(s, scheduleId); }
+        catch (Exception e) { throw new RuntimeException(e); }
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(s));
+
+        assertThatThrownBy(() -> service.cancel(scheduleId, trainerId, Role.TRAINER))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessageContaining("Access denied");
+    }
+
+    @Test
+    void cancel_admin_canCancelAnySchedule() {
+        UUID adminId = UUID.randomUUID();
+        UUID trainerId = UUID.randomUUID();
+        UUID scheduleId = UUID.randomUUID();
+
+        Schedule s = new Schedule();
+        s.setTrainerId(trainerId);
+        s.setStatus(ScheduleStatus.OPEN);
+        try { var f = Schedule.class.getDeclaredField("id"); f.setAccessible(true); f.set(s, scheduleId); }
+        catch (Exception e) { throw new RuntimeException(e); }
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(s));
+        when(scheduleRepository.save(any())).thenReturn(s);
+
+        assertThatCode(() -> service.cancel(scheduleId, adminId, Role.ADMIN)).doesNotThrowAnyException();
     }
 }

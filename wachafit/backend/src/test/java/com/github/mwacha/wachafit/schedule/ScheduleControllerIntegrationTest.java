@@ -126,7 +126,7 @@ class ScheduleControllerIntegrationTest {
     }
 
     @Test
-    void create_withTrainerToken_shouldReturn200() throws Exception {
+    void create_withTrainerToken_shouldReturn201() throws Exception {
         OffsetDateTime start = OffsetDateTime.of(2026, 9, 1, 8, 0, 0, 0, ZoneOffset.UTC);
         var req = new ScheduleRequest(null, trainerId, ScheduleType.PERSONAL, start, start.plusHours(1));
 
@@ -134,7 +134,7 @@ class ScheduleControllerIntegrationTest {
             .header("Authorization", "Bearer " + trainerToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(req)))
-            .andExpect(status().isOk())
+            .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").isNotEmpty())
             .andExpect(jsonPath("$.status").value("OPEN"))
             .andExpect(jsonPath("$.type").value("PERSONAL"));
@@ -150,21 +150,21 @@ class ScheduleControllerIntegrationTest {
             .header("Authorization", "Bearer " + trainerToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(req)))
-            .andExpect(status().isOk())
+            .andExpect(status().isCreated())
             .andReturn();
 
         var body = objectMapper.readTree(createResult.getResponse().getContentAsString());
         var scheduleId = body.get("id").asText();
 
-        // Cancel it
-        mockMvc.perform(patch("/api/schedules/" + scheduleId + "/cancel")
+        // Cancel it via DELETE
+        mockMvc.perform(delete("/api/schedules/" + scheduleId)
             .header("Authorization", "Bearer " + trainerToken))
             .andExpect(status().isNoContent());
     }
 
     @Test
     void cancel_withStudentToken_shouldReturn403() throws Exception {
-        mockMvc.perform(patch("/api/schedules/" + UUID.randomUUID() + "/cancel")
+        mockMvc.perform(delete("/api/schedules/" + UUID.randomUUID())
             .header("Authorization", "Bearer " + studentToken))
             .andExpect(status().isForbidden());
     }
