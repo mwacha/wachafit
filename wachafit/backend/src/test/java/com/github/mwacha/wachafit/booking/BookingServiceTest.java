@@ -8,7 +8,9 @@ import com.github.mwacha.wachafit.schedule.ScheduleRepository;
 import com.github.mwacha.wachafit.schedule.ScheduleStatus;
 import com.github.mwacha.wachafit.schedule.ScheduleType;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.user.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +35,7 @@ class BookingServiceTest {
     private BookingService service;
 
     @BeforeEach void setUp() {
-        service = new BookingService(bookingRepository, scheduleRepository, 4L);
+        service = new BookingService(bookingRepository, scheduleRepository);
     }
 
     private Schedule buildSchedule(UUID id, ScheduleType type, ScheduleStatus status, int capacity) {
@@ -113,7 +115,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void create_shouldThrow_RN03_whenClassFull() {
+    void create_shouldThrow_RN02_whenClassFull() {
         UUID scheduleId = UUID.randomUUID();
         UUID studentId = UUID.randomUUID();
         Schedule s = buildSchedule(scheduleId, ScheduleType.CLASS, ScheduleStatus.OPEN, 5);
@@ -129,23 +131,42 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancel_shouldThrow_RN04_whenOutsideWindow() {
+    void cancel_student_shouldThrow_ForbiddenException_whenNotOwner() {
         UUID bookingId = UUID.randomUUID();
-        UUID studentId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
         Schedule s = buildSchedule(UUID.randomUUID(), ScheduleType.CLASS, ScheduleStatus.OPEN, 10);
-        // Schedule starts in 2 hours — inside the 4h cancellation window
-        s.setStartsAt(OffsetDateTime.now(ZoneOffset.UTC).plusHours(2));
         Booking b = new Booking();
         try { var f = Booking.class.getDeclaredField("id"); f.setAccessible(true); f.set(b, bookingId); }
         catch (Exception e) { throw new RuntimeException(e); }
         b.setSchedule(s);
-        b.setStudentId(studentId);
+        b.setStudentId(ownerId);
         b.setStatus(BookingStatus.CONFIRMED);
 
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(b));
 
-        assertThatThrownBy(() -> service.cancelBooking(bookingId, studentId))
-            .isInstanceOf(BusinessException.class)
-            .hasMessageContaining("antecedência");
+        assertThatThrownBy(() -> service.cancelBooking(bookingId, otherId, Role.STUDENT))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessageContaining("Access denied");
+    }
+
+    @Test
+    void cancel_admin_shouldSucceed_whenNotOwner() {
+        UUID bookingId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        Schedule s = buildSchedule(UUID.randomUUID(), ScheduleType.CLASS, ScheduleStatus.OPEN, 10);
+        Booking b = new Booking();
+        try { var f = Booking.class.getDeclaredField("id"); f.setAccessible(true); f.set(b, bookingId); }
+        catch (Exception e) { throw new RuntimeException(e); }
+        b.setSchedule(s);
+        b.setStudentId(ownerId);
+        b.setStatus(BookingStatus.CONFIRMED);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(b));
+        when(bookingRepository.save(any())).thenReturn(b);
+
+        assertThatCode(() -> service.cancelBooking(bookingId, adminId, Role.ADMIN))
+            .doesNotThrowAnyException();
     }
 }

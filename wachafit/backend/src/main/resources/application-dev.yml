@@ -13,4 +13,3 @@ jwt:
 
 app:
   frontend-url: http://localhost:5173
-  cancellation-window-hours: 4

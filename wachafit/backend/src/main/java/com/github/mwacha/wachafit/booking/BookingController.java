@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.booking;
 
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
+import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -45,17 +46,8 @@ public class BookingController {
         @PathVariable UUID id,
         @AuthenticationPrincipal User currentUser
     ) {
-        bookingService.cancelBooking(id, currentUser.getId());
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/{id}/confirm")
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
-    public ResponseEntity<Void> confirm(
-        @PathVariable UUID id,
-        @AuthenticationPrincipal User currentUser
-    ) {
-        bookingService.confirmBooking(id, currentUser.getId());
+        Role role = currentUser.getRole();
+        bookingService.cancelBooking(id, currentUser.getId(), role);
         return ResponseEntity.noContent().build();
     }
 }

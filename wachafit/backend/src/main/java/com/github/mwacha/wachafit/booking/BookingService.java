@@ -7,14 +7,12 @@ import com.github.mwacha.wachafit.schedule.ScheduleRepository;
 import com.github.mwacha.wachafit.schedule.ScheduleStatus;
 import com.github.mwacha.wachafit.schedule.ScheduleType;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
-import org.springframework.beans.factory.annotation.Value;
+import com.github.mwacha.wachafit.user.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,14 +22,11 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final ScheduleRepository scheduleRepository;
-    private final long cancellationWindowHours;
 
     public BookingService(BookingRepository bookingRepository,
-                          ScheduleRepository scheduleRepository,
-                          @Value("${app.cancellation-window-hours:4}") long cancellationWindowHours) {
+                          ScheduleRepository scheduleRepository) {
         this.bookingRepository = bookingRepository;
         this.scheduleRepository = scheduleRepository;
-        this.cancellationWindowHours = cancellationWindowHours;
     }
 
     public BookingResponse createBooking(CreateBookingRequest req, UUID studentId) {
@@ -91,7 +86,7 @@ public class BookingService {
             .stream().map(this::toResponse).toList();
     }
 
-    public void cancelBooking(UUID bookingId, UUID requestingUserId) {
+    public void cancelBooking(UUID bookingId, UUID requestingUserId, Role requestingRole) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new NotFoundException("Booking não encontrado"));
 
@@ -99,39 +94,19 @@ public class BookingService {
             throw new BusinessException("Booking já cancelado");
         }
 
-        // RN-04: cancellation window — must cancel at least N hours before start
-        long hoursUntilStart = ChronoUnit.HOURS.between(
-            OffsetDateTime.now(ZoneOffset.UTC), booking.getSchedule().getStartsAt());
-        if (hoursUntilStart < cancellationWindowHours) {
-            throw new BusinessException(
-                "Cancelamento não permitido com menos de " + cancellationWindowHours + "h de antecedência");
+        // Ownership check: ADMIN can cancel any booking; STUDENT can only cancel their own
+        if (requestingRole == Role.STUDENT && !booking.getStudentId().equals(requestingUserId)) {
+            throw new ForbiddenException("Access denied");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
 
-        // RN-04 cascade: reopen schedule if it was FULL
+        // Cascade: reopen schedule if it was FULL
         Schedule schedule = booking.getSchedule();
         if (schedule.getStatus() == ScheduleStatus.FULL) {
             schedule.setStatus(ScheduleStatus.OPEN);
             scheduleRepository.save(schedule);
         }
-        bookingRepository.save(booking);
-    }
-
-    public void confirmBooking(UUID bookingId, UUID trainerId) {
-        Booking booking = bookingRepository.findById(bookingId)
-            .orElseThrow(() -> new NotFoundException("Booking não encontrado"));
-        Schedule schedule = booking.getSchedule();
-        if (schedule.getType() != ScheduleType.PERSONAL) {
-            throw new BusinessException("Apenas sessões individuais requerem confirmação");
-        }
-        if (!schedule.getTrainerId().equals(trainerId)) {
-            throw new BusinessException("Apenas o profissional responsável pode confirmar");
-        }
-        if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new BusinessException("Booking não está pendente");
-        }
-        booking.setStatus(BookingStatus.CONFIRMED);
         bookingRepository.save(booking);
     }
 
