@@ -4,6 +4,7 @@ import com.github.mwacha.wachafit.user.dto.CreateUserRequest;
 import com.github.mwacha.wachafit.user.dto.UpdateUserRequest;
 import com.github.mwacha.wachafit.user.dto.UserResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/admin/users")
 public class UserController {
 
     private final UserService userService;
@@ -34,10 +35,10 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {
-        return ResponseEntity.ok(userService.createUser(req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(req));
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> update(
         @PathVariable UUID id,

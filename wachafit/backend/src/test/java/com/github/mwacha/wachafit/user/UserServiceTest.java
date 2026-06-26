@@ -94,6 +94,18 @@ class UserServiceTest {
             .hasMessageContaining("própria conta");
     }
 
+    @Test
+    void deactivateUser_shouldRejectStudentRole() {
+        UUID userId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        User user = buildUser(userId, "student@example.com", Role.STUDENT, true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.deactivateUser(userId, currentUserId))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("Cannot deactivate a student user");
+    }
+
     private User buildUser(UUID id, String email, Role role, boolean active) {
         User u = new User();
         u.setEmail(email);

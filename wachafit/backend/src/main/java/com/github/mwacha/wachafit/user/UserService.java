@@ -50,17 +50,16 @@ public class UserService {
 
     public UserResponse updateUser(UUID id, UpdateUserRequest req) {
         User user = findOrThrow(id);
-        if (!user.getEmail().equals(req.email()) && userRepository.existsByEmail(req.email())) {
-            throw new BusinessException("E-mail já cadastrado");
-        }
         user.setName(req.name());
-        user.setEmail(req.email());
         user.setRole(req.role());
         return toResponse(userRepository.save(user));
     }
 
     public void deactivateUser(UUID id, UUID currentUserId) {
         User user = findOrThrow(id);
+        if (user.getRole() == Role.STUDENT) {
+            throw new BusinessException("Cannot deactivate a student user");
+        }
         if (id.equals(currentUserId)) {
             throw new BusinessException("Não é possível desativar a própria conta");
         }

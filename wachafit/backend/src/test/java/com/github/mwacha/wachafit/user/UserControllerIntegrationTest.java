@@ -68,20 +68,20 @@ class UserControllerIntegrationTest {
 
     @Test
     void listUsers_withStudentToken_shouldReturn403() throws Exception {
-        mockMvc.perform(get("/api/users")
+        mockMvc.perform(get("/api/admin/users")
             .header("Authorization", "Bearer " + studentToken))
             .andExpect(status().isForbidden());
     }
 
     @Test
     void listUsers_withoutToken_shouldReturn401() throws Exception {
-        mockMvc.perform(get("/api/users"))
+        mockMvc.perform(get("/api/admin/users"))
             .andExpect(status().isUnauthorized());
     }
 
     @Test
     void createUser_withStudentToken_shouldReturn403() throws Exception {
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/admin/users")
             .header("Authorization", "Bearer " + studentToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
