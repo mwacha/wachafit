@@ -47,7 +47,7 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, req));
     }
 
-    @PatchMapping("/{id}/deactivate")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deactivate(
         @PathVariable UUID id,
