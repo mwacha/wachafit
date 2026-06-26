@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -30,7 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest @Testcontainers
+@SpringBootTest
+@Testcontainers
+@ActiveProfiles("test")
 class BookingConcurrencyTest {
 
     @Container static PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("postgres:16");
@@ -47,6 +50,7 @@ class BookingConcurrencyTest {
         r.add("jwt.secret", () -> "integration-test-secret-32-chars-ok");
         r.add("jwt.expiration", () -> "3600");
         r.add("app.frontend-url", () -> "http://localhost:5173");
+        r.add("app.cancellation-window-hours", () -> "4");
     }
 
     @Autowired BookingService bookingService;

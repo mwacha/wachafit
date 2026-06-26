@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import org.mockito.Mockito;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceTest {
@@ -83,7 +84,8 @@ class BookingServiceTest {
         when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(s));
         when(scheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(s));
         when(bookingRepository.countStudentOverlaps(eq(studentId), any(), any())).thenReturn(0L);
-        when(bookingRepository.countConfirmedBookings(scheduleId)).thenReturn(0L);
+        // PERSONAL type skips capacity check — lenient to avoid UnnecessaryStubbing
+        lenient().when(bookingRepository.countConfirmedBookings(scheduleId)).thenReturn(0L);
         when(bookingRepository.save(any())).thenAnswer(inv -> {
             Booking b = inv.getArgument(0);
             try { var f = Booking.class.getDeclaredField("id"); f.setAccessible(true); f.set(b, UUID.randomUUID()); }
