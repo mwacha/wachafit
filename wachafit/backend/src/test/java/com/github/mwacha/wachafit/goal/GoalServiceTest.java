@@ -104,17 +104,21 @@ class GoalServiceTest {
 
     @Test
     void list_asStudent_shouldOnlySeeOwnGoals_forbidden_whenOtherStudent() {
-        UUID otherStudentId = UUID.randomUUID();
-        User otherStudent = new User();
-        otherStudent.setRole(Role.STUDENT);
-        // Set id via reflection workaround — use a different student
-        when(repo.findByStudentIdOrderByCreatedAtDesc(otherStudentId)).thenReturn(List.of());
+        // Inject studentId into student via reflection
+        try { var f = User.class.getDeclaredField("id"); f.setAccessible(true); f.set(student, studentId); }
+        catch (Exception e) { throw new RuntimeException(e); }
 
-        // student trying to list another student's goals: service checks role
-        // We'll verify a STUDENT can list their own by providing same id
         when(repo.findByStudentIdOrderByCreatedAtDesc(studentId)).thenReturn(List.of());
         List<GoalResponse> results = service.list(studentId, student);
         assertThat(results).isEmpty();
+
+        // Also verify a different student cannot access these goals
+        User otherStudent = new User();
+        otherStudent.setRole(Role.STUDENT);
+        try { var f = User.class.getDeclaredField("id"); f.setAccessible(true); f.set(otherStudent, UUID.randomUUID()); }
+        catch (Exception e) { throw new RuntimeException(e); }
+        assertThatThrownBy(() -> service.list(studentId, otherStudent))
+            .isInstanceOf(ForbiddenException.class);
     }
 
     @Test

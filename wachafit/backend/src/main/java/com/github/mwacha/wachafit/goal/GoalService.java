@@ -44,7 +44,7 @@ public class GoalService {
     public List<GoalResponse> list(UUID studentId, User requestingUser) {
         // STUDENT can only view their own goals
         if (requestingUser.getRole() == Role.STUDENT
-                && !requestingUser.getId().equals(studentId)) {
+                && !studentId.equals(requestingUser.getId())) {
             throw new ForbiddenException("Students can only view their own goals");
         }
         return repo.findByStudentIdOrderByCreatedAtDesc(studentId)
