@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.goal;
 
 import com.github.mwacha.wachafit.goal.dto.*;
 import com.github.mwacha.wachafit.user.User;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +25,7 @@ public class GoalController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<GoalResponse> create(
             @PathVariable UUID studentId,
-            @RequestBody CreateGoalRequest req,
+            @Valid @RequestBody CreateGoalRequest req,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(service.create(studentId, req, currentUser.getId()));
@@ -42,7 +43,7 @@ public class GoalController {
     @PreAuthorize("isAuthenticated()")
     public GoalResponse updateStatus(
             @PathVariable UUID id,
-            @RequestBody UpdateGoalStatusRequest req,
+            @Valid @RequestBody UpdateGoalStatusRequest req,
             @AuthenticationPrincipal User currentUser) {
         return service.updateStatus(id, req, currentUser);
     }

@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.progress;
 
+import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
@@ -9,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +42,24 @@ class ProgressServiceTest {
         when(repo.findById(any())).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.loadFile(UUID.randomUUID(), student))
             .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void upload_shouldThrowBusinessException_whenExtensionNotAllowed() {
+        MockMultipartFile file = new MockMultipartFile(
+            "file", "malicious.exe", "application/octet-stream", new byte[]{1, 2, 3});
+        assertThatThrownBy(() -> service.upload(studentId, file, LocalDate.now(), null, student))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("File type not allowed");
+    }
+
+    @Test
+    void upload_shouldThrowBusinessException_whenFileIsEmpty() {
+        MockMultipartFile file = new MockMultipartFile(
+            "file", "photo.jpg", "image/jpeg", new byte[0]);
+        assertThatThrownBy(() -> service.upload(studentId, file, LocalDate.now(), null, student))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("empty");
     }
 
     @Test

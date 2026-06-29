@@ -20,11 +20,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Transactional
 public class ProgressService {
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024L; // 10 MB
 
     private final ProgressPhotoRepository repo;
     private final Path uploadDir;
@@ -37,11 +41,20 @@ public class ProgressService {
 
     public PhotoResponse upload(UUID studentId, MultipartFile file, LocalDate takenAt, String notes, User uploadedBy) {
         assertCanAccessOrUpload(studentId, uploadedBy);
+        if (file.isEmpty()) {
+            throw new BusinessException("File must not be empty");
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new BusinessException("File exceeds maximum size of 10MB");
+        }
+        String ext = StringUtils.getFilenameExtension(file.getOriginalFilename());
+        if (ext == null || !ALLOWED_EXTENSIONS.contains(ext.toLowerCase())) {
+            throw new BusinessException("File type not allowed. Accepted: jpg, jpeg, png, webp");
+        }
         try {
             Path dir = uploadDir.resolve(studentId.toString());
             Files.createDirectories(dir);
-            String ext = StringUtils.getFilenameExtension(file.getOriginalFilename());
-            String filename = UUID.randomUUID() + (ext != null ? "." + ext : "");
+            String filename = UUID.randomUUID() + "." + ext.toLowerCase();
             file.transferTo(dir.resolve(filename));
             String storageKey = studentId + "/" + filename;
             ProgressPhoto photo = new ProgressPhoto();

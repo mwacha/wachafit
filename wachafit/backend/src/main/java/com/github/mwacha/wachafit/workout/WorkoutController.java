@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.workout;
 
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.workout.dto.*;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +25,7 @@ public class WorkoutController {
     @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public ResponseEntity<WorkoutPlanResponse> createPlan(
             @PathVariable UUID studentId,
-            @RequestBody CreateWorkoutPlanRequest req,
+            @Valid @RequestBody CreateWorkoutPlanRequest req,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(service.createPlan(studentId, req, currentUser.getId()));
@@ -50,7 +51,7 @@ public class WorkoutController {
     @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public WorkoutPlanResponse updatePlan(
             @PathVariable UUID planId,
-            @RequestBody CreateWorkoutPlanRequest req,
+            @Valid @RequestBody CreateWorkoutPlanRequest req,
             @AuthenticationPrincipal User currentUser) {
         return service.updatePlan(planId, req, currentUser);
     }
@@ -67,7 +68,7 @@ public class WorkoutController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<WorkoutLogResponse> createLog(
             @PathVariable UUID studentId,
-            @RequestBody CreateWorkoutLogRequest req,
+            @Valid @RequestBody CreateWorkoutLogRequest req,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(service.createLog(studentId, req, currentUser));

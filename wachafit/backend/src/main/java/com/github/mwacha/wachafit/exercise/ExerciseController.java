@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.exercise;
 
 import com.github.mwacha.wachafit.exercise.dto.*;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,13 +30,13 @@ public class ExerciseController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
-    public ResponseEntity<ExerciseResponse> create(@RequestBody CreateExerciseRequest req) {
+    public ResponseEntity<ExerciseResponse> create(@Valid @RequestBody CreateExerciseRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
-    public ExerciseResponse update(@PathVariable UUID id, @RequestBody UpdateExerciseRequest req) {
+    public ExerciseResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateExerciseRequest req) {
         return service.update(id, req);
     }
 

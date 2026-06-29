@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.assessment;
 
 import com.github.mwacha.wachafit.assessment.dto.*;
 import com.github.mwacha.wachafit.user.User;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +25,7 @@ public class AssessmentController {
     @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public ResponseEntity<AssessmentResponse> create(
             @PathVariable UUID studentId,
-            @RequestBody CreateAssessmentRequest req,
+            @Valid @RequestBody CreateAssessmentRequest req,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(service.create(studentId, req, currentUser.getId()));
@@ -50,7 +51,7 @@ public class AssessmentController {
     @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
     public AssessmentResponse update(
             @PathVariable UUID id,
-            @RequestBody CreateAssessmentRequest req,
+            @Valid @RequestBody CreateAssessmentRequest req,
             @AuthenticationPrincipal User currentUser) {
         return service.update(id, req, currentUser);
     }

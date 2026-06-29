@@ -1,3 +1,5 @@
 package com.github.mwacha.wachafit.exercise.dto;
 
-public record UpdateExerciseRequest(String name, String muscleGroup, String description, String videoUrl) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record UpdateExerciseRequest(@NotBlank String name, @NotBlank String muscleGroup, String description, String videoUrl) {}
