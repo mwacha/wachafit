@@ -160,7 +160,7 @@ class WorkoutControllerIntegrationTest {
 
     @Test
     void listRecords_withStudentToken_shouldReturn200() throws Exception {
-        mvc.perform(get("/api/students/" + studentId + "/personal-records")
+        mvc.perform(get("/api/students/" + studentId + "/records")
                 .header("Authorization", "Bearer " + studentToken))
             .andExpect(status().isOk());
     }
@@ -175,7 +175,7 @@ class WorkoutControllerIntegrationTest {
                 .content(mapper.writeValueAsString(req)))
             .andExpect(status().isCreated());
 
-        mvc.perform(get("/api/students/" + studentId + "/personal-records")
+        mvc.perform(get("/api/students/" + studentId + "/records")
                 .header("Authorization", "Bearer " + studentToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].recordLoadKg").value(100));

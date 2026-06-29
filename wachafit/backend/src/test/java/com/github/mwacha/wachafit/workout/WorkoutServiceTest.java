@@ -82,14 +82,16 @@ class WorkoutServiceTest {
         WorkoutPlan plan = new WorkoutPlan();
         plan.setStudentId(studentId);
         plan.setActive(false);
+        UUID planId = UUID.randomUUID();
         try {
             var f = WorkoutPlan.class.getDeclaredField("id");
             f.setAccessible(true);
-            f.set(plan, UUID.randomUUID());
+            f.set(plan, planId);
         } catch (Exception e) { throw new RuntimeException(e); }
-        when(planRepo.findById(any())).thenReturn(Optional.of(plan));
+        // findById called twice: once to get studentId, once after cache clear
+        when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
         when(planRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        WorkoutPlanResponse res = service.activatePlan(plan.getId(), trainer);
+        WorkoutPlanResponse res = service.activatePlan(planId, trainer);
         verify(planRepo).deactivateAllForStudent(studentId);
         assertThat(res.active()).isTrue();
     }

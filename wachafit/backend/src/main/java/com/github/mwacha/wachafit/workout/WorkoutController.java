@@ -81,7 +81,7 @@ public class WorkoutController {
         return service.listLogs(studentId, currentUser);
     }
 
-    @GetMapping("/api/students/{studentId}/personal-records")
+    @GetMapping("/api/students/{studentId}/records")
     @PreAuthorize("isAuthenticated()")
     public List<PersonalRecordResponse> listRecords(
             @PathVariable UUID studentId,
