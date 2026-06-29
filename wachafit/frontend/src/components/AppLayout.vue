@@ -7,21 +7,62 @@
       </button>
 
       <nav class="sidebar-nav">
-        <button
-          v-for="item in navItems"
-          :key="item.key"
-          class="nav-item"
-          :class="{
-            active: isActiveItem(item),
-            disabled: !item.route,
-          }"
-          :title="item.route ? item.label : `${item.label} — Em breve`"
-          :aria-label="item.route ? item.label : `${item.label} (em breve)`"
-          :disabled="!item.route"
-          @click="item.route && navigateTo(item.route)"
-        >
-          <i :class="`pi pi-${item.icon}`" />
-        </button>
+        <!-- Admin links -->
+        <template v-if="auth.role === 'ADMIN'">
+          <RouterLink to="/admin" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard">
+            <i class="pi pi-home" />
+          </RouterLink>
+          <RouterLink to="/admin/users" class="nav-item" active-class="active" title="Usuários" aria-label="Usuários">
+            <i class="pi pi-users" />
+          </RouterLink>
+          <RouterLink to="/admin/classes" class="nav-item" active-class="active" title="Turmas" aria-label="Turmas">
+            <i class="pi pi-calendar" />
+          </RouterLink>
+          <RouterLink to="/admin/schedules" class="nav-item" active-class="active" title="Agenda" aria-label="Agenda">
+            <i class="pi pi-chart-bar" />
+          </RouterLink>
+        </template>
+
+        <!-- Trainer links -->
+        <template v-else-if="auth.role === 'TRAINER'">
+          <RouterLink to="/trainer" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard">
+            <i class="pi pi-home" />
+          </RouterLink>
+          <RouterLink to="/trainer/schedule" class="nav-item" active-class="active" title="Minha Agenda" aria-label="Minha Agenda">
+            <i class="pi pi-calendar" />
+          </RouterLink>
+          <RouterLink to="/trainer/students" class="nav-item" active-class="active" title="Alunos" aria-label="Alunos">
+            <i class="pi pi-users" />
+          </RouterLink>
+        </template>
+
+        <!-- Student links -->
+        <template v-else-if="auth.role === 'STUDENT'">
+          <RouterLink to="/student" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard">
+            <i class="pi pi-home" />
+          </RouterLink>
+          <RouterLink to="/student/schedule" class="nav-item" active-class="active" title="Aulas Disponíveis" aria-label="Aulas Disponíveis">
+            <i class="pi pi-calendar" />
+          </RouterLink>
+          <RouterLink to="/student/bookings" class="nav-item" active-class="active" title="Minhas Reservas" aria-label="Minhas Reservas">
+            <i class="pi pi-bookmark" />
+          </RouterLink>
+          <RouterLink to="/student/workout" class="nav-item" active-class="active" title="Treino" aria-label="Treino">
+            <i class="pi pi-bolt" />
+          </RouterLink>
+          <RouterLink to="/student/records" class="nav-item" active-class="active" title="Recordes" aria-label="Recordes">
+            <i class="pi pi-trophy" />
+          </RouterLink>
+          <RouterLink to="/student/evolution" class="nav-item" active-class="active" title="Evolução" aria-label="Evolução">
+            <i class="pi pi-chart-bar" />
+          </RouterLink>
+          <RouterLink to="/student/goals" class="nav-item" active-class="active" title="Metas" aria-label="Metas">
+            <i class="pi pi-flag" />
+          </RouterLink>
+          <RouterLink to="/student/photos" class="nav-item" active-class="active" title="Fotos" aria-label="Fotos">
+            <i class="pi pi-image" />
+          </RouterLink>
+        </template>
       </nav>
 
       <div class="sidebar-footer">
@@ -69,39 +110,18 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { roleDashboards } from '@/utils/roleRoutes'
 import Button from 'primevue/button'
 
 const auth = useAuthStore()
 const router = useRouter()
-const route = useRoute()
 const currentTime = ref('')
 let timer: ReturnType<typeof setInterval>
 
-// route=null means "em breve" (Etapa 2+)
-const navItems = [
-  { key: 'home',     icon: 'home',      label: 'Dashboard',  route: () => dashboardRoute() },
-  { key: 'users',    icon: 'users',     label: 'Alunos',     route: null },
-  { key: 'calendar', icon: 'calendar',  label: 'Agenda',     route: null },
-  { key: 'activity', icon: 'bolt',      label: 'Treinos',    route: null },
-  { key: 'chart',    icon: 'chart-bar', label: 'Relatórios', route: null },
-]
-
 function dashboardRoute() {
   return auth.role ? roleDashboards[auth.role] : '/login'
-}
-
-function isActiveItem(item: typeof navItems[0]) {
-  if (item.key === 'home') {
-    return auth.role ? route.path === roleDashboards[auth.role] : false
-  }
-  return false
-}
-
-function navigateTo(routeFn: () => string) {
-  router.push(routeFn())
 }
 
 function goHome() {

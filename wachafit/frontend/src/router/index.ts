@@ -33,6 +33,77 @@ const router = createRouter({
       component: () => import('@/views/admin/AdminDashboard.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN'] },
     },
+    // --- Admin routes ---
+    {
+      path: '/admin/users',
+      component: () => import('@/views/admin/UsersView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN'] as Role[] },
+    },
+    {
+      path: '/admin/classes',
+      component: () => import('@/views/admin/ClassesView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN'] as Role[] },
+    },
+    {
+      path: '/admin/schedules',
+      component: () => import('@/views/admin/SchedulesView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN'] as Role[] },
+    },
+
+    // --- Trainer routes ---
+    {
+      path: '/trainer/schedule',
+      component: () => import('@/views/trainer/ScheduleView.vue'),
+      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+    },
+    {
+      path: '/trainer/students',
+      component: () => import('@/views/trainer/StudentsView.vue'),
+      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+    },
+    {
+      path: '/trainer/students/:id/overview',
+      component: () => import('@/views/trainer/StudentOverviewView.vue'),
+      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+    },
+
+    // --- Student routes ---
+    {
+      path: '/student/schedule',
+      component: () => import('@/views/student/ScheduleView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/bookings',
+      component: () => import('@/views/student/BookingsView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/workout',
+      component: () => import('@/views/student/WorkoutView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/records',
+      component: () => import('@/views/student/RecordsView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/evolution',
+      component: () => import('@/views/student/EvolutionView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/goals',
+      component: () => import('@/views/student/GoalsView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/photos',
+      component: () => import('@/views/student/PhotosView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+
     { path: '/', redirect: '/login' },
     { path: '/:pathMatch(.*)*', redirect: '/login' },
   ],

@@ -13,3 +13,4 @@ jwt:
 
 app:
   frontend-url: http://localhost:5173
+  upload-dir: uploads
