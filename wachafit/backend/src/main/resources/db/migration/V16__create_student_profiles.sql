@@ -6,7 +6,7 @@ CREATE TABLE student_profiles (
     phone                   VARCHAR(20),
     address_line            VARCHAR(200),
     address_city            VARCHAR(100),
-    address_state           CHAR(2),
+    address_state           VARCHAR(2),
     address_zip             VARCHAR(9),
     emergency_contact_name  VARCHAR(120),
     emergency_contact_phone VARCHAR(20),
