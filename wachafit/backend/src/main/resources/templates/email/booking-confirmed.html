@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Agendamento Confirmado</title></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;">
+    <div style="background:#1a73e8;padding:24px;text-align:center;">
+      <h1 style="color:#fff;margin:0;">WachaFit</h1>
+    </div>
+    <div style="padding:32px;">
+      <h2>Agendamento confirmado!</h2>
+      <p>Olá, <strong th:text="${name}">Aluno</strong>!</p>
+      <p>Seu agendamento foi confirmado com sucesso:</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Aula</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;" th:text="${className}">Musculação</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Data</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;" th:text="${date}">2026-07-01</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Horário</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;" th:text="${time}">08:00</td></tr>
+        <tr><td style="padding:8px;color:#666;">Profissional</td>
+            <td style="padding:8px;" th:text="${trainerName}">Personal</td></tr>
+      </table>
+      <p>Até lá!</p>
+    </div>
+    <div style="background:#f4f4f4;padding:16px;text-align:center;color:#666;font-size:12px;">
+      <p>© 2026 WachaFit</p>
+    </div>
+  </div>
+</body>
+</html>
