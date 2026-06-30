@@ -3,6 +3,7 @@ package com.github.mwacha.wachafit.booking;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
 import com.github.mwacha.wachafit.groupclass.GroupClass;
+import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.schedule.Schedule;
 import com.github.mwacha.wachafit.schedule.ScheduleRepository;
 import com.github.mwacha.wachafit.schedule.ScheduleStatus;
@@ -11,6 +12,8 @@ import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
+import com.github.mwacha.wachafit.user.User;
+import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,10 +35,12 @@ class BookingServiceTest {
 
     @Mock BookingRepository bookingRepository;
     @Mock ScheduleRepository scheduleRepository;
+    @Mock UserRepository userRepository;
+    @Mock EmailService emailService;
     private BookingService service;
 
     @BeforeEach void setUp() {
-        service = new BookingService(bookingRepository, scheduleRepository);
+        service = new BookingService(bookingRepository, scheduleRepository, userRepository, emailService);
     }
 
     private Schedule buildSchedule(UUID id, ScheduleType type, ScheduleStatus status, int capacity) {
@@ -50,6 +55,7 @@ class BookingServiceTest {
         if (type == ScheduleType.CLASS) {
             GroupClass gc = new GroupClass();
             gc.setCapacity(capacity);
+            gc.setName("Turma Teste");
             s.setGroupClass(gc);
         }
         return s;
@@ -168,5 +174,39 @@ class BookingServiceTest {
 
         assertThatCode(() -> service.cancelBooking(bookingId, adminId, Role.ADMIN))
             .doesNotThrowAnyException();
+    }
+
+    @Test
+    void createBooking_shouldSendConfirmationEmail_whenClassBooking() {
+        UUID studentId = UUID.randomUUID();
+        UUID trainerId = UUID.randomUUID();
+
+        Schedule schedule = buildSchedule(UUID.randomUUID(), ScheduleType.CLASS, ScheduleStatus.OPEN, 10);
+        schedule.setTrainerId(trainerId);
+
+        User student = new User(); student.setName("Aluno"); student.setEmail("aluno@test.com");
+        User trainer = new User(); trainer.setName("Trainer");
+
+        when(scheduleRepository.findById(schedule.getId())).thenReturn(Optional.of(schedule));
+        when(scheduleRepository.findByIdForUpdate(schedule.getId())).thenReturn(Optional.of(schedule));
+        when(bookingRepository.countStudentOverlaps(any(), any(), any())).thenReturn(0L);
+        when(bookingRepository.countConfirmedBookings(any())).thenReturn(0L);
+        when(bookingRepository.save(any())).thenAnswer(inv -> {
+            Booking b = inv.getArgument(0);
+            try { var f = Booking.class.getDeclaredField("id"); f.setAccessible(true); f.set(b, UUID.randomUUID()); }
+            catch (Exception e) { throw new RuntimeException(e); }
+            return b;
+        });
+        when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(userRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+
+        service.createBooking(new CreateBookingRequest(schedule.getId()), studentId);
+
+        verify(emailService).sendHtml(
+            eq("aluno@test.com"),
+            contains("confirmado"),
+            eq("email/booking-confirmed"),
+            anyMap()
+        );
     }
 }
