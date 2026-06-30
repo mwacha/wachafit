@@ -30,4 +30,13 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
           AND b.status = com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED
     """)
     long countConfirmedBookings(@Param("scheduleId") UUID scheduleId);
+
+    @Query("""
+        SELECT b FROM Booking b
+        WHERE b.status = com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED
+          AND b.schedule.startsAt >= :from
+          AND b.schedule.startsAt <= :to
+    """)
+    List<Booking> findConfirmedBetween(@Param("from") OffsetDateTime from,
+                                       @Param("to") OffsetDateTime to);
 }
