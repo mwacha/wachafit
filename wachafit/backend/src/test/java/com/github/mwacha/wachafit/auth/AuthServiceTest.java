@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.javamail.JavaMailSender;
+import com.github.mwacha.wachafit.notification.EmailService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -31,14 +31,14 @@ class AuthServiceTest {
     @Mock UserRepository userRepository;
     @Mock PasswordResetTokenRepository tokenRepository;
     @Mock JwtUtil jwtUtil;
-    @Mock JavaMailSender mailSender;
+    @Mock EmailService emailService;
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, tokenRepository, jwtUtil, passwordEncoder, mailSender, "http://localhost:5173");
+        authService = new AuthService(userRepository, tokenRepository, jwtUtil, passwordEncoder, emailService, "http://localhost:5173");
     }
 
     @Test
@@ -60,6 +60,7 @@ class AuthServiceTest {
         assertThat(response.token()).isEqualTo("token123");
         assertThat(response.role()).isEqualTo("STUDENT");
         verify(userRepository).save(argThat(u -> u.getRole() == Role.STUDENT && u.isActive()));
+        verify(emailService).sendHtml(eq("new@example.com"), contains("Bem-vindo"), eq("email/welcome"), anyMap());
     }
 
     @Test

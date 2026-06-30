@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.user;
 
+import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.user.dto.CreateUserRequest;
 import com.github.mwacha.wachafit.user.dto.UpdateUserRequest;
@@ -23,12 +24,13 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock UserRepository userRepository;
+    @Mock EmailService emailService;
     private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder);
+        userService = new UserService(userRepository, passwordEncoder, emailService);
     }
 
     @Test
@@ -52,6 +54,7 @@ class UserServiceTest {
         assertThat(result.role()).isEqualTo("TRAINER");
         assertThat(result.active()).isTrue();
         verify(userRepository).save(argThat(u -> u.getRole() == Role.TRAINER));
+        verify(emailService).sendHtml(eq("trainer@example.com"), contains("Bem-vindo"), eq("email/welcome"), anyMap());
     }
 
     @Test
