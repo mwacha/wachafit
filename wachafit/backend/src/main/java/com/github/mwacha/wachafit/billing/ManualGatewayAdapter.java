@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = "app.payment.gateway", havingValue = "manual", matchIfMissing = true)
 public class ManualGatewayAdapter implements PaymentGatewayService {
 
+    // Validação desabilitada intencionalmente. app.payment.webhook-secret só é lido por adapters reais (MercadoPago, PagSeguro).
     @Override
     public boolean validateWebhookSignature(String payload, String signature) {
         return true;
