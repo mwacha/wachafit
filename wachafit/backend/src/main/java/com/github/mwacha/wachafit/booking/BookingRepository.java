@@ -34,6 +34,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("""
         SELECT b FROM Booking b
         WHERE b.status = com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED
+          AND b.reminderSent = false
           AND b.schedule.startsAt >= :from
           AND b.schedule.startsAt <= :to
     """)

@@ -59,6 +59,7 @@ class ReminderSchedulerTest {
         when(bookingRepository.findConfirmedBetween(any(), any())).thenReturn(List.of(booking));
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(userRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(bookingRepository.save(any())).thenReturn(booking);
 
         scheduler.sendReminders();
 
@@ -68,6 +69,7 @@ class ReminderSchedulerTest {
             eq("email/session-reminder"),
             anyMap()
         );
+        verify(bookingRepository).save(booking);
     }
 
     @Test

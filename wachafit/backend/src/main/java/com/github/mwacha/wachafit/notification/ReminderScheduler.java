@@ -33,26 +33,36 @@ public class ReminderScheduler {
         OffsetDateTime to   = now.plusHours(5);
         List<Booking> bookings = bookingRepository.findConfirmedBetween(from, to);
         for (Booking booking : bookings) {
-            userRepository.findById(booking.getStudentId()).ifPresent(student ->
-                userRepository.findById(booking.getSchedule().getTrainerId()).ifPresent(trainer ->
-                    emailService.sendHtml(
-                        student.getEmail(),
-                        "Lembrete de sessão — WachaFit",
-                        "email/session-reminder",
-                        Map.of(
-                            "name",        student.getName(),
-                            "className",   booking.getSchedule().getGroupClass() != null
-                                               ? booking.getSchedule().getGroupClass().getName()
-                                               : "Treino Personal",
-                            "date",        booking.getSchedule().getStartsAt()
-                                               .toLocalDate().toString(),
-                            "time",        booking.getSchedule().getStartsAt()
-                                               .toLocalTime().toString(),
-                            "trainerName", trainer.getName()
-                        )
-                    )
+            var studentOpt = userRepository.findById(booking.getStudentId());
+            if (studentOpt.isEmpty()) continue;
+            var student = studentOpt.get();
+
+            String trainerName = "Personal";
+            if (booking.getSchedule().getTrainerId() != null) {
+                trainerName = userRepository.findById(booking.getSchedule().getTrainerId())
+                    .map(com.github.mwacha.wachafit.user.User::getName)
+                    .orElse("Personal");
+            }
+
+            emailService.sendHtml(
+                student.getEmail(),
+                "Lembrete de sessão — WachaFit",
+                "email/session-reminder",
+                Map.of(
+                    "name",        student.getName(),
+                    "className",   booking.getSchedule().getGroupClass() != null
+                                       ? booking.getSchedule().getGroupClass().getName()
+                                       : "Treino Personal",
+                    "date",        booking.getSchedule().getStartsAt()
+                                       .toLocalDate().toString(),
+                    "time",        booking.getSchedule().getStartsAt()
+                                       .toLocalTime().toString(),
+                    "trainerName", trainerName
                 )
             );
+
+            booking.setReminderSent(true);
+            bookingRepository.save(booking);
         }
     }
 }
