@@ -1,7 +1,6 @@
 // backend/src/main/java/com/github/mwacha/wachafit/notification/EmailService.java
 package com.github.mwacha.wachafit.notification;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ public class EmailService {
             helper.setText(html, true);
             mailSender.send(message);
         } catch (Exception e) {
-            log.error("Falha ao enviar e-mail para {}: {}", to, e.getMessage());
+            log.error("Falha ao enviar e-mail para {}", to, e);
         }
     }
 }
