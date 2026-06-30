@@ -2,11 +2,15 @@ package com.github.mwacha.wachafit.billing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mwacha.wachafit.billing.dto.WebhookPayload;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class WebhookController {
+
+    private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
 
     private final PaymentGatewayService gatewayService;
     private final BillingService billingService;
@@ -29,10 +33,12 @@ public class WebhookController {
         }
         try {
             WebhookPayload parsed = objectMapper.readValue(payload, WebhookPayload.class);
-            if (parsed.externalChargeId() != null && parsed.status() != null) {
-                billingService.processWebhookCharge(parsed.externalChargeId(), parsed.status());
+            if (parsed.externalChargeId() == null || parsed.status() == null) {
+                return ResponseEntity.badRequest().build();
             }
+            billingService.processWebhookCharge(parsed.externalChargeId(), parsed.status());
         } catch (Exception e) {
+            log.warn("Erro ao processar webhook: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok().build();
