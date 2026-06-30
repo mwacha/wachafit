@@ -54,7 +54,7 @@ public class BillingService {
         return toResponse(chargeRepo.save(charge));
     }
 
-    public ChargeResponse payCharge(UUID chargeId, ManualPaymentRequest req, User requestingUser) {
+    public ChargeResponse payCharge(UUID chargeId, ManualPaymentRequest req) {
         PaymentCharge charge = chargeRepo.findById(chargeId)
             .orElseThrow(() -> new NotFoundException("Cobrança não encontrada"));
         if ("PAID".equals(charge.getStatus()) || "CANCELLED".equals(charge.getStatus())) {

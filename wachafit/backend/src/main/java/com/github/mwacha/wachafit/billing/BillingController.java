@@ -43,9 +43,8 @@ public class BillingController {
     @PatchMapping("/api/charges/{id}/pay")
     @PreAuthorize("hasAnyRole('RECEPTIONIST','CASHIER','ADMIN','MANAGER')")
     public ChargeResponse payCharge(@PathVariable UUID id,
-                                    @Valid @RequestBody ManualPaymentRequest req,
-                                    @AuthenticationPrincipal User currentUser) {
-        return service.payCharge(id, req, currentUser);
+                                    @Valid @RequestBody ManualPaymentRequest req) {
+        return service.payCharge(id, req);
     }
 
     @PatchMapping("/api/charges/{id}/cancel")

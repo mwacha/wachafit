@@ -95,7 +95,7 @@ class BillingServiceTest {
     void payCharge_shouldSetPaidAndMethod() {
         when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
         when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        ChargeResponse res = service.payCharge(chargeId, new ManualPaymentRequest("CASH"), adminUser);
+        ChargeResponse res = service.payCharge(chargeId, new ManualPaymentRequest("CASH"));
         assertThat(res.status()).isEqualTo("PAID");
         assertThat(res.paymentMethod()).isEqualTo("CASH");
         assertThat(res.paidAt()).isNotNull();
@@ -105,7 +105,7 @@ class BillingServiceTest {
     void payCharge_shouldThrowBusiness_whenAlreadyPaid() {
         pendingCharge.setStatus("PAID");
         when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
-        assertThatThrownBy(() -> service.payCharge(chargeId, new ManualPaymentRequest("CASH"), adminUser))
+        assertThatThrownBy(() -> service.payCharge(chargeId, new ManualPaymentRequest("CASH")))
             .isInstanceOf(BusinessException.class);
     }
 
