@@ -46,6 +46,10 @@ public class MembershipService {
         MembershipPlan plan = planRepo.findById(req.planId())
             .orElseThrow(() -> new NotFoundException("Plano não encontrado"));
 
+        if (!plan.isActive()) {
+            throw new BusinessException("Plano inativo");
+        }
+
         MemberSubscription sub = new MemberSubscription();
         sub.setStudentId(studentId);
         sub.setPlanId(plan.getId());

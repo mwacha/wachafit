@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface PaymentChargeRepository extends JpaRepository<PaymentCharge, UUID> {
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE PaymentCharge c SET c.status = 'CANCELLED' WHERE c.subscriptionId = :subscriptionId AND c.status = 'PENDING'")
     void cancelPendingBySubscriptionId(@Param("subscriptionId") UUID subscriptionId);
 }

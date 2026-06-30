@@ -33,10 +33,11 @@ public class MembershipController {
 
     @GetMapping("/api/students/{studentId}/subscription")
     @PreAuthorize("isAuthenticated()")
-    public SubscriptionResponse getActive(
+    public ResponseEntity<SubscriptionResponse> getActive(
             @PathVariable UUID studentId,
             @AuthenticationPrincipal User currentUser) {
-        return service.getActiveSubscription(studentId, currentUser);
+        SubscriptionResponse res = service.getActiveSubscription(studentId, currentUser);
+        return res != null ? ResponseEntity.ok(res) : ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/api/students/{studentId}/subscription")

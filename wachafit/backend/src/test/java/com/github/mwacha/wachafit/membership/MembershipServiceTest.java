@@ -98,6 +98,20 @@ class MembershipServiceTest {
     }
 
     @Test
+    void createSubscription_shouldThrowBusiness_whenPlanInactive() {
+        plan.setActive(false);
+        when(userRepo.findById(studentId)).thenReturn(Optional.of(new User()));
+        when(subscriptionRepo.existsByStudentIdAndStatus(studentId, "ACTIVE")).thenReturn(false);
+        when(planRepo.findById(plan.getId())).thenReturn(Optional.of(plan));
+
+        assertThatThrownBy(() -> service.createSubscription(studentId,
+            new CreateSubscriptionRequest(plan.getId(), LocalDate.now()),
+            adminUser.getId()))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("inativo");
+    }
+
+    @Test
     void cancelSubscription_shouldSetCancelledAndCancelPendingCharges() {
         MemberSubscription sub = new MemberSubscription();
         sub.setStudentId(studentId);
