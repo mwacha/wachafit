@@ -28,8 +28,9 @@ public class ReminderScheduler {
 
     @Scheduled(fixedDelay = 3_600_000)
     public void sendReminders() {
-        OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC).plusHours(3);
-        OffsetDateTime to   = OffsetDateTime.now(ZoneOffset.UTC).plusHours(5);
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime from = now.plusHours(3);
+        OffsetDateTime to   = now.plusHours(5);
         List<Booking> bookings = bookingRepository.findConfirmedBetween(from, to);
         for (Booking booking : bookings) {
             userRepository.findById(booking.getStudentId()).ifPresent(student ->
