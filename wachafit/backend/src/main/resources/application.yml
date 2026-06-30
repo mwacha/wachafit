@@ -24,3 +24,9 @@ jwt:
 
 app:
   frontend-url: ${APP_FRONTEND_URL}
+  upload-dir: ${APP_UPLOAD_DIR:uploads}
+  payment:
+    gateway: ${PAYMENT_GATEWAY:manual}
+    access-token: ${PAYMENT_ACCESS_TOKEN:}
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
+    suspend-after-days: ${PAYMENT_SUSPEND_AFTER_DAYS:5}

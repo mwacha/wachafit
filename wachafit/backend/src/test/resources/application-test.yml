@@ -23,3 +23,6 @@ jwt:
 app:
   frontend-url: http://localhost:5173
   upload-dir: ${java.io.tmpdir}/wachafit-test-uploads
+  payment:
+    gateway: manual
+    suspend-after-days: 5
