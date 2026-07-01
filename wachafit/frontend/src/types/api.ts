@@ -142,6 +142,114 @@ export interface PersonalRecord {
 }
 export interface ProgressionPoint { performedAt: string; loadKg: number | null; reps: number | null }
 
+// --- Membership ---
+export interface MembershipPlan {
+  id: string
+  name: string
+  description: string | null
+  durationMonths: number
+  price: number
+  maxClassesPerWeek: number | null
+  active: boolean
+  createdAt: string
+}
+
+export interface MemberSubscription {
+  id: string
+  studentId: string
+  planId: string
+  planName: string
+  status: 'ACTIVE' | 'SUSPENDED' | 'CANCELLED'
+  startedAt: string
+  expiresAt: string
+  createdAt: string
+}
+
+export interface CreateSubscriptionRequest {
+  planId: string
+  startedAt: string
+}
+
+// --- Billing ---
+export interface PaymentCharge {
+  id: string
+  studentId: string
+  subscriptionId: string
+  amount: number
+  dueDate: string
+  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+  paidAt: string | null
+  paymentMethod: string | null
+  externalPaymentUrl: string | null
+  createdAt: string
+}
+
+export interface CreateChargeRequest {
+  amount: number
+  dueDate: string
+}
+
+export interface ManualPaymentRequest {
+  paymentMethod: string
+}
+
+// --- Reports ---
+export interface RevenueReport {
+  month: string
+  total: number
+  chargesCount: number
+}
+
+export interface OverdueStudent {
+  studentId: string
+  name: string
+  totalDue: number
+  daysOverdue: number
+}
+
+export interface SubscriptionStats {
+  active: number
+  suspended: number
+  cancelled: number
+  expired: number
+}
+
+export interface TrainerCommission {
+  trainerId: string
+  name: string
+  commissionType: string
+  commissionDue: number
+  classesCount: number
+}
+
+export interface CashFlowDay {
+  date: string
+  received: number
+  pending: number
+  overdue: number
+}
+
+// --- Trainer Profile ---
+export interface TrainerProfile {
+  userId: string
+  cref: string | null
+  specialties: string | null
+  bio: string | null
+  profilePhotoKey: string | null
+  contractType: 'CLT' | 'PJ' | 'FREELANCE' | null
+  commissionType: 'FIXED' | 'PERCENTAGE' | null
+  commissionValue: number | null
+}
+
+export interface UpdateTrainerProfileRequest {
+  cref?: string
+  specialties?: string
+  bio?: string
+  contractType?: string
+  commissionType?: string
+  commissionValue?: number
+}
+
 // --- Progress Photos ---
 export interface Photo {
   id: string
