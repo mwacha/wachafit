@@ -83,7 +83,77 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
     },
 
+    // --- Admin/Manager shared routes ---
+    {
+      path: '/admin/membership-plans',
+      component: () => import('@/views/admin/MembershipPlansView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER'] as Role[] },
+    },
+    {
+      path: '/admin/enroll',
+      component: () => import('@/views/admin/StudentEnrollView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST'] as Role[] },
+    },
+    {
+      path: '/admin/reports/revenue',
+      component: () => import('@/views/admin/reports/RevenueView.vue'),
+      meta: { requiresAuth: true, roles: ['CASHIER', 'MANAGER', 'ADMIN'] as Role[] },
+    },
+    {
+      path: '/admin/reports/overdue',
+      component: () => import('@/views/admin/reports/OverdueView.vue'),
+      meta: { requiresAuth: true, roles: ['CASHIER', 'MANAGER', 'ADMIN'] as Role[] },
+    },
+    {
+      path: '/admin/reports/commissions',
+      component: () => import('@/views/admin/reports/CommissionsView.vue'),
+      meta: { requiresAuth: true, roles: ['MANAGER', 'ADMIN'] as Role[] },
+    },
+
+    // --- Cashier routes ---
+    {
+      path: '/cashier/charges',
+      component: () => import('@/views/cashier/ChargesView.vue'),
+      meta: { requiresAuth: true, roles: ['CASHIER', 'RECEPTIONIST', 'ADMIN', 'MANAGER'] as Role[] },
+    },
+    {
+      path: '/cashier/cash-flow',
+      component: () => import('@/views/cashier/CashFlowView.vue'),
+      meta: { requiresAuth: true, roles: ['CASHIER', 'MANAGER', 'ADMIN'] as Role[] },
+    },
+
+    // --- Receptionist routes ---
+    {
+      path: '/reception/enroll',
+      component: () => import('@/views/receptionist/EnrollView.vue'),
+      meta: { requiresAuth: true, roles: ['RECEPTIONIST', 'ADMIN', 'MANAGER'] as Role[] },
+    },
+    {
+      path: '/reception/charges',
+      component: () => import('@/views/receptionist/ChargesView.vue'),
+      meta: { requiresAuth: true, roles: ['RECEPTIONIST', 'CASHIER', 'ADMIN', 'MANAGER'] as Role[] },
+    },
+
+    // --- Trainer routes ---
+    {
+      path: '/trainer/profile',
+      component: () => import('@/views/trainer/ProfileView.vue'),
+      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+    },
+
     // --- Student routes ---
+    {
+      path: '/student/subscription',
+      component: () => import('@/views/student/SubscriptionView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/charges',
+      component: () => import('@/views/student/ChargesView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+
+    // --- Student routes (existing) ---
     {
       path: '/student/schedule',
       component: () => import('@/views/student/ScheduleView.vue'),
