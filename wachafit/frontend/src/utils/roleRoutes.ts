@@ -2,6 +2,9 @@ import type { Role } from '@/types/api'
 
 export const roleDashboards: Record<Role, string> = {
   ADMIN: '/admin',
+  MANAGER: '/manager',
+  CASHIER: '/cashier',
+  RECEPTIONIST: '/reception',
   TRAINER: '/trainer',
   STUDENT: '/student',
 }

@@ -1,7 +1,10 @@
 <template>
   <div class="app-shell">
+    <!-- Mobile overlay -->
+    <div v-if="mobileOpen" class="mobile-overlay" @click="mobileOpen = false" />
+
     <!-- Sidebar -->
-    <aside class="sidebar" role="navigation" aria-label="Navegação principal">
+    <aside class="sidebar" :class="{ 'sidebar-open': mobileOpen }" role="navigation" aria-label="Navegação principal">
       <button class="sidebar-logo" :title="`WachaFit — ir para dashboard`" @click="goHome">
         <span class="logo-w">W</span>
       </button>
@@ -9,59 +12,57 @@
       <nav class="sidebar-nav">
         <!-- Admin links -->
         <template v-if="auth.role === 'ADMIN'">
-          <RouterLink to="/admin" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard">
-            <i class="pi pi-home" />
-          </RouterLink>
-          <RouterLink to="/admin/users" class="nav-item" active-class="active" title="Usuários" aria-label="Usuários">
-            <i class="pi pi-users" />
-          </RouterLink>
-          <RouterLink to="/admin/classes" class="nav-item" active-class="active" title="Turmas" aria-label="Turmas">
-            <i class="pi pi-calendar" />
-          </RouterLink>
-          <RouterLink to="/admin/schedules" class="nav-item" active-class="active" title="Agenda" aria-label="Agenda">
-            <i class="pi pi-chart-bar" />
-          </RouterLink>
+          <RouterLink to="/admin" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
+          <RouterLink to="/admin/users" class="nav-item" active-class="active" title="Usuários" aria-label="Usuários" @click="mobileOpen = false"><i class="pi pi-users" /></RouterLink>
+          <RouterLink to="/admin/classes" class="nav-item" active-class="active" title="Turmas" aria-label="Turmas" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
+          <RouterLink to="/admin/schedules" class="nav-item" active-class="active" title="Agenda" aria-label="Agenda" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
+          <RouterLink to="/admin/membership-plans" class="nav-item" active-class="active" title="Planos" aria-label="Planos" @click="mobileOpen = false"><i class="pi pi-credit-card" /></RouterLink>
+          <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Relatórios" aria-label="Relatórios" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
+        </template>
+
+        <!-- Manager links -->
+        <template v-else-if="auth.role === 'MANAGER'">
+          <RouterLink to="/manager" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
+          <RouterLink to="/admin/membership-plans" class="nav-item" active-class="active" title="Planos" aria-label="Planos" @click="mobileOpen = false"><i class="pi pi-credit-card" /></RouterLink>
+          <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Receita" aria-label="Receita" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
+          <RouterLink to="/admin/reports/overdue" class="nav-item" active-class="active" title="Inadimplentes" aria-label="Inadimplentes" @click="mobileOpen = false"><i class="pi pi-exclamation-triangle" /></RouterLink>
+          <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" title="Comissões" aria-label="Comissões" @click="mobileOpen = false"><i class="pi pi-dollar" /></RouterLink>
+        </template>
+
+        <!-- Cashier links -->
+        <template v-else-if="auth.role === 'CASHIER'">
+          <RouterLink to="/cashier" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
+          <RouterLink to="/cashier/charges" class="nav-item" active-class="active" title="Cobranças" aria-label="Cobranças" @click="mobileOpen = false"><i class="pi pi-money-bill" /></RouterLink>
+          <RouterLink to="/cashier/cash-flow" class="nav-item" active-class="active" title="Fluxo de Caixa" aria-label="Fluxo de Caixa" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
+        </template>
+
+        <!-- Receptionist links -->
+        <template v-else-if="auth.role === 'RECEPTIONIST'">
+          <RouterLink to="/reception" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
+          <RouterLink to="/reception/enroll" class="nav-item" active-class="active" title="Nova Matrícula" aria-label="Nova Matrícula" @click="mobileOpen = false"><i class="pi pi-user-plus" /></RouterLink>
+          <RouterLink to="/reception/charges" class="nav-item" active-class="active" title="Cobranças" aria-label="Cobranças" @click="mobileOpen = false"><i class="pi pi-money-bill" /></RouterLink>
         </template>
 
         <!-- Trainer links -->
         <template v-else-if="auth.role === 'TRAINER'">
-          <RouterLink to="/trainer" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard">
-            <i class="pi pi-home" />
-          </RouterLink>
-          <RouterLink to="/trainer/schedule" class="nav-item" active-class="active" title="Minha Agenda" aria-label="Minha Agenda">
-            <i class="pi pi-calendar" />
-          </RouterLink>
-          <RouterLink to="/trainer/students" class="nav-item" active-class="active" title="Alunos" aria-label="Alunos">
-            <i class="pi pi-users" />
-          </RouterLink>
+          <RouterLink to="/trainer" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
+          <RouterLink to="/trainer/schedule" class="nav-item" active-class="active" title="Minha Agenda" aria-label="Minha Agenda" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
+          <RouterLink to="/trainer/students" class="nav-item" active-class="active" title="Alunos" aria-label="Alunos" @click="mobileOpen = false"><i class="pi pi-users" /></RouterLink>
+          <RouterLink to="/trainer/profile" class="nav-item" active-class="active" title="Meu Perfil" aria-label="Meu Perfil" @click="mobileOpen = false"><i class="pi pi-user" /></RouterLink>
         </template>
 
         <!-- Student links -->
         <template v-else-if="auth.role === 'STUDENT'">
-          <RouterLink to="/student" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard">
-            <i class="pi pi-home" />
-          </RouterLink>
-          <RouterLink to="/student/schedule" class="nav-item" active-class="active" title="Aulas Disponíveis" aria-label="Aulas Disponíveis">
-            <i class="pi pi-calendar" />
-          </RouterLink>
-          <RouterLink to="/student/bookings" class="nav-item" active-class="active" title="Minhas Reservas" aria-label="Minhas Reservas">
-            <i class="pi pi-bookmark" />
-          </RouterLink>
-          <RouterLink to="/student/workout" class="nav-item" active-class="active" title="Treino" aria-label="Treino">
-            <i class="pi pi-bolt" />
-          </RouterLink>
-          <RouterLink to="/student/records" class="nav-item" active-class="active" title="Recordes" aria-label="Recordes">
-            <i class="pi pi-trophy" />
-          </RouterLink>
-          <RouterLink to="/student/evolution" class="nav-item" active-class="active" title="Evolução" aria-label="Evolução">
-            <i class="pi pi-chart-bar" />
-          </RouterLink>
-          <RouterLink to="/student/goals" class="nav-item" active-class="active" title="Metas" aria-label="Metas">
-            <i class="pi pi-flag" />
-          </RouterLink>
-          <RouterLink to="/student/photos" class="nav-item" active-class="active" title="Fotos" aria-label="Fotos">
-            <i class="pi pi-image" />
-          </RouterLink>
+          <RouterLink to="/student" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
+          <RouterLink to="/student/schedule" class="nav-item" active-class="active" title="Aulas Disponíveis" aria-label="Aulas Disponíveis" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
+          <RouterLink to="/student/bookings" class="nav-item" active-class="active" title="Minhas Reservas" aria-label="Minhas Reservas" @click="mobileOpen = false"><i class="pi pi-bookmark" /></RouterLink>
+          <RouterLink to="/student/workout" class="nav-item" active-class="active" title="Treino" aria-label="Treino" @click="mobileOpen = false"><i class="pi pi-bolt" /></RouterLink>
+          <RouterLink to="/student/records" class="nav-item" active-class="active" title="Recordes" aria-label="Recordes" @click="mobileOpen = false"><i class="pi pi-trophy" /></RouterLink>
+          <RouterLink to="/student/evolution" class="nav-item" active-class="active" title="Evolução" aria-label="Evolução" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
+          <RouterLink to="/student/goals" class="nav-item" active-class="active" title="Metas" aria-label="Metas" @click="mobileOpen = false"><i class="pi pi-flag" /></RouterLink>
+          <RouterLink to="/student/photos" class="nav-item" active-class="active" title="Fotos" aria-label="Fotos" @click="mobileOpen = false"><i class="pi pi-image" /></RouterLink>
+          <RouterLink to="/student/subscription" class="nav-item" active-class="active" title="Meu Plano" aria-label="Meu Plano" @click="mobileOpen = false"><i class="pi pi-id-card" /></RouterLink>
+          <RouterLink to="/student/charges" class="nav-item" active-class="active" title="Cobranças" aria-label="Cobranças" @click="mobileOpen = false"><i class="pi pi-money-bill" /></RouterLink>
         </template>
       </nav>
 
@@ -81,6 +82,9 @@
     <div class="main-area">
       <header class="topbar">
         <div class="topbar-left">
+          <button class="hamburger" aria-label="Abrir menu" @click="mobileOpen = !mobileOpen">
+            <i class="pi pi-bars" />
+          </button>
           <time class="topbar-time">{{ currentTime }}</time>
           <h1 class="topbar-greeting">Olá, {{ greeting }}</h1>
         </div>
@@ -94,7 +98,6 @@
               aria-label="Buscar"
             />
           </div>
-          <Button label="+ Matrícula" class="topbar-cta" aria-label="Nova matrícula" />
           <button class="logout-btn" title="Sair" aria-label="Sair" @click="handleLogout">
             <i class="pi pi-sign-out" />
           </button>
@@ -113,11 +116,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { roleDashboards } from '@/utils/roleRoutes'
-import Button from 'primevue/button'
 
 const auth = useAuthStore()
 const router = useRouter()
 const currentTime = ref('')
+const mobileOpen = ref(false)
 let timer: ReturnType<typeof setInterval>
 
 function dashboardRoute() {
@@ -126,14 +129,17 @@ function dashboardRoute() {
 
 function goHome() {
   router.push(dashboardRoute())
+  mobileOpen.value = false
 }
 
 const userInitial = computed(() => auth.role?.charAt(0) ?? 'U')
 
 const greeting = computed(() => {
-  if (auth.role === 'ADMIN') return 'Admin'
-  if (auth.role === 'TRAINER') return 'Profissional'
-  return 'Aluno'
+  const labels: Record<string, string> = {
+    ADMIN: 'Admin', MANAGER: 'Gerente', CASHIER: 'Caixa',
+    RECEPTIONIST: 'Recepção', TRAINER: 'Profissional', STUDENT: 'Aluno',
+  }
+  return auth.role ? (labels[auth.role] ?? auth.role) : 'Usuário'
 })
 
 function tick() {
@@ -293,4 +299,28 @@ function handleLogout() {
 .logout-btn:hover { border-color: var(--neutral-300); color: var(--neutral-900); }
 
 .page-content { flex: 1; padding: 24px; overflow-y: auto; }
+
+/* ── Mobile ── */
+.hamburger {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  font-size: 20px; color: var(--neutral-700); padding: 4px;
+  margin-right: 8px; align-items: center; justify-content: center;
+}
+
+.mobile-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  z-index: 40;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed; left: -68px; top: 0; height: 100dvh;
+    z-index: 50; transition: left 0.25s ease;
+  }
+  .sidebar.sidebar-open { left: 0; }
+  .hamburger { display: flex; }
+  .search-wrap { display: none; }
+  .page-content { padding: 16px; }
+}
 </style>

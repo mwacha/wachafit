@@ -31,23 +31,39 @@ const router = createRouter({
     {
       path: '/admin',
       component: () => import('@/views/admin/AdminDashboard.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN'] },
+      meta: { requiresAuth: true, roles: ['ADMIN'] as Role[] },
     },
+    {
+      path: '/manager',
+      component: () => import('@/views/manager/ManagerDashboard.vue'),
+      meta: { requiresAuth: true, roles: ['MANAGER'] as Role[] },
+    },
+    {
+      path: '/cashier',
+      component: () => import('@/views/cashier/CashierDashboard.vue'),
+      meta: { requiresAuth: true, roles: ['CASHIER'] as Role[] },
+    },
+    {
+      path: '/reception',
+      component: () => import('@/views/receptionist/ReceptionistDashboard.vue'),
+      meta: { requiresAuth: true, roles: ['RECEPTIONIST'] as Role[] },
+    },
+
     // --- Admin routes ---
     {
       path: '/admin/users',
       component: () => import('@/views/admin/UsersView.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN'] as Role[] },
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER'] as Role[] },
     },
     {
       path: '/admin/classes',
       component: () => import('@/views/admin/ClassesView.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN'] as Role[] },
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER'] as Role[] },
     },
     {
       path: '/admin/schedules',
       component: () => import('@/views/admin/SchedulesView.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN'] as Role[] },
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'CASHIER', 'TRAINER'] as Role[] },
     },
 
     // --- Trainer routes ---
