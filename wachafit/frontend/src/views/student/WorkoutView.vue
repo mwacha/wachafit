@@ -2,7 +2,17 @@
 <template>
   <AppLayout>
     <div class="p-6 max-w-3xl">
-      <h1 class="text-2xl font-bold mb-6">Meu Treino</h1>
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Meu Treino</h1>
+        <Button
+          v-if="workoutStore.activePlan"
+          icon="pi pi-download"
+          label="Baixar Ficha"
+          class="p-button-outlined"
+          :loading="downloadingPdf"
+          @click="downloadWorkoutPdf"
+        />
+      </div>
 
       <div v-if="workoutStore.loading" class="text-center py-8">Carregando...</div>
       <div v-else-if="!workoutStore.activePlan" class="text-surface-400">Nenhuma ficha ativa.</div>
@@ -47,9 +57,11 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
+import api from '@/services/api'
 
 const workoutStore = useWorkoutStore()
 const authStore = useAuthStore()
+const downloadingPdf = ref(false)
 const showLog = ref(false)
 const saving = ref(false)
 const logError = ref<string | null>(null)
@@ -57,6 +69,22 @@ const currentItem = ref<WorkoutPlanItem | null>(null)
 const logForm = ref({ sets: null as number | null, reps: null as number | null, loadKg: null as number | null, notes: '' })
 
 onMounted(() => workoutStore.fetchActivePlan(authStore.userId!))
+
+async function downloadWorkoutPdf() {
+  if (!authStore.userId) return
+  downloadingPdf.value = true
+  try {
+    const res = await api.get(`/api/students/${authStore.userId}/pdf/workout`, { responseType: 'blob' })
+    const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'ficha-treino.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+  } finally {
+    downloadingPdf.value = false
+  }
+}
 
 function openLog(item: WorkoutPlanItem) { currentItem.value = item; showLog.value = true }
 
