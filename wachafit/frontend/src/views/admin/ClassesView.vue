@@ -1,29 +1,31 @@
 <!-- frontend/src/views/admin/ClassesView.vue -->
 <template>
   <AppLayout>
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">Turmas</h1>
+    <div class="view-wrap">
+      <div class="page-header">
+        <h1 class="page-title">Turmas</h1>
         <Button label="Nova turma" icon="pi pi-plus" @click="showCreate = true" />
       </div>
 
-      <DataTable :value="adminStore.classes" :loading="adminStore.loading" stripedRows>
-        <Column field="name" header="Nome" />
-        <Column field="capacity" header="Capacidade" />
-        <Column field="durationMinutes" header="Duração (min)" />
-        <Column header="Status">
-          <template #body="{ data }">
-            <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativa' : 'Inativa'" />
-          </template>
-        </Column>
-        <Column header="Ações">
-          <template #body="{ data }">
-            <Button v-if="data.active" icon="pi pi-trash" severity="danger" text @click="deactivate(data.id)" />
-          </template>
-        </Column>
-      </DataTable>
+      <div class="table-scroll">
+        <DataTable :value="adminStore.classes" :loading="adminStore.loading" stripedRows>
+          <Column field="name" header="Nome" style="min-width:140px" />
+          <Column field="capacity" header="Capacidade" style="min-width:110px" />
+          <Column field="durationMinutes" header="Duração (min)" style="min-width:120px" />
+          <Column header="Status" style="min-width:90px">
+            <template #body="{ data }">
+              <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativa' : 'Inativa'" />
+            </template>
+          </Column>
+          <Column header="Ações" style="min-width:80px">
+            <template #body="{ data }">
+              <Button v-if="data.active" icon="pi pi-trash" severity="danger" text @click="deactivate(data.id)" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
 
-      <Dialog v-model:visible="showCreate" header="Nova Turma" :modal="true" style="width: 420px">
+      <Dialog v-model:visible="showCreate" header="Nova Turma" :modal="true" style="width: min(420px, 95vw)">
         <form @submit.prevent="submitCreate" class="flex flex-col gap-3">
           <InputText v-model="form.name" placeholder="Nome" required />
           <InputNumber v-model="form.capacity" placeholder="Capacidade" :min="1" required />
@@ -75,3 +77,10 @@ async function submitCreate() {
   } finally { saving.value = false }
 }
 </script>
+
+<style scoped>
+.view-wrap { display: flex; flex-direction: column; gap: 20px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+.table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
+</style>

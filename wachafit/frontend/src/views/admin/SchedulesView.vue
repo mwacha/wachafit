@@ -1,37 +1,39 @@
 <!-- frontend/src/views/admin/SchedulesView.vue -->
 <template>
   <AppLayout>
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">Agenda</h1>
+    <div class="view-wrap">
+      <div class="page-header">
+        <h1 class="page-title">Agenda</h1>
         <Button label="Novo horário" icon="pi pi-plus" @click="showCreate = true" />
       </div>
 
-      <div class="flex gap-3 mb-4">
+      <div class="filter-row">
         <DatePicker v-model="filterDate" placeholder="Filtrar por data" dateFormat="yy-mm-dd"
           @update:modelValue="loadSchedules" showButtonBar />
         <Select v-model="filterType" :options="['CLASS','PERSONAL']" placeholder="Tipo" showClear
           @update:modelValue="loadSchedules" />
       </div>
 
-      <DataTable :value="scheduleStore.schedules" :loading="scheduleStore.loading" stripedRows>
-        <Column field="type" header="Tipo" />
-        <Column header="Início">
-          <template #body="{ data }">{{ formatDate(data.startsAt) }}</template>
-        </Column>
-        <Column header="Fim">
-          <template #body="{ data }">{{ formatDate(data.endsAt) }}</template>
-        </Column>
-        <Column field="status" header="Status" />
-        <Column header="Ações">
-          <template #body="{ data }">
-            <Button v-if="data.status !== 'CANCELLED'" icon="pi pi-times" severity="danger" text
-              @click="cancelSchedule(data.id)" />
-          </template>
-        </Column>
-      </DataTable>
+      <div class="table-scroll">
+        <DataTable :value="scheduleStore.schedules" :loading="scheduleStore.loading" stripedRows>
+          <Column field="type" header="Tipo" style="min-width:100px" />
+          <Column header="Início" style="min-width:160px">
+            <template #body="{ data }">{{ formatDate(data.startsAt) }}</template>
+          </Column>
+          <Column header="Fim" style="min-width:160px">
+            <template #body="{ data }">{{ formatDate(data.endsAt) }}</template>
+          </Column>
+          <Column field="status" header="Status" style="min-width:100px" />
+          <Column header="Ações" style="min-width:80px">
+            <template #body="{ data }">
+              <Button v-if="data.status !== 'CANCELLED'" icon="pi pi-times" severity="danger" text
+                @click="cancelSchedule(data.id)" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
 
-      <Dialog v-model:visible="showCreate" header="Novo Horário" :modal="true" style="width: 460px">
+      <Dialog v-model:visible="showCreate" header="Novo Horário" :modal="true" style="width: min(460px, 95vw)">
         <form @submit.prevent="submitCreate" class="flex flex-col gap-3">
           <Select v-model="form.type" :options="['CLASS','PERSONAL']" placeholder="Tipo" required />
           <label class="text-sm font-medium">Início</label>
@@ -99,3 +101,13 @@ async function submitCreate() {
   } finally { saving.value = false }
 }
 </script>
+
+<style scoped>
+.view-wrap { display: flex; flex-direction: column; gap: 20px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+.filter-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.filter-row :deep(.p-datepicker-input),
+.filter-row :deep(.p-select) { min-width: 140px; flex: 1; }
+.table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
+</style>

@@ -1,35 +1,37 @@
 <template>
   <AppLayout>
-    <div class="p-6 max-w-4xl">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">Planos de Matrícula</h1>
+    <div class="view-wrap">
+      <div class="page-header">
+        <h1 class="page-title">Planos de Matrícula</h1>
         <Button icon="pi pi-plus" label="Novo Plano" @click="openCreate" />
       </div>
 
-      <div v-if="loading" class="text-center py-8">Carregando...</div>
+      <div v-if="loading" class="empty-state">Carregando...</div>
 
-      <DataTable v-else :value="plans" stripedRows>
-        <Column field="name" header="Nome" />
-        <Column header="Duração">
-          <template #body="{ data }">{{ data.durationMonths }} mes(es)</template>
-        </Column>
-        <Column header="Preço">
-          <template #body="{ data }">R$ {{ data.price.toFixed(2) }}</template>
-        </Column>
-        <Column header="Status">
-          <template #body="{ data }">
-            <Tag :value="data.active ? 'Ativo' : 'Inativo'" :severity="data.active ? 'success' : 'secondary'" />
-          </template>
-        </Column>
-        <Column header="Ações">
-          <template #body="{ data }">
-            <Button icon="pi pi-pencil" text size="small" @click="openEdit(data)" />
-            <Button v-if="data.active" icon="pi pi-trash" text severity="danger" size="small" @click="deactivate(data.id)" />
-          </template>
-        </Column>
-      </DataTable>
+      <div v-else class="table-scroll">
+        <DataTable :value="plans" stripedRows>
+          <Column field="name" header="Nome" style="min-width:140px" />
+          <Column header="Duração" style="min-width:110px">
+            <template #body="{ data }">{{ data.durationMonths }} mes(es)</template>
+          </Column>
+          <Column header="Preço" style="min-width:100px">
+            <template #body="{ data }">R$ {{ data.price.toFixed(2) }}</template>
+          </Column>
+          <Column header="Status" style="min-width:90px">
+            <template #body="{ data }">
+              <Tag :value="data.active ? 'Ativo' : 'Inativo'" :severity="data.active ? 'success' : 'secondary'" />
+            </template>
+          </Column>
+          <Column header="Ações" style="min-width:100px">
+            <template #body="{ data }">
+              <Button icon="pi pi-pencil" text size="small" @click="openEdit(data)" />
+              <Button v-if="data.active" icon="pi pi-trash" text severity="danger" size="small" @click="deactivate(data.id)" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
 
-      <Dialog v-model:visible="showDialog" :header="editing ? 'Editar Plano' : 'Novo Plano'" :modal="true" style="width:420px">
+      <Dialog v-model:visible="showDialog" :header="editing ? 'Editar Plano' : 'Novo Plano'" :modal="true" style="width: min(420px, 95vw)">
         <form @submit.prevent="save" class="flex flex-col gap-3 pt-2">
           <InputText v-model="form.name" placeholder="Nome do plano" required />
           <InputText v-model="form.description" placeholder="Descrição (opcional)" />
@@ -104,3 +106,11 @@ async function deactivate(id: string) {
   if (idx !== -1) plans.value[idx] = { ...plans.value[idx], active: false }
 }
 </script>
+
+<style scoped>
+.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+.table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
+.empty-state { text-align: center; padding: 40px; color: var(--neutral-500); }
+</style>
