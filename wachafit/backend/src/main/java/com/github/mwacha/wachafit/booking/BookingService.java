@@ -2,7 +2,9 @@ package com.github.mwacha.wachafit.booking;
 
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
-import com.github.mwacha.wachafit.notification.EmailService;
+import com.github.mwacha.wachafit.notification.event.BookingCancelledEvent;
+import com.github.mwacha.wachafit.notification.event.BookingConfirmedEvent;
+import com.github.mwacha.wachafit.notification.event.PersonalSessionRequestedEvent;
 import com.github.mwacha.wachafit.schedule.Schedule;
 import com.github.mwacha.wachafit.schedule.ScheduleRepository;
 import com.github.mwacha.wachafit.schedule.ScheduleStatus;
@@ -12,11 +14,11 @@ import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -26,16 +28,16 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
-    private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public BookingService(BookingRepository bookingRepository,
                           ScheduleRepository scheduleRepository,
                           UserRepository userRepository,
-                          EmailService emailService) {
+                          ApplicationEventPublisher eventPublisher) {
         this.bookingRepository = bookingRepository;
         this.scheduleRepository = scheduleRepository;
         this.userRepository = userRepository;
-        this.emailService = emailService;
+        this.eventPublisher = eventPublisher;
     }
 
     public BookingResponse createBooking(CreateBookingRequest req, UUID studentId) {
@@ -80,8 +82,18 @@ public class BookingService {
         booking.setStatus(status);
         Booking saved = bookingRepository.save(booking);
 
+        String className = locked.getGroupClass() != null
+            ? locked.getGroupClass().getName() : "Sessão individual";
+        String date = locked.getStartsAt().toLocalDate().toString();
+        String time = locked.getStartsAt().toLocalTime().toString();
+
         if (status == BookingStatus.CONFIRMED) {
-            sendBookingConfirmedEmail(studentId, locked);
+            eventPublisher.publishEvent(new BookingConfirmedEvent(
+                studentId, locked.getTrainerId(), className, date, time));
+        } else {
+            // PERSONAL session — notify trainer of the pending request
+            eventPublisher.publishEvent(new PersonalSessionRequestedEvent(
+                studentId, locked.getTrainerId(), date, time));
         }
 
         return toResponse(saved);
@@ -114,44 +126,12 @@ public class BookingService {
         }
         bookingRepository.save(booking);
 
-        sendBookingCancelledEmail(booking.getStudentId(), schedule);
-    }
-
-    private void sendBookingConfirmedEmail(UUID studentId, Schedule schedule) {
-        userRepository.findById(studentId).ifPresent(student ->
-            userRepository.findById(schedule.getTrainerId()).ifPresent(trainer ->
-                emailService.sendHtml(
-                    student.getEmail(),
-                    "Agendamento confirmado — WachaFit",
-                    "email/booking-confirmed",
-                    Map.of(
-                        "name", student.getName(),
-                        "className", schedule.getGroupClass() != null
-                            ? schedule.getGroupClass().getName() : "Sessão individual",
-                        "date", schedule.getStartsAt().toLocalDate().toString(),
-                        "time", schedule.getStartsAt().toLocalTime().toString(),
-                        "trainerName", trainer.getName()
-                    )
-                )
-            )
-        );
-    }
-
-    private void sendBookingCancelledEmail(UUID studentId, Schedule schedule) {
-        userRepository.findById(studentId).ifPresent(student ->
-            emailService.sendHtml(
-                student.getEmail(),
-                "Agendamento cancelado — WachaFit",
-                "email/booking-cancelled",
-                Map.of(
-                    "name", student.getName(),
-                    "className", schedule.getGroupClass() != null
-                        ? schedule.getGroupClass().getName() : "Sessão individual",
-                    "date", schedule.getStartsAt().toLocalDate().toString(),
-                    "time", schedule.getStartsAt().toLocalTime().toString()
-                )
-            )
-        );
+        eventPublisher.publishEvent(new BookingCancelledEvent(
+            booking.getStudentId(),
+            schedule.getGroupClass() != null ? schedule.getGroupClass().getName() : "Sessão individual",
+            schedule.getStartsAt().toLocalDate().toString(),
+            schedule.getStartsAt().toLocalTime().toString()
+        ));
     }
 
     private BookingResponse toResponse(Booking b) {

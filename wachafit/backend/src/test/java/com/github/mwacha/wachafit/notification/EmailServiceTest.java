@@ -1,11 +1,10 @@
-// backend/src/test/java/com/github/mwacha/wachafit/notification/EmailServiceTest.java
 package com.github.mwacha.wachafit.notification;
 
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -25,7 +24,12 @@ class EmailServiceTest {
 
     @Mock JavaMailSender mailSender;
     @Mock TemplateEngine templateEngine;
-    @InjectMocks EmailService service;
+    private EmailService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new EmailService(mailSender, templateEngine, "noreply@wachafit.com");
+    }
 
     @Test
     void sendHtml_shouldRenderTemplateAndSend() {
