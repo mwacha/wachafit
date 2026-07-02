@@ -321,6 +321,13 @@ function handleLogout() {
   .sidebar.sidebar-open { left: 0; }
   .hamburger { display: flex; }
   .search-wrap { display: none; }
-  .page-content { padding: 16px; }
+  .topbar { padding: 10px 14px; gap: 8px; }
+  .topbar-greeting { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .page-content { padding: 14px; }
+}
+
+@media (max-width: 400px) {
+  .topbar-greeting { font-size: 16px; max-width: 150px; }
+  .topbar-time { display: none; }
 }
 </style>

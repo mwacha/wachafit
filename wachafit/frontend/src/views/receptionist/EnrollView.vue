@@ -1,9 +1,9 @@
 <template>
   <AppLayout>
-    <div class="p-6 max-w-lg">
-      <h1 class="text-2xl font-bold mb-6">Nova Matrícula</h1>
+    <div class="view-wrap">
+      <h1 class="page-title">Nova Matrícula</h1>
 
-      <div class="card p-6">
+      <div class="form-card">
         <form @submit.prevent="submit" class="flex flex-col gap-4">
           <div>
             <label style="font-size:13px; font-weight:600; margin-bottom:4px; display:block">Email do Aluno</label>
@@ -64,3 +64,13 @@ async function submit() {
   } finally { loading.value = false }
 }
 </script>
+
+<style scoped>
+.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 520px; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+.form-card {
+  background: #fff; border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg); padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+</style>

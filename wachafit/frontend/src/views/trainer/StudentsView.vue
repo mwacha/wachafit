@@ -1,20 +1,22 @@
 <!-- frontend/src/views/trainer/StudentsView.vue -->
 <template>
   <AppLayout>
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-6">Alunos</h1>
-      <InputText v-model="search" placeholder="Buscar por nome..." class="mb-4 w-full" />
-      <DataTable :value="filteredStudents" :loading="adminStore.loading" stripedRows>
-        <Column field="name" header="Nome" />
-        <Column field="email" header="Email" />
-        <Column header="Ações">
-          <template #body="{ data }">
-            <RouterLink :to="`/trainer/students/${data.id}/overview`">
-              <Button icon="pi pi-eye" text label="Ver" />
-            </RouterLink>
-          </template>
-        </Column>
-      </DataTable>
+    <div class="view-wrap">
+      <h1 class="page-title">Alunos</h1>
+      <InputText v-model="search" placeholder="Buscar por nome..." />
+      <div class="table-scroll">
+        <DataTable :value="filteredStudents" :loading="adminStore.loading" stripedRows>
+          <Column field="name" header="Nome" style="min-width:140px" />
+          <Column field="email" header="Email" style="min-width:180px" />
+          <Column header="Ações" style="min-width:90px">
+            <template #body="{ data }">
+              <RouterLink :to="`/trainer/students/${data.id}/overview`">
+                <Button icon="pi pi-eye" text label="Ver" />
+              </RouterLink>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -40,3 +42,9 @@ const filteredStudents = computed(() =>
     .filter(u => u.name.toLowerCase().includes(search.value.toLowerCase()))
 )
 </script>
+
+<style scoped>
+.view-wrap { display: flex; flex-direction: column; gap: 16px; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+.table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
+</style>

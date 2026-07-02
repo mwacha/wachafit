@@ -1,30 +1,32 @@
 <!-- frontend/src/views/admin/UsersView.vue -->
 <template>
   <AppLayout>
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">Usuários</h1>
+    <div class="view-wrap">
+      <div class="page-header">
+        <h1 class="page-title">Usuários</h1>
         <Button label="Novo usuário" icon="pi pi-plus" @click="showCreate = true" />
       </div>
 
-      <DataTable :value="adminStore.users" :loading="adminStore.loading" stripedRows>
-        <Column field="name" header="Nome" />
-        <Column field="email" header="Email" />
-        <Column field="role" header="Perfil" />
-        <Column header="Status">
-          <template #body="{ data }">
-            <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativo' : 'Inativo'" />
-          </template>
-        </Column>
-        <Column header="Ações">
-          <template #body="{ data }">
-            <Button v-if="data.active" icon="pi pi-ban" severity="danger" text @click="deactivate(data.id)" />
-            <Button v-else icon="pi pi-check" severity="success" text @click="activate(data.id)" />
-          </template>
-        </Column>
-      </DataTable>
+      <div class="table-scroll">
+        <DataTable :value="adminStore.users" :loading="adminStore.loading" stripedRows>
+          <Column field="name" header="Nome" style="min-width:140px" />
+          <Column field="email" header="Email" style="min-width:180px" />
+          <Column field="role" header="Perfil" style="min-width:100px" />
+          <Column header="Status" style="min-width:90px">
+            <template #body="{ data }">
+              <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativo' : 'Inativo'" />
+            </template>
+          </Column>
+          <Column header="Ações" style="min-width:80px">
+            <template #body="{ data }">
+              <Button v-if="data.active" icon="pi pi-ban" severity="danger" text @click="deactivate(data.id)" />
+              <Button v-else icon="pi pi-check" severity="success" text @click="activate(data.id)" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
 
-      <Dialog v-model:visible="showCreate" header="Novo Usuário" :modal="true" style="width: 420px">
+      <Dialog v-model:visible="showCreate" header="Novo Usuário" :modal="true" style="width: min(420px, 95vw)">
         <form @submit.prevent="submitCreate" class="flex flex-col gap-3">
           <InputText v-model="form.name" placeholder="Nome" required />
           <InputText v-model="form.email" type="email" placeholder="Email" required />
@@ -82,3 +84,13 @@ async function submitCreate() {
   } finally { saving.value = false }
 }
 </script>
+
+<style scoped>
+.view-wrap { display: flex; flex-direction: column; gap: 20px; }
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+}
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+.table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
+</style>
