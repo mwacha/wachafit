@@ -3,7 +3,9 @@ package com.github.mwacha.wachafit.booking;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
 import com.github.mwacha.wachafit.groupclass.GroupClass;
-import com.github.mwacha.wachafit.notification.EmailService;
+import com.github.mwacha.wachafit.notification.event.BookingCancelledEvent;
+import com.github.mwacha.wachafit.notification.event.BookingConfirmedEvent;
+import com.github.mwacha.wachafit.notification.event.PersonalSessionRequestedEvent;
 import com.github.mwacha.wachafit.schedule.Schedule;
 import com.github.mwacha.wachafit.schedule.ScheduleRepository;
 import com.github.mwacha.wachafit.schedule.ScheduleStatus;
@@ -12,23 +14,24 @@ import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
-import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.mockito.ArgumentCaptor;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import org.mockito.Mockito;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceTest {
@@ -36,11 +39,11 @@ class BookingServiceTest {
     @Mock BookingRepository bookingRepository;
     @Mock ScheduleRepository scheduleRepository;
     @Mock UserRepository userRepository;
-    @Mock EmailService emailService;
+    @Mock ApplicationEventPublisher eventPublisher;
     private BookingService service;
 
     @BeforeEach void setUp() {
-        service = new BookingService(bookingRepository, scheduleRepository, userRepository, emailService);
+        service = new BookingService(bookingRepository, scheduleRepository, userRepository, eventPublisher);
     }
 
     private Schedule buildSchedule(UUID id, ScheduleType type, ScheduleStatus status, int capacity) {
@@ -92,7 +95,6 @@ class BookingServiceTest {
         when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(s));
         when(scheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(s));
         when(bookingRepository.countStudentOverlaps(eq(studentId), any(), any())).thenReturn(0L);
-        // PERSONAL type skips capacity check — lenient to avoid UnnecessaryStubbing
         lenient().when(bookingRepository.countConfirmedBookings(scheduleId)).thenReturn(0L);
         when(bookingRepository.save(any())).thenAnswer(inv -> {
             Booking b = inv.getArgument(0);
@@ -177,15 +179,11 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBooking_shouldSendConfirmationEmail_whenClassBooking() {
+    void createBooking_CLASS_shouldPublishBookingConfirmedEvent() {
         UUID studentId = UUID.randomUUID();
         UUID trainerId = UUID.randomUUID();
-
         Schedule schedule = buildSchedule(UUID.randomUUID(), ScheduleType.CLASS, ScheduleStatus.OPEN, 10);
         schedule.setTrainerId(trainerId);
-
-        User student = new User(); student.setName("Aluno"); student.setEmail("aluno@test.com");
-        User trainer = new User(); trainer.setName("Trainer");
 
         when(scheduleRepository.findById(schedule.getId())).thenReturn(Optional.of(schedule));
         when(scheduleRepository.findByIdForUpdate(schedule.getId())).thenReturn(Optional.of(schedule));
@@ -197,16 +195,64 @@ class BookingServiceTest {
             catch (Exception e) { throw new RuntimeException(e); }
             return b;
         });
-        when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
-        when(userRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
 
         service.createBooking(new CreateBookingRequest(schedule.getId()), studentId);
 
-        verify(emailService).sendHtml(
-            eq("aluno@test.com"),
-            contains("confirmado"),
-            eq("email/booking-confirmed"),
-            anyMap()
-        );
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(BookingConfirmedEvent.class);
+        BookingConfirmedEvent evt = (BookingConfirmedEvent) captor.getValue();
+        assertThat(evt.studentId()).isEqualTo(studentId);
+        assertThat(evt.trainerId()).isEqualTo(trainerId);
+    }
+
+    @Test
+    void createBooking_PERSONAL_shouldPublishPersonalSessionRequestedEvent() {
+        UUID studentId = UUID.randomUUID();
+        UUID trainerId = UUID.randomUUID();
+        Schedule schedule = buildSchedule(UUID.randomUUID(), ScheduleType.PERSONAL, ScheduleStatus.OPEN, 1);
+        schedule.setTrainerId(trainerId);
+
+        when(scheduleRepository.findById(schedule.getId())).thenReturn(Optional.of(schedule));
+        when(scheduleRepository.findByIdForUpdate(schedule.getId())).thenReturn(Optional.of(schedule));
+        when(bookingRepository.countStudentOverlaps(any(), any(), any())).thenReturn(0L);
+        when(bookingRepository.save(any())).thenAnswer(inv -> {
+            Booking b = inv.getArgument(0);
+            try { var f = Booking.class.getDeclaredField("id"); f.setAccessible(true); f.set(b, UUID.randomUUID()); }
+            catch (Exception e) { throw new RuntimeException(e); }
+            return b;
+        });
+
+        service.createBooking(new CreateBookingRequest(schedule.getId()), studentId);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(PersonalSessionRequestedEvent.class);
+        PersonalSessionRequestedEvent evt = (PersonalSessionRequestedEvent) captor.getValue();
+        assertThat(evt.studentId()).isEqualTo(studentId);
+        assertThat(evt.trainerId()).isEqualTo(trainerId);
+    }
+
+    @Test
+    void cancelBooking_shouldPublishBookingCancelledEvent() {
+        UUID bookingId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        Schedule s = buildSchedule(UUID.randomUUID(), ScheduleType.CLASS, ScheduleStatus.OPEN, 10);
+        Booking b = new Booking();
+        try { var f = Booking.class.getDeclaredField("id"); f.setAccessible(true); f.set(b, bookingId); }
+        catch (Exception e) { throw new RuntimeException(e); }
+        b.setSchedule(s);
+        b.setStudentId(studentId);
+        b.setStatus(BookingStatus.CONFIRMED);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(b));
+        when(bookingRepository.save(any())).thenReturn(b);
+
+        service.cancelBooking(bookingId, studentId, Role.STUDENT);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(BookingCancelledEvent.class);
+        assertThat(((BookingCancelledEvent) captor.getValue()).studentId()).isEqualTo(studentId);
     }
 }
