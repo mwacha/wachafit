@@ -73,6 +73,48 @@ Defina as seguintes variáveis antes de subir em produção:
 | `PAYMENT_GATEWAY` | Gateway de pagamento (`manual`) | `manual` |
 | `PAYMENT_SUSPEND_AFTER_DAYS` | Dias de atraso para suspender matrícula | `5` |
 
+## Deploy em produção (Docker)
+
+### Build e subida completa
+
+```bash
+# 1. Copiar e preencher variáveis de ambiente
+cp .env.example .env
+# edite .env com os valores reais
+
+# 2. Subir todos os serviços
+docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+```
+
+A stack completa sobe 3 containers:
+
+| Serviço | Porta | Função |
+|---------|-------|--------|
+| `frontend` | `${PORT:-80}` | nginx serve os assets Vue + proxy `/api/` → backend |
+| `backend` | interno | Spring Boot 3 |
+| `db` | interno | PostgreSQL 16 |
+
+O frontend fica acessível em `http://seu-servidor:80`.  
+O Swagger UI também fica disponível via `http://seu-servidor/swagger-ui.html` (proxy nginx).
+
+### Volumes persistentes
+
+| Volume | Conteúdo |
+|--------|----------|
+| `postgres_data` | Dados do banco |
+| `uploads` | Fotos de progresso e anexos |
+
+### Reverse proxy (recomendado)
+
+Para HTTPS, coloque um reverse proxy (Nginx/Caddy/Traefik) na frente do container `frontend` na porta 80.  
+Exemplo com Caddy (`Caddyfile`):
+
+```
+app.wachafit.com {
+    reverse_proxy localhost:80
+}
+```
+
 ## Rodando os testes
 
 ```bash
