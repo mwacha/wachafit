@@ -17,19 +17,26 @@ export interface ErrorResponse {
 // --- Schedule / Booking ---
 export type ScheduleType = 'CLASS' | 'PERSONAL'
 export type ScheduleStatus = 'OPEN' | 'FULL' | 'CANCELLED'
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED'
+
+export interface BookedStudentSummary {
+  studentId: string
+  studentName: string
+  status: BookingStatus
+}
 
 export interface Schedule {
   id: string
   groupClassId: string | null
+  groupClassName: string | null
   trainerId: string
   type: ScheduleType
   startsAt: string
   endsAt: string
   status: ScheduleStatus
   createdAt: string
+  bookedStudents: BookedStudentSummary[]
 }
-
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED'
 
 export interface Booking {
   id: string
