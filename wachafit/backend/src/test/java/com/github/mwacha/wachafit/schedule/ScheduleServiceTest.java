@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.schedule;
 
+import com.github.mwacha.wachafit.booking.BookingRepository;
 import com.github.mwacha.wachafit.groupclass.GroupClass;
 import com.github.mwacha.wachafit.groupclass.GroupClassRepository;
 import com.github.mwacha.wachafit.schedule.dto.ScheduleRequest;
@@ -7,6 +8,7 @@ import com.github.mwacha.wachafit.schedule.dto.ScheduleResponse;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.user.Role;
+import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,10 +29,12 @@ class ScheduleServiceTest {
 
     @Mock ScheduleRepository scheduleRepository;
     @Mock GroupClassRepository groupClassRepository;
+    @Mock BookingRepository bookingRepository;
+    @Mock UserRepository userRepository;
     private ScheduleService service;
 
     @BeforeEach void setUp() {
-        service = new ScheduleService(scheduleRepository, groupClassRepository);
+        service = new ScheduleService(scheduleRepository, groupClassRepository, bookingRepository, userRepository);
     }
 
     @Test
@@ -51,6 +55,7 @@ class ScheduleServiceTest {
 
         when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
         when(scheduleRepository.countOverlaps(trainerId, start, end)).thenReturn(0L);
+        when(bookingRepository.findActiveByScheduleId(any())).thenReturn(java.util.List.of());
         when(scheduleRepository.save(any())).thenAnswer(inv -> {
             Schedule s = inv.getArgument(0);
             try { var f = Schedule.class.getDeclaredField("id"); f.setAccessible(true); f.set(s, UUID.randomUUID()); }
