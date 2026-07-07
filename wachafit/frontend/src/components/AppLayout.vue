@@ -14,10 +14,13 @@
         <template v-if="auth.role === 'ADMIN'">
           <RouterLink to="/admin" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
           <RouterLink to="/admin/users" class="nav-item" active-class="active" title="Usuários" aria-label="Usuários" @click="mobileOpen = false"><i class="pi pi-users" /></RouterLink>
-          <RouterLink to="/admin/classes" class="nav-item" active-class="active" title="Turmas" aria-label="Turmas" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
-          <RouterLink to="/admin/schedules" class="nav-item" active-class="active" title="Agenda" aria-label="Agenda" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
+          <RouterLink to="/admin/enroll" class="nav-item" active-class="active" title="Matricular Aluno" aria-label="Matricular Aluno" @click="mobileOpen = false"><i class="pi pi-user-plus" /></RouterLink>
+          <RouterLink to="/admin/classes" class="nav-item" active-class="active" title="Turmas" aria-label="Turmas" @click="mobileOpen = false"><i class="pi pi-th-large" /></RouterLink>
+          <RouterLink to="/admin/schedules" class="nav-item" active-class="active" title="Agenda" aria-label="Agenda" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
           <RouterLink to="/admin/membership-plans" class="nav-item" active-class="active" title="Planos" aria-label="Planos" @click="mobileOpen = false"><i class="pi pi-credit-card" /></RouterLink>
-          <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Relatórios" aria-label="Relatórios" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
+          <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Receita" aria-label="Receita" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
+          <RouterLink to="/admin/reports/overdue" class="nav-item" active-class="active" title="Inadimplentes" aria-label="Inadimplentes" @click="mobileOpen = false"><i class="pi pi-exclamation-triangle" /></RouterLink>
+          <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" title="Comissões" aria-label="Comissões" @click="mobileOpen = false"><i class="pi pi-dollar" /></RouterLink>
         </template>
 
         <!-- Manager links -->
