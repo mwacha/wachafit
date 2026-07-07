@@ -5,12 +5,20 @@ import java.time.LocalDate;
 
 public record CreateStudentProfileRequest(
     @NotBlank String cpf,
+    String rg,
     LocalDate birthDate,
+    String gender,
+    String maritalStatus,
+    String profession,
     String phone,
+    String addressZip,
     String addressLine,
+    String addressNumber,
+    String addressComplement,
+    String addressNeighborhood,
     String addressCity,
     String addressState,
-    String addressZip,
     String emergencyContactName,
-    String emergencyContactPhone
+    String emergencyContactPhone,
+    String emergencyContactRelationship
 ) {}

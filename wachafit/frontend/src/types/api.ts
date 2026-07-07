@@ -257,6 +257,65 @@ export interface UpdateTrainerProfileRequest {
   commissionValue?: number
 }
 
+// --- Student Profile ---
+export interface StudentProfile {
+  id: string
+  userId: string
+  cpf: string
+  rg: string | null
+  birthDate: string | null
+  gender: string | null
+  maritalStatus: string | null
+  profession: string | null
+  phone: string | null
+  addressZip: string | null
+  addressLine: string | null
+  addressNumber: string | null
+  addressComplement: string | null
+  addressNeighborhood: string | null
+  addressCity: string | null
+  addressState: string | null
+  emergencyContactName: string | null
+  emergencyContactPhone: string | null
+  emergencyContactRelationship: string | null
+  createdAt: string
+}
+
+export interface StudentHealth {
+  id: string
+  userId: string
+  hasHeartCondition: boolean
+  hasDiabetes: boolean
+  hasHypertension: boolean
+  hasRespiratoryCondition: boolean
+  hasOrthopedicCondition: boolean
+  hadSurgery: boolean
+  surgeryDescription: string | null
+  hasChronicPain: boolean
+  chronicPainLocation: string | null
+  medications: string | null
+  physicalRestrictions: string | null
+  smokes: boolean
+  drinksAlcohol: boolean
+  alcoholFrequency: string | null
+  sleepHours: number | null
+  stressLevel: number | null
+  activityLevel: string | null
+  fitnessGoal: string | null
+  fitnessLevel: string | null
+  exerciseHistory: string | null
+  parqHeartProblem: boolean
+  parqChestPainExercise: boolean
+  parqChestPainRest: boolean
+  parqDizziness: boolean
+  parqBoneJoint: boolean
+  parqBloodPressureMeds: boolean
+  parqOtherReason: boolean
+  parqOtherReasonDetail: string | null
+  parqSignedAt: string | null
+  notes: string | null
+}
+
 // --- Progress Photos ---
 export interface Photo {
   id: string

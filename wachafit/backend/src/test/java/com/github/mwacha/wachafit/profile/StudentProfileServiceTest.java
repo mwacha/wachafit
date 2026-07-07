@@ -48,7 +48,8 @@ class StudentProfileServiceTest {
         when(profileRepo.findByUserId(studentId)).thenReturn(Optional.empty());
         when(profileRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         CreateStudentProfileRequest req = new CreateStudentProfileRequest(
-            "123.456.789-00", null, "11999999999", null, null, null, null, null, null
+            "123.456.789-00", null, null, null, null, null, "11999999999",
+            null, null, null, null, null, null, null, null, null, null
         );
         StudentProfileResponse res = service.createProfile(studentId, req, admin.getId());
         assertThat(res.cpf()).isEqualTo("123.456.789-00");
@@ -60,7 +61,8 @@ class StudentProfileServiceTest {
         StudentProfile existing = new StudentProfile();
         when(profileRepo.findByUserId(studentId)).thenReturn(Optional.of(existing));
         assertThatThrownBy(() -> service.createProfile(studentId,
-            new CreateStudentProfileRequest("123.456.789-00", null, null, null, null, null, null, null, null),
+            new CreateStudentProfileRequest("123.456.789-00", null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null),
             admin.getId()))
             .isInstanceOf(BusinessException.class);
     }

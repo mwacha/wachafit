@@ -73,7 +73,8 @@ class StudentProfileControllerIntegrationTest {
     @Test
     void createProfile_withAdminToken_shouldReturn201() throws Exception {
         CreateStudentProfileRequest req = new CreateStudentProfileRequest(
-            "123.456.789-00", null, "11999999999", null, null, null, null, null, null);
+            "123.456.789-00", null, null, null, null, null, "11999999999",
+            null, null, null, null, null, null, null, null, null, null);
         mvc.perform(post("/api/students/" + studentId + "/profile")
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)

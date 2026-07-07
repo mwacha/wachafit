@@ -30,18 +30,7 @@ public class StudentProfileService {
             throw new BusinessException("Profile already exists for this student");
         if (profileRepo.existsByCpfAndUserIdNot(req.cpf(), studentId))
             throw new BusinessException("CPF already registered");
-        StudentProfile p = new StudentProfile();
-        p.setUserId(studentId);
-        p.setCpf(req.cpf());
-        p.setBirthDate(req.birthDate());
-        p.setPhone(req.phone());
-        p.setAddressLine(req.addressLine());
-        p.setAddressCity(req.addressCity());
-        p.setAddressState(req.addressState());
-        p.setAddressZip(req.addressZip());
-        p.setEmergencyContactName(req.emergencyContactName());
-        p.setEmergencyContactPhone(req.emergencyContactPhone());
-        return toResponse(profileRepo.save(p));
+        return toResponse(profileRepo.save(applyProfile(new StudentProfile(), studentId, req)));
     }
 
     @Transactional(readOnly = true)
@@ -56,16 +45,7 @@ public class StudentProfileService {
             .orElseThrow(() -> new NotFoundException("Profile not found"));
         if (!p.getCpf().equals(req.cpf()) && profileRepo.existsByCpfAndUserIdNot(req.cpf(), studentId))
             throw new BusinessException("CPF already registered");
-        p.setCpf(req.cpf());
-        p.setBirthDate(req.birthDate());
-        p.setPhone(req.phone());
-        p.setAddressLine(req.addressLine());
-        p.setAddressCity(req.addressCity());
-        p.setAddressState(req.addressState());
-        p.setAddressZip(req.addressZip());
-        p.setEmergencyContactName(req.emergencyContactName());
-        p.setEmergencyContactPhone(req.emergencyContactPhone());
-        return toResponse(profileRepo.save(p));
+        return toResponse(profileRepo.save(applyProfile(p, studentId, req)));
     }
 
     public StudentHealthResponse upsertHealth(UUID studentId, StudentHealthRequest req, User requestingUser) {
@@ -75,24 +55,62 @@ public class StudentProfileService {
         h.setHasHeartCondition(req.hasHeartCondition());
         h.setHasDiabetes(req.hasDiabetes());
         h.setHasHypertension(req.hasHypertension());
+        h.setHasRespiratoryCondition(req.hasRespiratoryCondition());
+        h.setHasOrthopedicCondition(req.hasOrthopedicCondition());
+        h.setHadSurgery(req.hadSurgery());
+        h.setSurgeryDescription(req.surgeryDescription());
+        h.setHasChronicPain(req.hasChronicPain());
+        h.setChronicPainLocation(req.chronicPainLocation());
         h.setMedications(req.medications());
         h.setPhysicalRestrictions(req.physicalRestrictions());
+        h.setSmokes(req.smokes());
+        h.setDrinksAlcohol(req.drinksAlcohol());
+        h.setAlcoholFrequency(req.alcoholFrequency());
+        h.setSleepHours(req.sleepHours());
+        h.setStressLevel(req.stressLevel());
+        h.setActivityLevel(req.activityLevel());
+        h.setFitnessGoal(req.fitnessGoal());
+        h.setFitnessLevel(req.fitnessLevel());
+        h.setExerciseHistory(req.exerciseHistory());
+        h.setParqHeartProblem(req.parqHeartProblem());
+        h.setParqChestPainExercise(req.parqChestPainExercise());
+        h.setParqChestPainRest(req.parqChestPainRest());
+        h.setParqDizziness(req.parqDizziness());
+        h.setParqBoneJoint(req.parqBoneJoint());
+        h.setParqBloodPressureMeds(req.parqBloodPressureMeds());
+        h.setParqOtherReason(req.parqOtherReason());
+        h.setParqOtherReasonDetail(req.parqOtherReasonDetail());
         h.setParqSignedAt(req.parqSignedAt());
         h.setNotes(req.notes());
-        StudentHealth saved = healthRepo.save(h);
-        return new StudentHealthResponse(saved.getId(), saved.getUserId(), saved.isHasHeartCondition(),
-            saved.isHasDiabetes(), saved.isHasHypertension(), saved.getMedications(),
-            saved.getPhysicalRestrictions(), saved.getParqSignedAt(), saved.getNotes());
+        return toHealthResponse(healthRepo.save(h));
     }
 
     @Transactional(readOnly = true)
     public StudentHealthResponse getHealth(UUID studentId, User requestingUser) {
         assertCanAccess(studentId, requestingUser);
-        return healthRepo.findByUserId(studentId).map(h ->
-            new StudentHealthResponse(h.getId(), h.getUserId(), h.isHasHeartCondition(),
-                h.isHasDiabetes(), h.isHasHypertension(), h.getMedications(),
-                h.getPhysicalRestrictions(), h.getParqSignedAt(), h.getNotes()))
-            .orElse(null);
+        return healthRepo.findByUserId(studentId).map(this::toHealthResponse).orElse(null);
+    }
+
+    private StudentProfile applyProfile(StudentProfile p, UUID studentId, CreateStudentProfileRequest req) {
+        p.setUserId(studentId);
+        p.setCpf(req.cpf());
+        p.setRg(req.rg());
+        p.setBirthDate(req.birthDate());
+        p.setGender(req.gender());
+        p.setMaritalStatus(req.maritalStatus());
+        p.setProfession(req.profession());
+        p.setPhone(req.phone());
+        p.setAddressZip(req.addressZip());
+        p.setAddressLine(req.addressLine());
+        p.setAddressNumber(req.addressNumber());
+        p.setAddressComplement(req.addressComplement());
+        p.setAddressNeighborhood(req.addressNeighborhood());
+        p.setAddressCity(req.addressCity());
+        p.setAddressState(req.addressState());
+        p.setEmergencyContactName(req.emergencyContactName());
+        p.setEmergencyContactPhone(req.emergencyContactPhone());
+        p.setEmergencyContactRelationship(req.emergencyContactRelationship());
+        return p;
     }
 
     private void assertCanAccess(UUID studentId, User requestingUser) {
@@ -101,8 +119,34 @@ public class StudentProfileService {
     }
 
     private StudentProfileResponse toResponse(StudentProfile p) {
-        return new StudentProfileResponse(p.getId(), p.getUserId(), p.getCpf(), p.getBirthDate(),
-            p.getPhone(), p.getAddressLine(), p.getAddressCity(), p.getAddressState(),
-            p.getAddressZip(), p.getEmergencyContactName(), p.getEmergencyContactPhone(), p.getCreatedAt());
+        return new StudentProfileResponse(
+            p.getId(), p.getUserId(),
+            p.getCpf(), p.getRg(),
+            p.getBirthDate(), p.getGender(), p.getMaritalStatus(), p.getProfession(),
+            p.getPhone(),
+            p.getAddressZip(), p.getAddressLine(), p.getAddressNumber(),
+            p.getAddressComplement(), p.getAddressNeighborhood(),
+            p.getAddressCity(), p.getAddressState(),
+            p.getEmergencyContactName(), p.getEmergencyContactPhone(), p.getEmergencyContactRelationship(),
+            p.getCreatedAt()
+        );
+    }
+
+    private StudentHealthResponse toHealthResponse(StudentHealth h) {
+        return new StudentHealthResponse(
+            h.getId(), h.getUserId(),
+            h.isHasHeartCondition(), h.isHasDiabetes(), h.isHasHypertension(),
+            h.isHasRespiratoryCondition(), h.isHasOrthopedicCondition(),
+            h.isHadSurgery(), h.getSurgeryDescription(),
+            h.isHasChronicPain(), h.getChronicPainLocation(),
+            h.getMedications(), h.getPhysicalRestrictions(),
+            h.isSmokes(), h.isDrinksAlcohol(), h.getAlcoholFrequency(),
+            h.getSleepHours(), h.getStressLevel(), h.getActivityLevel(),
+            h.getFitnessGoal(), h.getFitnessLevel(), h.getExerciseHistory(),
+            h.isParqHeartProblem(), h.isParqChestPainExercise(), h.isParqChestPainRest(),
+            h.isParqDizziness(), h.isParqBoneJoint(), h.isParqBloodPressureMeds(),
+            h.isParqOtherReason(), h.getParqOtherReasonDetail(),
+            h.getParqSignedAt(), h.getNotes()
+        );
     }
 }
