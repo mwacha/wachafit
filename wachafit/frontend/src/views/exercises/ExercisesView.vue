@@ -50,6 +50,8 @@
         </Column>
       </DataTable>
 
+      <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
+
       <!-- Dialog criar/editar -->
       <Dialog v-model:visible="showDialog" :header="editingId ? 'Editar exercício' : 'Novo exercício'"
         :modal="true" style="width: min(460px, 95vw)">
@@ -106,6 +108,12 @@ const editingId = ref<string | null>(null)
 const deactivatingId = ref<string | null>(null)
 const form = ref({ name: '', muscleGroup: '', description: '', videoUrl: '' })
 
+const successMsg = ref('')
+function showSuccess(msg: string) {
+  successMsg.value = msg
+  setTimeout(() => { successMsg.value = '' }, 3000)
+}
+
 const muscleGroups = [
   'Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps',
   'Antebraço', 'Abdômen', 'Glúteos', 'Quadríceps',
@@ -156,11 +164,14 @@ async function submitForm() {
       const updated = await exerciseService.update(editingId.value, payload)
       const idx = exercises.value.findIndex(e => e.id === editingId.value)
       if (idx !== -1) exercises.value[idx] = updated
+      showDialog.value = false
+      showSuccess('Exercício atualizado.')
     } else {
       const created = await exerciseService.create(payload)
       exercises.value.unshift(created)
+      showDialog.value = false
+      showSuccess('Exercício criado.')
     }
-    showDialog.value = false
   } finally { saving.value = false }
 }
 
@@ -170,6 +181,7 @@ async function deactivate(id: string) {
     await exerciseService.deactivate(id)
     const idx = exercises.value.findIndex(e => e.id === id)
     if (idx !== -1) exercises.value[idx] = { ...exercises.value[idx], active: false }
+    showSuccess('Exercício desativado.')
   } finally { deactivatingId.value = null }
 }
 </script>
@@ -182,4 +194,5 @@ async function deactivate(id: string) {
 .search-wrap { position: relative; }
 .field-label { font-size: 12px; font-weight: 600; color: var(--neutral-600); }
 .video-link { color: var(--blue-500); font-size: 13px; display: flex; align-items: center; gap: 4px; }
+.success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0; }
 </style>

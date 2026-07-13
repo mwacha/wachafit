@@ -25,6 +25,8 @@
         <div v-if="goals.length === 0" class="empty-state">Nenhuma meta registrada.</div>
       </div>
 
+      <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
+
       <Dialog v-model:visible="showCreate" header="Nova Meta" :modal="true" style="width: min(420px, 95vw)">
         <form @submit.prevent="submitCreate" class="flex flex-col gap-3 pt-2">
           <InputText v-model="form.description" placeholder="Descrição" required />
@@ -57,6 +59,12 @@ const showCreate = ref(false)
 const saving = ref(false)
 const form = ref({ description: '', metric: '', targetValue: null as number | null })
 const menuRefs = ref<Record<string, any>>({})
+
+const successMsg = ref('')
+function showSuccess(msg: string) {
+  successMsg.value = msg
+  setTimeout(() => { successMsg.value = '' }, 3000)
+}
 
 onMounted(async () => {
   loading.value = true
@@ -93,6 +101,7 @@ async function changeStatus(id: string, status: GoalStatus) {
   const updated = await goalService.updateStatus(id, status)
   const idx = goals.value.findIndex(g => g.id === id)
   if (idx !== -1) goals.value[idx] = updated
+  showSuccess('Status atualizado.')
 }
 
 async function submitCreate() {
@@ -106,6 +115,7 @@ async function submitCreate() {
     goals.value.unshift(g)
     showCreate.value = false
     form.value = { description: '', metric: '', targetValue: null }
+    showSuccess('Meta criada.')
   } finally { saving.value = false }
 }
 </script>
@@ -126,4 +136,5 @@ async function submitCreate() {
 .goal-meta { font-size: 12px; color: var(--neutral-500); margin-top: 2px; }
 .goal-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .empty-state { text-align: center; padding: 40px; color: var(--neutral-400); font-size: 14px; }
+.success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0; }
 </style>

@@ -62,6 +62,8 @@
         </TabPanel>
       </TabView>
 
+      <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
+
       <!-- Dialog: Nova Avaliação -->
       <Dialog v-model:visible="showAssessment" header="Nova Avaliação" :modal="true" style="width: min(480px, 95vw)">
         <form @submit.prevent="submitAssessment" class="flex flex-col gap-3 pt-2">
@@ -145,6 +147,12 @@ const showAssessment = ref(false)
 const showGoal = ref(false)
 const saving = ref(false)
 
+const successMsg = ref('')
+function showSuccess(msg: string) {
+  successMsg.value = msg
+  setTimeout(() => { successMsg.value = '' }, 3000)
+}
+
 const aForm = ref({
   weightKg: null as number | null,
   heightCm: null as number | null,
@@ -185,6 +193,7 @@ async function changeGoalStatus(id: string, status: GoalStatus) {
   const updated = await goalService.updateStatus(id, status)
   const idx = goals.value.findIndex(g => g.id === id)
   if (idx !== -1) goals.value[idx] = updated
+  showSuccess('Status atualizado.')
 }
 
 function addMeasurement() { aForm.value.measurements.push({ bodyPart: '', valueCm: null }) }
@@ -206,6 +215,7 @@ async function submitAssessment() {
     showAssessment.value = false
     aForm.value = { weightKg: null, heightCm: null, bodyFatPct: null, notes: '', measurements: [] }
     await assessmentStore.fetchAssessments(studentId)
+    showSuccess('Avaliação registrada.')
   } finally { saving.value = false }
 }
 
@@ -219,6 +229,7 @@ async function submitGoal() {
     goals.value.unshift(g)
     showGoal.value = false
     gForm.value = { description: '', metric: '' }
+    showSuccess('Meta criada.')
   } finally { saving.value = false }
 }
 
@@ -227,6 +238,7 @@ async function activatePlan(planId: string) {
   try {
     const updated = await workoutService.activatePlan(planId)
     plans.value = plans.value.map(p => ({ ...p, active: p.id === updated.id }))
+    showSuccess('Ficha ativada.')
   } finally { activatingPlan.value = null }
 }
 </script>
@@ -244,4 +256,5 @@ async function activatePlan(planId: string) {
 }
 .empty-state { text-align: center; padding: 32px; color: var(--neutral-400); font-size: 13px; }
 .field-label { font-size: 12px; font-weight: 600; color: var(--neutral-600); }
+.success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0; }
 </style>

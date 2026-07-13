@@ -88,6 +88,7 @@
               @click="activateCurrent" />
             <Tag v-if="activePlan?.active" severity="success" value="Ficha ativa" />
           </div>
+          <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
           <p v-if="saveError" class="text-red-500 text-sm mt-1">{{ saveError }}</p>
         </div>
       </section>
@@ -119,6 +120,11 @@ const selectedPlanId = ref<string | null>(null)
 const saving = ref(false)
 const activating = ref(false)
 const saveError = ref<string | null>(null)
+const successMsg = ref('')
+function showSuccess(msg: string) {
+  successMsg.value = msg
+  setTimeout(() => { successMsg.value = '' }, 3000)
+}
 const exerciseSuggestions = ref<Exercise[]>([])
 const exerciseMap = ref<Record<string, string>>({})
 
@@ -236,6 +242,7 @@ async function savePlan() {
       plans.value.unshift(created)
       selectedPlanId.value = created.id
     }
+    showSuccess('Ficha salva.')
   } catch (e: any) {
     saveError.value = e.response?.data?.message ?? 'Erro ao salvar.'
   } finally { saving.value = false }
@@ -247,6 +254,7 @@ async function activateCurrent() {
   try {
     const updated = await workoutService.activatePlan(selectedPlanId.value)
     plans.value = plans.value.map(p => ({ ...p, active: p.id === updated.id }))
+    showSuccess('Ficha ativada.')
   } finally { activating.value = false }
 }
 </script>
@@ -310,6 +318,8 @@ async function activateCurrent() {
 .cell-input:focus { border-color: var(--blue-400); }
 .col-exercise {} .col-div {} .col-num {} .col-reps {} .col-notes {} .col-action {}
 .editor-footer { display: flex; align-items: center; gap: 12px; padding-top: 8px; border-top: 1px solid var(--neutral-200); margin-top: 8px; }
+
+.success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0.25rem; }
 
 /* Mobile */
 @media (max-width: 768px) {
