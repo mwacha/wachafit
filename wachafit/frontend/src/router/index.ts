@@ -228,8 +228,8 @@ router.beforeEach(to => {
     return '/login'
   }
 
-  // Role-restricted route, wrong role → unauthorized
-  if (to.meta.roles && auth.role && !to.meta.roles.includes(auth.role)) {
+  // Role-restricted route, wrong role → unauthorized (ADMIN bypasses all role checks)
+  if (to.meta.roles && auth.role && auth.role !== 'ADMIN' && !to.meta.roles.includes(auth.role)) {
     return '/unauthorized'
   }
 })
