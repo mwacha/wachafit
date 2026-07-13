@@ -25,7 +25,7 @@
         <div v-if="goals.length === 0" class="empty-state">Nenhuma meta registrada.</div>
       </div>
 
-      <Dialog v-model:visible="showCreate" header="Nova Meta" :modal="true" style="width: 420px">
+      <Dialog v-model:visible="showCreate" header="Nova Meta" :modal="true" style="width: min(420px, 95vw)">
         <form @submit.prevent="submitCreate" class="flex flex-col gap-3 pt-2">
           <InputText v-model="form.description" placeholder="Descrição" required />
           <InputText v-model="form.metric" placeholder="Métrica (ex: weight, body_fat)" />

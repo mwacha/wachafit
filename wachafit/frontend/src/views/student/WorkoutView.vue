@@ -32,7 +32,7 @@
         </div>
       </div>
 
-      <Dialog v-model:visible="showLog" header="Registrar Execução" :modal="true" style="width: 380px">
+      <Dialog v-model:visible="showLog" header="Registrar Execução" :modal="true" style="width: min(380px, 95vw)">
         <form @submit.prevent="submitLog" class="flex flex-col gap-3">
           <InputNumber v-model="logForm.sets" placeholder="Séries" :min="1" />
           <InputNumber v-model="logForm.reps" placeholder="Repetições" :min="1" />

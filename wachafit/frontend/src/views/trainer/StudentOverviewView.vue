@@ -63,7 +63,7 @@
       </TabView>
 
       <!-- Dialog: Nova Avaliação -->
-      <Dialog v-model:visible="showAssessment" header="Nova Avaliação" :modal="true" style="width: 480px">
+      <Dialog v-model:visible="showAssessment" header="Nova Avaliação" :modal="true" style="width: min(480px, 95vw)">
         <form @submit.prevent="submitAssessment" class="flex flex-col gap-3 pt-2">
           <div class="grid grid-cols-2 gap-3">
             <div class="flex flex-col gap-1">
@@ -102,7 +102,7 @@
       </Dialog>
 
       <!-- Dialog: Nova Meta -->
-      <Dialog v-model:visible="showGoal" header="Nova Meta" :modal="true" style="width: 420px">
+      <Dialog v-model:visible="showGoal" header="Nova Meta" :modal="true" style="width: min(420px, 95vw)">
         <form @submit.prevent="submitGoal" class="flex flex-col gap-3 pt-2">
           <InputText v-model="gForm.description" placeholder="Descrição" required />
           <InputText v-model="gForm.metric" placeholder="Métrica (ex: weight)" />

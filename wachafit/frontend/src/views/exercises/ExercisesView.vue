@@ -51,7 +51,7 @@
 
       <!-- Dialog criar/editar -->
       <Dialog v-model:visible="showDialog" :header="editingId ? 'Editar exercício' : 'Novo exercício'"
-        :modal="true" style="width: 460px">
+        :modal="true" style="width: min(460px, 95vw)">
         <form @submit.prevent="submitForm" class="flex flex-col gap-3 pt-2">
           <div class="flex flex-col gap-1">
             <label class="field-label">Nome *</label>
