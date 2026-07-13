@@ -51,6 +51,34 @@
             </DataTable>
           </div>
         </div>
+
+        <!-- Progressão de Cargas -->
+        <div class="section-card">
+          <h2 class="section-title">Progressão de Cargas</h2>
+          <Select
+            v-model="selectedExerciseId"
+            :options="exercises"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Selecione um exercício"
+            filter
+            class="exercise-select"
+            @change="loadProgression"
+          />
+          <div v-if="loadingProgression" class="chart-empty">
+            <i class="pi pi-spin pi-spinner" />
+          </div>
+          <p v-else-if="selectedExerciseId && progressionPoints.length === 0" class="empty-msg">
+            Nenhum registro encontrado para este exercício.
+          </p>
+          <Chart
+            v-else-if="progressionPoints.length > 0"
+            type="line"
+            :data="progressionChartData"
+            :options="progressionChartOptions"
+            class="progression-chart"
+          />
+        </div>
       </template>
     </div>
   </AppLayout>
@@ -66,10 +94,18 @@ import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Chart from 'primevue/chart'
 import api from '@/services/api'
+import { exerciseService } from '@/services/exercise.service'
+import { workoutService } from '@/services/workout.service'
+import Select from 'primevue/select'
+import type { Exercise, ProgressionPoint } from '@/types/api'
 
 const assessmentStore = useAssessmentStore()
 const authStore = useAuthStore()
 const downloadingPdf = ref(false)
+const exercises = ref<Exercise[]>([])
+const selectedExerciseId = ref<string | null>(null)
+const progressionPoints = ref<ProgressionPoint[]>([])
+const loadingProgression = ref(false)
 
 const metrics = reactive([
   { key: 'weightKg',   label: 'Peso (kg)',  color: '#3b82f6', visible: true },
@@ -110,7 +146,51 @@ const chartOptions = {
   },
 }
 
-onMounted(() => assessmentStore.fetchAssessments(authStore.userId!))
+const progressionChartData = computed(() => ({
+  labels: progressionPoints.value.map(p => p.performedAt),
+  datasets: [{
+    label: 'Carga (kg)',
+    data: progressionPoints.value.map(p => p.loadKg),
+    borderColor: '#22c55e',
+    backgroundColor: '#22c55e22',
+    fill: false,
+    tension: 0.3,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    spanGaps: true,
+  }],
+}))
+
+const progressionChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: { mode: 'index', intersect: false },
+  },
+  scales: {
+    x: { grid: { color: '#f1f5f9' } },
+    y: { grid: { color: '#f1f5f9' }, beginAtZero: true },
+  },
+}
+
+onMounted(async () => {
+  await assessmentStore.fetchAssessments(authStore.userId!)
+  exercises.value = await exerciseService.search()
+})
+
+async function loadProgression() {
+  if (!selectedExerciseId.value) return
+  loadingProgression.value = true
+  try {
+    progressionPoints.value = await workoutService.progression(
+      authStore.userId!,
+      selectedExerciseId.value
+    )
+  } finally {
+    loadingProgression.value = false
+  }
+}
 
 async function downloadEvolutionPdf() {
   if (!authStore.userId) return
@@ -155,4 +235,9 @@ async function downloadEvolutionPdf() {
 }
 .empty-icon { font-size: 2.5rem; color: var(--neutral-300); }
 .empty-hint { font-size: 13px; }
+
+.exercise-select { width: 100%; max-width: 320px; margin-bottom: 16px; }
+.progression-chart { height: 220px; }
+.chart-empty { text-align: center; padding: 40px; color: var(--neutral-400); font-size: 14px; }
+.empty-msg { color: var(--p-text-muted-color, #9ca3af); font-size: 0.875rem; text-align: center; padding: 2rem 0; }
 </style>
