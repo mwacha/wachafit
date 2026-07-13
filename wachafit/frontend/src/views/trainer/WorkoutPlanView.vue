@@ -163,7 +163,7 @@ function selectPlan(plan: WorkoutPlan) {
   editor.value.description = plan.description ?? ''
   editor.value.items = plan.items.map(item => ({
     exerciseId: item.exerciseId,
-    exerciseDisplay: { id: item.exerciseId, name: exerciseMap.value[item.exerciseId] ?? item.exerciseId } as Exercise,
+    exerciseDisplay: { id: item.exerciseId, name: exerciseMap.value[item.exerciseId] ?? 'Exercício não encontrado' } as Exercise,
     division: item.division ?? '',
     sets: item.sets,
     reps: item.reps,
