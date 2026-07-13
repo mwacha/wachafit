@@ -17,8 +17,9 @@
               <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativa' : 'Inativa'" />
             </template>
           </Column>
-          <Column header="Ações" style="min-width:80px">
+          <Column header="Ações" style="min-width:100px">
             <template #body="{ data }">
+              <Button icon="pi pi-pencil" text @click="openEdit(data)" />
               <Button v-if="data.active" icon="pi pi-trash" severity="danger" text @click="deactivate(data.id)" />
             </template>
           </Column>
@@ -32,6 +33,16 @@
           <InputNumber v-model="form.durationMinutes" placeholder="Duração (minutos)" :min="1" required />
           <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
           <Button type="submit" label="Criar" :loading="saving" />
+        </form>
+      </Dialog>
+
+      <Dialog v-model:visible="showEdit" header="Editar Turma" :modal="true" style="width: min(420px, 95vw)">
+        <form @submit.prevent="submitEdit" class="flex flex-col gap-3">
+          <InputText v-model="editForm.name" placeholder="Nome" required />
+          <InputNumber v-model="editForm.capacity" placeholder="Capacidade" :min="1" required />
+          <InputNumber v-model="editForm.durationMinutes" placeholder="Duração (minutos)" :min="1" required />
+          <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
+          <Button type="submit" label="Salvar" :loading="saving" />
         </form>
       </Dialog>
     </div>
@@ -55,11 +66,33 @@ import InputNumber from 'primevue/inputnumber'
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
 const showCreate = ref(false)
+const showEdit = ref(false)
+const editingId = ref<string | null>(null)
 const saving = ref(false)
 const formError = ref<string | null>(null)
 const form = ref({ name: '', capacity: 10, durationMinutes: 60 })
+const editForm = ref({ name: '', capacity: 10, durationMinutes: 60 })
 
 onMounted(() => adminStore.fetchClasses())
+
+function openEdit(cls: { id: string; name: string; capacity: number; durationMinutes: number }) {
+  editingId.value = cls.id
+  editForm.value = { name: cls.name, capacity: cls.capacity, durationMinutes: cls.durationMinutes }
+  formError.value = null
+  showEdit.value = true
+}
+
+async function submitEdit() {
+  if (!editingId.value) return
+  saving.value = true; formError.value = null
+  try {
+    await groupClassService.update(editingId.value, editForm.value)
+    showEdit.value = false
+    await adminStore.fetchClasses()
+  } catch (e: any) {
+    formError.value = e.response?.data?.message ?? 'Erro ao salvar'
+  } finally { saving.value = false }
+}
 
 async function deactivate(id: string) {
   await groupClassService.deactivate(id)

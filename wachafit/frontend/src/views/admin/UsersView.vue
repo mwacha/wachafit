@@ -17,8 +17,9 @@
               <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativo' : 'Inativo'" />
             </template>
           </Column>
-          <Column header="Ações" style="min-width:80px">
+          <Column header="Ações" style="min-width:120px">
             <template #body="{ data }">
+              <Button icon="pi pi-pencil" text @click="openEdit(data)" />
               <Button v-if="data.active" icon="pi pi-ban" severity="danger" text @click="deactivate(data.id)" />
               <Button v-else icon="pi pi-check" severity="success" text @click="activate(data.id)" />
             </template>
@@ -31,9 +32,18 @@
           <InputText v-model="form.name" placeholder="Nome" required />
           <InputText v-model="form.email" type="email" placeholder="Email" required />
           <Password v-model="form.password" placeholder="Senha" :feedback="false" required />
-          <Select v-model="form.role" :options="['ADMIN','TRAINER','STUDENT']" placeholder="Perfil" required />
+          <Select v-model="form.role" :options="['ADMIN','MANAGER','TRAINER','RECEPTIONIST','CASHIER','STUDENT']" placeholder="Perfil" required />
           <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
           <Button type="submit" label="Criar" :loading="saving" />
+        </form>
+      </Dialog>
+
+      <Dialog v-model:visible="showEdit" header="Editar Usuário" :modal="true" style="width: min(420px, 95vw)">
+        <form @submit.prevent="submitEdit" class="flex flex-col gap-3">
+          <InputText v-model="editForm.name" placeholder="Nome" required />
+          <Select v-model="editForm.role" :options="['ADMIN','MANAGER','TRAINER','RECEPTIONIST','CASHIER','STUDENT']" placeholder="Perfil" required />
+          <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
+          <Button type="submit" label="Salvar" :loading="saving" />
         </form>
       </Dialog>
     </div>
@@ -56,9 +66,12 @@ import Select from 'primevue/select'
 
 const adminStore = useAdminStore()
 const showCreate = ref(false)
+const showEdit = ref(false)
+const editingId = ref<string | null>(null)
 const saving = ref(false)
 const formError = ref<string | null>(null)
 const form = ref({ name: '', email: '', password: '', role: '' })
+const editForm = ref({ name: '', role: '' })
 
 onMounted(() => adminStore.fetchUsers())
 
@@ -70,6 +83,25 @@ async function deactivate(id: string) {
 async function activate(id: string) {
   await userService.activate(id)
   await adminStore.fetchUsers()
+}
+
+function openEdit(user: { id: string; name: string; role: string }) {
+  editingId.value = user.id
+  editForm.value = { name: user.name, role: user.role }
+  formError.value = null
+  showEdit.value = true
+}
+
+async function submitEdit() {
+  if (!editingId.value) return
+  saving.value = true; formError.value = null
+  try {
+    await userService.update(editingId.value, editForm.value)
+    showEdit.value = false
+    await adminStore.fetchUsers()
+  } catch (e: any) {
+    formError.value = e.response?.data?.message ?? 'Erro ao salvar'
+  } finally { saving.value = false }
 }
 
 async function submitCreate() {
