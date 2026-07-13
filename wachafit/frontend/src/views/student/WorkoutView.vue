@@ -21,7 +21,7 @@
         <div v-for="item in workoutStore.activePlan.items" :key="item.id"
              class="card p-4 mb-3 flex items-center justify-between">
           <div>
-            <div class="font-medium">Exercício #{{ item.exerciseId.slice(0,8) }}</div>
+            <div class="font-medium">{{ exerciseNames[item.exerciseId] ?? 'Exercício' }}</div>
             <div class="text-sm text-surface-500">
               {{ item.division ? `Divisão ${item.division} — ` : '' }}
               {{ item.sets }}x{{ item.reps }}
@@ -52,6 +52,7 @@ import AppLayout from '@/components/AppLayout.vue'
 import { useWorkoutStore } from '@/stores/workout.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { workoutService } from '@/services/workout.service'
+import { exerciseService } from '@/services/exercise.service'
 import type { WorkoutPlanItem } from '@/types/api'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -67,8 +68,13 @@ const saving = ref(false)
 const logError = ref<string | null>(null)
 const currentItem = ref<WorkoutPlanItem | null>(null)
 const logForm = ref({ sets: null as number | null, reps: null as number | null, loadKg: null as number | null, notes: '' })
+const exerciseNames = ref<Record<string, string>>({})
 
-onMounted(() => workoutStore.fetchActivePlan(authStore.userId!))
+onMounted(async () => {
+  await workoutStore.fetchActivePlan(authStore.userId!)
+  const exercises = await exerciseService.search()
+  exerciseNames.value = Object.fromEntries(exercises.map(e => [e.id, e.name]))
+})
 
 async function downloadWorkoutPdf() {
   if (!authStore.userId) return
