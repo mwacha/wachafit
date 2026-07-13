@@ -21,6 +21,7 @@
           <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Receita" aria-label="Receita" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
           <RouterLink to="/admin/reports/overdue" class="nav-item" active-class="active" title="Inadimplentes" aria-label="Inadimplentes" @click="mobileOpen = false"><i class="pi pi-exclamation-triangle" /></RouterLink>
           <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" title="Comissões" aria-label="Comissões" @click="mobileOpen = false"><i class="pi pi-dollar" /></RouterLink>
+          <RouterLink to="/exercises" class="nav-item" active-class="active" title="Exercícios" aria-label="Exercícios" @click="mobileOpen = false"><i class="pi pi-list" /></RouterLink>
         </template>
 
         <!-- Manager links -->
@@ -52,6 +53,7 @@
           <RouterLink to="/trainer/schedule" class="nav-item" active-class="active" title="Minha Agenda" aria-label="Minha Agenda" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
           <RouterLink to="/trainer/students" class="nav-item" active-class="active" title="Alunos" aria-label="Alunos" @click="mobileOpen = false"><i class="pi pi-users" /></RouterLink>
           <RouterLink to="/trainer/profile" class="nav-item" active-class="active" title="Meu Perfil" aria-label="Meu Perfil" @click="mobileOpen = false"><i class="pi pi-user" /></RouterLink>
+          <RouterLink to="/exercises" class="nav-item" active-class="active" title="Exercícios" aria-label="Exercícios" @click="mobileOpen = false"><i class="pi pi-list" /></RouterLink>
         </template>
 
         <!-- Student links -->
@@ -64,6 +66,7 @@
           <RouterLink to="/student/evolution" class="nav-item" active-class="active" title="Evolução" aria-label="Evolução" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
           <RouterLink to="/student/goals" class="nav-item" active-class="active" title="Metas" aria-label="Metas" @click="mobileOpen = false"><i class="pi pi-flag" /></RouterLink>
           <RouterLink to="/student/photos" class="nav-item" active-class="active" title="Fotos" aria-label="Fotos" @click="mobileOpen = false"><i class="pi pi-image" /></RouterLink>
+          <RouterLink to="/student/profile" class="nav-item" active-class="active" title="Meu Perfil" aria-label="Meu Perfil" @click="mobileOpen = false"><i class="pi pi-user" /></RouterLink>
           <RouterLink to="/student/subscription" class="nav-item" active-class="active" title="Meu Plano" aria-label="Meu Plano" @click="mobileOpen = false"><i class="pi pi-id-card" /></RouterLink>
           <RouterLink to="/student/charges" class="nav-item" active-class="active" title="Cobranças" aria-label="Cobranças" @click="mobileOpen = false"><i class="pi pi-money-bill" /></RouterLink>
         </template>

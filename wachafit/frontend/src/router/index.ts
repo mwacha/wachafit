@@ -65,6 +65,11 @@ const router = createRouter({
       component: () => import('@/views/admin/SchedulesView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'CASHIER', 'TRAINER'] as Role[] },
     },
+    {
+      path: '/exercises',
+      component: () => import('@/views/exercises/ExercisesView.vue'),
+      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
+    },
 
     // --- Trainer routes ---
     {
@@ -140,6 +145,11 @@ const router = createRouter({
       component: () => import('@/views/trainer/ProfileView.vue'),
       meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
     },
+    {
+      path: '/trainer/students/:id/workout',
+      component: () => import('@/views/trainer/WorkoutPlanView.vue'),
+      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+    },
 
     // --- Student routes ---
     {
@@ -187,6 +197,11 @@ const router = createRouter({
     {
       path: '/student/photos',
       component: () => import('@/views/student/PhotosView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
+      path: '/student/profile',
+      component: () => import('@/views/student/ProfileView.vue'),
       meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
     },
 
