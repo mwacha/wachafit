@@ -175,6 +175,11 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
     },
     {
+      path: '/student/calendar',
+      component: () => import('@/views/student/CalendarView.vue'),
+      meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },
+    },
+    {
       path: '/student/workout',
       component: () => import('@/views/student/WorkoutView.vue'),
       meta: { requiresAuth: true, roles: ['STUDENT'] as Role[] },

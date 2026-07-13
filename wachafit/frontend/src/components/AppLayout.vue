@@ -61,6 +61,7 @@
           <RouterLink to="/student" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
           <RouterLink to="/student/schedule" class="nav-item" active-class="active" title="Aulas Disponíveis" aria-label="Aulas Disponíveis" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
           <RouterLink to="/student/bookings" class="nav-item" active-class="active" title="Minhas Reservas" aria-label="Minhas Reservas" @click="mobileOpen = false"><i class="pi pi-bookmark" /></RouterLink>
+          <RouterLink to="/student/calendar" class="nav-item" active-class="active" title="Meu Calendário" aria-label="Meu Calendário" @click="mobileOpen = false"><i class="pi pi-calendar-plus" /></RouterLink>
           <RouterLink to="/student/workout" class="nav-item" active-class="active" title="Treino" aria-label="Treino" @click="mobileOpen = false"><i class="pi pi-bolt" /></RouterLink>
           <RouterLink to="/student/records" class="nav-item" active-class="active" title="Recordes" aria-label="Recordes" @click="mobileOpen = false"><i class="pi pi-trophy" /></RouterLink>
           <RouterLink to="/student/evolution" class="nav-item" active-class="active" title="Evolução" aria-label="Evolução" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
