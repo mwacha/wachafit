@@ -2,7 +2,10 @@
 <template>
   <AppLayout>
     <div class="view-wrap">
-      <h1 class="page-title">Alunos</h1>
+      <div class="page-header">
+        <h1 class="page-title">Alunos</h1>
+        <Button v-if="authStore.role === 'ADMIN'" label="Cadastrar Aluno" icon="pi pi-plus" @click="router.push('/admin/enroll')" />
+      </div>
       <InputText v-model="search" placeholder="Buscar por nome..." />
       <div class="table-scroll">
         <DataTable :value="filteredStudents" :loading="adminStore.loading" stripedRows>
@@ -25,13 +28,16 @@
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useAdminStore } from '@/stores/admin.store'
-import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
+import { RouterLink, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 
 const adminStore = useAdminStore()
+const authStore = useAuthStore()
+const router = useRouter()
 const search = ref('')
 
 onMounted(() => adminStore.fetchUsers())
@@ -45,6 +51,7 @@ const filteredStudents = computed(() =>
 
 <style scoped>
 .view-wrap { display: flex; flex-direction: column; gap: 16px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
 </style>
