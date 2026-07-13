@@ -55,7 +55,7 @@
               <Tag :severity="p.active ? 'success' : 'secondary'" :value="p.active ? 'Ativa' : 'Inativa'" />
               <Button v-if="!p.active" label="Ativar" size="small" outlined :loading="activatingPlan === p.id"
                 @click="activatePlan(p.id)" />
-              <Button icon="pi pi-pencil" text size="small"
+              <Button icon="pi pi-pencil" text size="small" aria-label="Ver/Editar ficha"
                 @click="$router.push(`/trainer/students/${studentId}/workout?planId=${p.id}`)" />
             </div>
           </div>
