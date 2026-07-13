@@ -1,40 +1,72 @@
 <template>
   <AppLayout>
     <div class="dash">
-      <!-- KPIs -->
-      <div class="kpi-grid">
-        <div class="kpi-card" v-for="kpi in kpis" :key="kpi.label">
-          <span class="kpi-label">{{ kpi.label }}</span>
-          <span class="kpi-value">{{ kpi.value }}</span>
-          <span class="kpi-badge" :class="kpi.trend > 0 ? 'badge-up' : 'badge-neutral'">
-            {{ kpi.trend > 0 ? '+' : '' }}{{ kpi.trend }}%
-          </span>
+      <div v-if="loading" class="empty-state">Carregando...</div>
+      <div v-else class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Minhas reservas</span>
+          <span class="kpi-value">{{ totalBookings }}</span>
         </div>
-        <div class="kpi-card kpi-highlight">
+        <div class="kpi-card">
+          <span class="kpi-label">Confirmadas</span>
+          <span class="kpi-value">{{ confirmedBookings }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Pendentes</span>
+          <span class="kpi-value">{{ pendingBookings }}</span>
+        </div>
+        <div class="kpi-card kpi-highlight" v-if="nextBooking">
           <span class="kpi-label kpi-label-white">Próxima aula</span>
-          <span class="kpi-value kpi-value-white">Seg, 07:00</span>
-          <span class="kpi-badge badge-white">Funcional</span>
+          <span class="kpi-value kpi-value-white">{{ nextBookingTime }}</span>
+          <span class="kpi-badge badge-white">{{ nextBookingType }}</span>
         </div>
-      </div>
-
-      <!-- Coming soon -->
-      <div class="placeholder-card">
-        <i class="pi pi-calendar placeholder-icon" aria-hidden="true" />
-        <p class="placeholder-title">Agenda e treinos</p>
-        <p class="placeholder-sub">Disponível na Etapa 2 — agendamento e fichas de treino.</p>
+        <div class="kpi-card kpi-neutral" v-else>
+          <span class="kpi-label">Próxima aula</span>
+          <span class="kpi-value kpi-muted">—</span>
+          <span class="kpi-sub">Sem aulas agendadas</span>
+        </div>
       </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
+import { useBookingStore } from '@/stores/booking.store'
 
-const kpis = [
-  { label: 'Treinos no mês', value: '12', trend: 20 },
-  { label: 'Frequência',     value: '86%', trend: 5 },
-  { label: 'Carga média',    value: '64 kg', trend: 8 },
-]
+const bookingStore = useBookingStore()
+const loading = ref(true)
+
+onMounted(async () => {
+  await bookingStore.fetchMyBookings()
+  loading.value = false
+})
+
+const totalBookings = computed(() => bookingStore.bookings.length)
+const confirmedBookings = computed(() => bookingStore.bookings.filter(b => b.status === 'CONFIRMED').length)
+const pendingBookings = computed(() => bookingStore.bookings.filter(b => b.status === 'PENDING').length)
+
+const nextBooking = computed(() => {
+  const now = new Date().toISOString()
+  return bookingStore.bookings
+    .filter(b => b.status !== 'CANCELLED' && b.startsAt > now)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] ?? null
+})
+
+const nextBookingTime = computed(() => {
+  if (!nextBooking.value) return '—'
+  return new Date(nextBooking.value.startsAt).toLocaleString('pt-BR', {
+    weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  })
+})
+
+const nextBookingType = computed(() => {
+  if (!nextBooking.value) return ''
+  return nextBooking.value.type === 'CLASS'
+    ? (nextBooking.value.groupClassName || 'Aula coletiva')
+    : 'Personal'
+})
 </script>
 
 <style scoped>
@@ -47,58 +79,37 @@ const kpis = [
 }
 
 .kpi-card {
-  background: #fff;
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-lg);
-  padding: 18px 16px;
+  background: #fff; border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg); padding: 18px 16px;
   display: flex; flex-direction: column; gap: 6px;
   box-shadow: var(--shadow-card);
   transition: box-shadow 0.2s, transform 0.2s;
-  cursor: default;
 }
 .kpi-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
 
 .kpi-highlight {
   background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
-  border-color: transparent;
-  box-shadow: var(--shadow-btn);
+  border-color: transparent; box-shadow: var(--shadow-btn);
 }
+.kpi-neutral { background: var(--neutral-50); }
 
 .kpi-label {
-  font-family: var(--font-body); font-size: 11px; font-weight: 500;
-  color: var(--neutral-500); text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 11px; font-weight: 500; color: var(--neutral-500);
+  text-transform: uppercase; letter-spacing: 0.06em;
 }
 .kpi-label-white { color: rgba(255,255,255,0.65); }
-
 .kpi-value {
   font-family: var(--font-display); font-size: 28px; font-weight: 700;
   color: var(--neutral-900); line-height: 1.1;
 }
 .kpi-value-white { color: #fff; }
-
+.kpi-muted { color: var(--neutral-400); }
 .kpi-badge {
-  display: inline-flex; align-items: center;
-  font-size: 11px; font-weight: 700;
-  padding: 3px 8px; border-radius: 6px;
-  align-self: flex-start;
+  display: inline-flex; font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 6px; align-self: flex-start;
 }
-.badge-up { background: var(--success-bg); color: var(--success-text); }
-.badge-neutral { background: var(--neutral-100); color: var(--neutral-600); }
 .badge-white { background: rgba(255,255,255,0.18); color: #fff; }
+.kpi-sub { font-size: 11px; color: var(--neutral-400); }
 
-.placeholder-card {
-  background: #fff;
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-lg);
-  padding: 48px 24px;
-  display: flex; flex-direction: column; align-items: center;
-  gap: 10px; text-align: center;
-  box-shadow: var(--shadow-card);
-}
-.placeholder-icon { font-size: 32px; color: var(--neutral-300); }
-.placeholder-title {
-  font-family: var(--font-display); font-size: 16px; font-weight: 600;
-  color: var(--neutral-800);
-}
-.placeholder-sub { font-size: 13px; color: var(--neutral-500); max-width: 320px; }
+.empty-state { text-align: center; padding: 48px; color: var(--neutral-500); font-size: 14px; }
 </style>

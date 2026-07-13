@@ -1,36 +1,77 @@
 <template>
   <AppLayout>
     <div class="dash">
-      <div class="kpi-grid">
-        <div class="kpi-card" v-for="kpi in kpis" :key="kpi.label">
-          <span class="kpi-label">{{ kpi.label }}</span>
-          <span class="kpi-value">{{ kpi.value }}</span>
-          <span class="kpi-badge badge-up">+{{ kpi.trend }}%</span>
-        </div>
+      <div v-if="loading" class="empty-state">Carregando...</div>
+      <div v-else class="kpi-grid">
         <div class="kpi-card kpi-highlight">
           <span class="kpi-label kpi-label-white">Aulas hoje</span>
-          <span class="kpi-value kpi-value-white">5</span>
-          <span class="kpi-badge badge-white">Confirmadas</span>
+          <span class="kpi-value kpi-value-white">{{ schedulesToday }}</span>
+          <span class="kpi-badge badge-white">{{ schedulesToday === 1 ? 'Aula' : 'Aulas' }}</span>
         </div>
-      </div>
-
-      <div class="placeholder-card">
-        <i class="pi pi-users placeholder-icon" aria-hidden="true" />
-        <p class="placeholder-title">Gestão de alunos e agenda</p>
-        <p class="placeholder-sub">Disponível na Etapa 2 — agenda, avaliações e fichas de treino.</p>
+        <div class="kpi-card">
+          <span class="kpi-label">Próxima aula</span>
+          <span class="kpi-value" :class="nextScheduleTime ? '' : 'kpi-muted'">
+            {{ nextScheduleTime || '—' }}
+          </span>
+          <span v-if="nextScheduleName" class="kpi-sub">{{ nextScheduleName }}</span>
+          <span v-else class="kpi-sub">Sem aulas agendadas</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Alunos</span>
+          <span class="kpi-value">{{ studentsCount }}</span>
+          <span class="kpi-sub">cadastrados ativos</span>
+        </div>
       </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
+import { scheduleService } from '@/services/schedule.service'
+import { useAuthStore } from '@/stores/auth.store'
+import { useAdminStore } from '@/stores/admin.store'
 
-const kpis = [
-  { label: 'Alunos ativos',  value: '24', trend: 12 },
-  { label: 'Sessões no mês', value: '68', trend: 8 },
-  { label: 'Taxa de presença',value: '91%', trend: 3 },
-]
+const authStore = useAuthStore()
+const adminStore = useAdminStore()
+const loading = ref(true)
+const todaySchedules = ref<Awaited<ReturnType<typeof scheduleService.list>>>([])
+
+onMounted(async () => {
+  const today = new Date().toISOString().split('T')[0]
+  await Promise.all([
+    scheduleService.list({ trainerId: authStore.userId ?? undefined, date: today }).then(s => {
+      todaySchedules.value = s.filter(sc => sc.status !== 'CANCELLED')
+    }),
+    adminStore.fetchUsers(),
+  ])
+  loading.value = false
+})
+
+const schedulesToday = computed(() => todaySchedules.value.length)
+
+const studentsCount = computed(() =>
+  adminStore.users.filter(u => u.role === 'STUDENT' && u.active).length
+)
+
+const nextScheduleTime = computed(() => {
+  const now = new Date().toISOString()
+  const next = todaySchedules.value
+    .filter(s => s.startsAt > now)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
+  if (!next) return null
+  return new Date(next.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+})
+
+const nextScheduleName = computed(() => {
+  const now = new Date().toISOString()
+  const next = todaySchedules.value
+    .filter(s => s.startsAt > now)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
+  if (!next) return null
+  return next.type === 'CLASS' ? (next.groupClassName || 'Aula coletiva') : 'Personal'
+})
 </script>
 
 <style scoped>
@@ -47,7 +88,7 @@ const kpis = [
   border-radius: var(--radius-lg); padding: 18px 16px;
   display: flex; flex-direction: column; gap: 6px;
   box-shadow: var(--shadow-card);
-  transition: box-shadow 0.2s, transform 0.2s; cursor: default;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 .kpi-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
 
@@ -66,24 +107,14 @@ const kpis = [
   color: var(--neutral-900); line-height: 1.1;
 }
 .kpi-value-white { color: #fff; }
+.kpi-muted { color: var(--neutral-400); }
 .kpi-badge {
   display: inline-flex; align-items: center;
   font-size: 11px; font-weight: 700;
   padding: 3px 8px; border-radius: 6px; align-self: flex-start;
 }
-.badge-up { background: var(--success-bg); color: var(--success-text); }
 .badge-white { background: rgba(255,255,255,0.18); color: #fff; }
+.kpi-sub { font-size: 11px; color: var(--neutral-400); }
 
-.placeholder-card {
-  background: #fff; border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-lg); padding: 48px 24px;
-  display: flex; flex-direction: column; align-items: center;
-  gap: 10px; text-align: center; box-shadow: var(--shadow-card);
-}
-.placeholder-icon { font-size: 32px; color: var(--neutral-300); }
-.placeholder-title {
-  font-family: var(--font-display); font-size: 16px; font-weight: 600;
-  color: var(--neutral-800);
-}
-.placeholder-sub { font-size: 13px; color: var(--neutral-500); max-width: 320px; }
+.empty-state { text-align: center; padding: 48px; color: var(--neutral-500); font-size: 14px; }
 </style>
