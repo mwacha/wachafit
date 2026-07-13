@@ -80,12 +80,12 @@ const router = createRouter({
     {
       path: '/trainer/students',
       component: () => import('@/views/trainer/StudentsView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
     },
     {
       path: '/trainer/students/:id/overview',
       component: () => import('@/views/trainer/StudentOverviewView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
     },
 
     // --- Admin/Manager shared routes ---
@@ -148,7 +148,7 @@ const router = createRouter({
     {
       path: '/trainer/students/:id/workout',
       component: () => import('@/views/trainer/WorkoutPlanView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
     },
 
     // --- Student routes ---
