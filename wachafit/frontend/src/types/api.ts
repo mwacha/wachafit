@@ -44,6 +44,11 @@ export interface Booking {
   studentId: string
   status: BookingStatus
   bookedAt: string
+  startsAt: string
+  endsAt: string
+  type: ScheduleType
+  groupClassName: string | null
+  trainerName: string | null
 }
 
 // --- Admin ---
