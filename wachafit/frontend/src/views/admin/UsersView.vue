@@ -105,6 +105,9 @@ async function submitEdit() {
 }
 
 async function submitCreate() {
+  if (form.value.password.length < 8) {
+    formError.value = 'A senha deve ter no mínimo 8 caracteres.'; return
+  }
   saving.value = true; formError.value = null
   try {
     await userService.create(form.value as any)

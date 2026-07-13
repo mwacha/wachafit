@@ -6,6 +6,6 @@ import jakarta.validation.constraints.*;
 public record CreateUserRequest(
     @NotBlank String name,
     @Email @NotBlank String email,
-    @NotBlank @Size(min = 8) String password,
+    @NotBlank @Size(min = 8, message = "Senha deve ter no mínimo 8 caracteres") String password,
     @NotNull Role role
 ) {}

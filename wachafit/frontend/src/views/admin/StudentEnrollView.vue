@@ -413,6 +413,9 @@ function nextStep() {
     if (userNotFound.value && (!account.value.name || !account.value.password)) {
       errorMsg.value = 'Preencha o nome e a senha para criar uma nova conta.'; return
     }
+    if (userNotFound.value && account.value.password.length < 8) {
+      errorMsg.value = 'A senha deve ter no mínimo 8 caracteres.'; return
+    }
   }
   if (currentStep.value === 1 && !personal.value.cpf) {
     errorMsg.value = 'O CPF é obrigatório.'; return
