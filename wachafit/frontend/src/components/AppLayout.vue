@@ -19,7 +19,6 @@
           <RouterLink to="/admin/schedules" class="nav-item" active-class="active" title="Agenda" aria-label="Agenda" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
           <RouterLink to="/admin/membership-plans" class="nav-item" active-class="active" title="Planos" aria-label="Planos" @click="mobileOpen = false"><i class="pi pi-credit-card" /></RouterLink>
           <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Receita" aria-label="Receita" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
-          <RouterLink to="/admin/reports/overdue" class="nav-item" active-class="active" title="Inadimplentes" aria-label="Inadimplentes" @click="mobileOpen = false"><i class="pi pi-exclamation-triangle" /></RouterLink>
           <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" title="Comissões" aria-label="Comissões" @click="mobileOpen = false"><i class="pi pi-dollar" /></RouterLink>
           <RouterLink to="/exercises" class="nav-item" active-class="active" title="Exercícios" aria-label="Exercícios" @click="mobileOpen = false"><i class="pi pi-list" /></RouterLink>
         </template>
