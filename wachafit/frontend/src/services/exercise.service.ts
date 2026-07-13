@@ -8,5 +8,5 @@ export const exerciseService = {
     api.post<Exercise>('/api/exercises', data).then(r => r.data),
   update: (id: string, data: { name: string; muscleGroup: string; description?: string; videoUrl?: string }) =>
     api.put<Exercise>(`/api/exercises/${id}`, data).then(r => r.data),
-  deactivate: (id: string) => api.delete(`/api/exercises/${id}`),
+  deactivate: (id: string) => api.patch(`/api/exercises/${id}/deactivate`),
 }
