@@ -15,7 +15,7 @@
       </div>
 
       <div v-if="workoutStore.loading" class="text-center py-8">Carregando...</div>
-      <div v-else-if="!workoutStore.activePlan" class="text-surface-400">Nenhuma ficha ativa.</div>
+      <div v-else-if="!workoutStore.activePlan" class="text-surface-400">Você não tem uma ficha de treino ativa.</div>
       <div v-else>
         <h2 class="text-lg font-semibold mb-3">{{ workoutStore.activePlan.name }}</h2>
         <div v-for="item in workoutStore.activePlan.items" :key="item.id"
