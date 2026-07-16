@@ -17,7 +17,8 @@
       <template v-if="tab === 'ativos'">
         <InputText v-model="search" placeholder="Buscar por nome..." />
         <div class="table-scroll">
-          <DataTable :value="filteredStudents" :loading="adminStore.loading" stripedRows emptyMessage="Nenhum aluno encontrado.">
+          <DataTable :value="filteredStudents" :loading="adminStore.loading" stripedRows>
+            <template #empty>Nenhum aluno encontrado.</template>
             <Column field="name" header="Nome" style="min-width:140px" />
             <Column field="email" header="Email" style="min-width:180px" />
             <Column header="Ações" style="min-width:90px">

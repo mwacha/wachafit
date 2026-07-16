@@ -17,8 +17,8 @@
           showClear @change="onSearch" style="width:200px" />
       </div>
 
-      <DataTable :value="exercises" :loading="loading" stripedRows
-        emptyMessage="Nenhum exercício encontrado.">
+      <DataTable :value="exercises" :loading="loading" stripedRows>
+        <template #empty>Nenhum exercício encontrado.</template>
         <Column field="name" header="Nome" style="min-width:160px" />
         <Column field="muscleGroup" header="Grupo Muscular" style="min-width:140px" />
         <Column field="description" header="Descrição" style="min-width:200px">

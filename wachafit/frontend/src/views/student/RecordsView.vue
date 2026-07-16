@@ -3,8 +3,8 @@
   <AppLayout>
     <div class="view-wrap">
       <h1 class="page-title">Recordes Pessoais</h1>
-      <DataTable :value="workoutStore.records" :loading="workoutStore.loading" stripedRows
-        emptyMessage="Nenhum recorde registrado.">
+      <DataTable :value="workoutStore.records" :loading="workoutStore.loading" stripedRows>
+        <template #empty>Nenhum recorde registrado.</template>
         <Column header="Exercício" style="min-width:160px">
           <template #body="{ data }">{{ exerciseNames[data.exerciseId] ?? '—' }}</template>
         </Column>

@@ -8,7 +8,8 @@
       </div>
 
       <div class="table-scroll">
-        <DataTable :value="adminStore.users" :loading="adminStore.loading" stripedRows emptyMessage="Nenhum usuário cadastrado.">
+        <DataTable :value="adminStore.users" :loading="adminStore.loading" stripedRows>
+          <template #empty>Nenhum usuário cadastrado.</template>
           <Column field="name" header="Nome" style="min-width:140px" />
           <Column field="email" header="Email" style="min-width:180px" />
           <Column field="role" header="Perfil" style="min-width:100px" />
