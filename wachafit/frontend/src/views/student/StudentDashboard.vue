@@ -39,8 +39,11 @@ const bookingStore = useBookingStore()
 const loading = ref(true)
 
 onMounted(async () => {
-  await bookingStore.fetchMyBookings()
-  loading.value = false
+  try {
+    await bookingStore.fetchMyBookings()
+  } finally {
+    loading.value = false
+  }
 })
 
 const totalBookings = computed(() => bookingStore.bookings.length)

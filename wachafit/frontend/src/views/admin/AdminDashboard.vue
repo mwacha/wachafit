@@ -28,15 +28,18 @@ const schedulesToday = ref(0)
 
 onMounted(async () => {
   const today = new Date().toISOString().split('T')[0]
-  await Promise.all([
-    adminStore.fetchUsers(),
-    reportService.getSubscriptionStats().then(s => { activeStudents.value = s.active }),
-    reportService.getOverdue().then(o => { overdueCount.value = o.length }),
-    scheduleService.list({ date: today }).then(s => {
-      schedulesToday.value = s.filter(sc => sc.status !== 'CANCELLED').length
-    }),
-  ])
-  loading.value = false
+  try {
+    await Promise.all([
+      adminStore.fetchUsers(),
+      reportService.getSubscriptionStats().then(s => { activeStudents.value = s.active }).catch(() => {}),
+      reportService.getOverdue().then(o => { overdueCount.value = o.length }).catch(() => {}),
+      scheduleService.list({ date: today }).then(s => {
+        schedulesToday.value = s.filter(sc => sc.status !== 'CANCELLED').length
+      }).catch(() => {}),
+    ])
+  } finally {
+    loading.value = false
+  }
 })
 
 const trainersCount = computed(() =>

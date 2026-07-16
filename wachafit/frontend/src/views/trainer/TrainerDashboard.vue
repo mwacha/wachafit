@@ -40,13 +40,16 @@ const todaySchedules = ref<Awaited<ReturnType<typeof scheduleService.list>>>([])
 
 onMounted(async () => {
   const today = new Date().toISOString().split('T')[0]
-  await Promise.all([
-    scheduleService.list({ trainerId: authStore.userId ?? undefined, date: today }).then(s => {
-      todaySchedules.value = s.filter(sc => sc.status !== 'CANCELLED')
-    }),
-    adminStore.fetchUsers(),
-  ])
-  loading.value = false
+  try {
+    await Promise.all([
+      scheduleService.list({ trainerId: authStore.userId ?? undefined, date: today }).then(s => {
+        todaySchedules.value = s.filter(sc => sc.status !== 'CANCELLED')
+      }).catch(() => {}),
+      adminStore.fetchUsers().catch(() => {}),
+    ])
+  } finally {
+    loading.value = false
+  }
 })
 
 const schedulesToday = computed(() => todaySchedules.value.length)
