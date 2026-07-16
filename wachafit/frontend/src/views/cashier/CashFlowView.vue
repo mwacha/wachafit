@@ -31,7 +31,8 @@
       </div>
 
       <div v-if="loading" class="empty-state">Carregando...</div>
-      <div v-else-if="data.length > 0" class="table-scroll">
+      <div v-else-if="data.length === 0" class="empty-state">Nenhum lançamento no período.</div>
+      <div v-else class="table-scroll">
         <DataTable :value="data" stripedRows>
           <Column field="date" header="Data" style="min-width:110px">
             <template #body="{ data }">{{ formatDate(data.date) }}</template>

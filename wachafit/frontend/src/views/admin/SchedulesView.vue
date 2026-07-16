@@ -15,7 +15,7 @@
       </div>
 
       <div class="table-scroll">
-        <DataTable :value="scheduleStore.schedules" :loading="scheduleStore.loading" stripedRows>
+        <DataTable :value="scheduleStore.schedules" :loading="scheduleStore.loading" stripedRows emptyMessage="Nenhuma aula agendada.">
           <Column field="type" header="Tipo" style="min-width:100px" />
           <Column header="Início" style="min-width:160px">
             <template #body="{ data }">{{ formatDate(data.startsAt) }}</template>

@@ -8,7 +8,7 @@
       </div>
 
       <div class="table-scroll">
-        <DataTable :value="adminStore.classes" :loading="adminStore.loading" stripedRows>
+        <DataTable :value="adminStore.classes" :loading="adminStore.loading" stripedRows emptyMessage="Nenhuma turma cadastrada.">
           <Column field="name" header="Nome" style="min-width:140px" />
           <Column field="capacity" header="Capacidade" style="min-width:110px" />
           <Column field="durationMinutes" header="Duração (min)" style="min-width:120px" />

@@ -9,7 +9,7 @@
       <div v-if="loading" class="empty-state">Carregando...</div>
 
       <div v-else class="table-scroll">
-        <DataTable :value="plans" stripedRows>
+        <DataTable :value="plans" stripedRows emptyMessage="Nenhum plano cadastrado.">
           <Column field="name" header="Nome" style="min-width:140px" />
           <Column header="Duração" style="min-width:110px">
             <template #body="{ data }">{{ data.durationMonths }} mes(es)</template>
