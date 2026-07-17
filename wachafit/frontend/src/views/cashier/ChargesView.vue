@@ -1,49 +1,107 @@
+<!-- frontend/src/views/cashier/ChargesView.vue -->
 <template>
   <AppLayout>
     <div class="view-wrap">
       <h1 class="page-title">Cobranças</h1>
 
+      <!-- Busca por aluno -->
       <div class="search-bar">
         <div class="search-field">
-          <label class="field-label">Email do Aluno</label>
+          <label class="field-label">E-mail do Aluno</label>
           <InputText v-model="searchEmail" placeholder="buscar por email..." @keydown.enter="search" />
         </div>
-        <Button label="Buscar" @click="search" :loading="loading" />
+        <Button label="Buscar" icon="pi pi-search" @click="search" :loading="loading" />
       </div>
 
       <div v-if="loading" class="empty-state">Carregando...</div>
-      <div v-else-if="searched && charges.length === 0" class="empty-state">
-        Nenhuma cobrança encontrada.
-      </div>
 
-      <div v-else-if="charges.length > 0" class="table-scroll">
-        <DataTable :value="charges" stripedRows>
-          <Column field="dueDate" header="Vencimento" style="min-width:120px">
-            <template #body="{ data }">{{ formatDate(data.dueDate) }}</template>
-          </Column>
-          <Column header="Valor" style="min-width:90px">
-            <template #body="{ data }">R$ {{ data.amount.toFixed(2) }}</template>
-          </Column>
-          <Column header="Status" style="min-width:100px">
-            <template #body="{ data }">
-              <Tag :value="statusLabel(data.status)" :severity="statusSeverity(data.status)" />
-            </template>
-          </Column>
-          <Column header="Ações" style="min-width:90px">
-            <template #body="{ data }">
-              <Button v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
-                      icon="pi pi-check" text size="small" label="Pagar" @click="openPay(data)" />
-            </template>
-          </Column>
-        </DataTable>
-      </div>
+      <template v-else-if="foundStudent">
+        <!-- Header do aluno encontrado -->
+        <div class="student-header">
+          <div class="student-info">
+            <i class="pi pi-user-circle student-icon" />
+            <div>
+              <p class="student-name">{{ foundStudent.name }}</p>
+              <p class="student-email">{{ foundStudent.email }}</p>
+            </div>
+          </div>
+          <Button label="Nova cobrança" icon="pi pi-plus" size="small" @click="openNewCharge" />
+        </div>
 
+        <div v-if="charges.length === 0" class="empty-state">Nenhuma cobrança cadastrada.</div>
+        <div v-else class="table-scroll">
+          <DataTable :value="charges" stripedRows>
+            <Column field="dueDate" header="Vencimento" style="min-width:120px">
+              <template #body="{ data }">{{ formatDate(data.dueDate) }}</template>
+            </Column>
+            <Column header="Valor" style="min-width:100px">
+              <template #body="{ data }">R$ {{ data.amount.toFixed(2) }}</template>
+            </Column>
+            <Column header="Status" style="min-width:110px">
+              <template #body="{ data }">
+                <Tag :value="statusLabel(data.status)" :severity="statusSeverity(data.status)" />
+              </template>
+            </Column>
+            <Column header="Pago em" style="min-width:120px">
+              <template #body="{ data }">
+                <span v-if="data.paidAt">{{ formatDate(data.paidAt) }}</span>
+                <span v-else class="text-muted">—</span>
+              </template>
+            </Column>
+            <Column header="Forma" style="min-width:120px">
+              <template #body="{ data }">{{ data.paymentMethod ?? '—' }}</template>
+            </Column>
+            <Column header="Ações" style="min-width:130px">
+              <template #body="{ data }">
+                <Button v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
+                        icon="pi pi-check" text size="small" label="Pagar"
+                        @click="openPay(data)" />
+                <Button v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
+                        icon="pi pi-times" text size="small" severity="danger"
+                        @click="cancelCharge(data.id)" />
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+      </template>
+
+      <div v-else-if="searched" class="empty-state">Nenhum aluno encontrado com esse e-mail.</div>
+
+      <!-- Dialog: Nova Cobrança -->
+      <Dialog v-model:visible="showNewCharge" header="Nova Cobrança" :modal="true" style="width: min(380px, 95vw)">
+        <form @submit.prevent="submitCharge" class="flex flex-col gap-3 pt-2">
+          <div class="field">
+            <label class="field-label">Valor (R$) *</label>
+            <InputNumber v-model="chargeForm.amount" mode="currency" currency="BRL" locale="pt-BR"
+              :min="0.01" class="w-full" required />
+          </div>
+          <div class="field">
+            <label class="field-label">Data de vencimento *</label>
+            <InputText v-model="chargeForm.dueDate" type="date" class="w-full" required />
+          </div>
+          <p v-if="chargeError" class="error-msg">{{ chargeError }}</p>
+          <div class="flex justify-end gap-2 mt-1">
+            <Button type="button" label="Cancelar" outlined @click="showNewCharge = false" />
+            <Button type="submit" label="Criar cobrança" :loading="savingCharge" />
+          </div>
+        </form>
+      </Dialog>
+
+      <!-- Dialog: Registrar Pagamento -->
       <Dialog v-model:visible="showPayDialog" header="Registrar Pagamento" :modal="true" style="width: min(360px, 95vw)">
         <div class="flex flex-col gap-3 pt-2">
-          <Select v-model="payMethod" :options="payMethods" placeholder="Forma de pagamento" />
+          <div v-if="selectedCharge" class="charge-summary">
+            <span>R$ {{ selectedCharge.amount.toFixed(2) }}</span>
+            <span class="text-muted">Venc. {{ formatDate(selectedCharge.dueDate) }}</span>
+          </div>
+          <div class="field">
+            <label class="field-label">Forma de pagamento *</label>
+            <Select v-model="payMethod" :options="payMethodOptions" optionLabel="label" optionValue="value"
+              placeholder="Selecione" class="w-full" />
+          </div>
           <div class="flex gap-2 justify-end">
-            <Button label="Cancelar" class="p-button-text" @click="showPayDialog = false" />
-            <Button label="Confirmar" :loading="paying" @click="confirmPay" />
+            <Button label="Cancelar" outlined @click="showPayDialog = false" />
+            <Button label="Confirmar pagamento" :loading="paying" :disabled="!payMethod" @click="confirmPay" />
           </div>
         </div>
       </Dialog>
@@ -60,29 +118,68 @@ import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import billingService from '@/services/billing.service'
 import { userService } from '@/services/user.service'
-import type { PaymentCharge } from '@/types/api'
+import type { PaymentCharge, AdminUser } from '@/types/api'
 
 const charges = ref<PaymentCharge[]>([])
 const loading = ref(false)
 const searched = ref(false)
 const searchEmail = ref('')
+const foundStudent = ref<AdminUser | null>(null)
+
 const showPayDialog = ref(false)
 const selectedCharge = ref<PaymentCharge | null>(null)
 const payMethod = ref('')
 const paying = ref(false)
-const payMethods = ['CASH', 'PIX', 'CREDIT_CARD', 'DEBIT_CARD', 'TRANSFER']
+
+const showNewCharge = ref(false)
+const savingCharge = ref(false)
+const chargeError = ref('')
+const chargeForm = ref({ amount: null as number | null, dueDate: '' })
+
+const payMethodOptions = [
+  { label: 'Dinheiro', value: 'CASH' },
+  { label: 'PIX', value: 'PIX' },
+  { label: 'Cartão de crédito', value: 'CREDIT_CARD' },
+  { label: 'Cartão de débito', value: 'DEBIT_CARD' },
+  { label: 'Transferência', value: 'TRANSFER' },
+]
 
 async function search() {
   if (!searchEmail.value) return
-  loading.value = true; searched.value = true
+  loading.value = true; searched.value = true; foundStudent.value = null; charges.value = []
   try {
     const users = await userService.list({ role: 'STUDENT' })
-    const student = users.find((u) => u.email.toLowerCase().includes(searchEmail.value.toLowerCase()))
-    charges.value = student ? await billingService.listCharges(student.id) : []
+    const student = users.find(u => u.email.toLowerCase().includes(searchEmail.value.toLowerCase()))
+    if (student) {
+      foundStudent.value = student
+      charges.value = await billingService.listCharges(student.id)
+    }
   } finally { loading.value = false }
+}
+
+function openNewCharge() {
+  chargeForm.value = { amount: null, dueDate: new Date().toISOString().slice(0, 10) }
+  chargeError.value = ''
+  showNewCharge.value = true
+}
+
+async function submitCharge() {
+  if (!foundStudent.value || !chargeForm.value.amount || !chargeForm.value.dueDate) return
+  savingCharge.value = true; chargeError.value = ''
+  try {
+    const created = await billingService.createCharge(foundStudent.value.id, {
+      amount: chargeForm.value.amount,
+      dueDate: chargeForm.value.dueDate,
+    })
+    charges.value.unshift(created)
+    showNewCharge.value = false
+  } catch (e: any) {
+    chargeError.value = e.response?.data?.message ?? 'Erro ao criar cobrança.'
+  } finally { savingCharge.value = false }
 }
 
 function openPay(charge: PaymentCharge) {
@@ -100,7 +197,15 @@ async function confirmPay() {
   } finally { paying.value = false }
 }
 
-function formatDate(d: string) { return new Date(d).toLocaleDateString('pt-BR') }
+async function cancelCharge(id: string) {
+  await billingService.cancelCharge(id)
+  const idx = charges.value.findIndex(c => c.id === id)
+  if (idx !== -1) charges.value[idx] = { ...charges.value[idx], status: 'CANCELLED' }
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+}
 function statusLabel(s: string) {
   return { PENDING: 'Pendente', PAID: 'Pago', OVERDUE: 'Vencido', CANCELLED: 'Cancelado' }[s] ?? s
 }
@@ -112,15 +217,34 @@ function statusSeverity(s: string) {
 <style scoped>
 .view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+
 .search-bar { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .search-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
-.field-label { font-size: 13px; font-weight: 600; color: var(--neutral-800); }
-.search-field :deep(.p-inputtext) { width: 100%; }
+.field-label { font-size: 12px; font-weight: 600; color: var(--neutral-700); }
+
+.student-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  background: #fff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg);
+  padding: 14px 18px;
+}
+.student-info { display: flex; align-items: center; gap: 12px; }
+.student-icon { font-size: 32px; color: var(--blue-500); }
+.student-name { font-weight: 700; font-size: 15px; color: var(--neutral-900); margin: 0; }
+.student-email { font-size: 12px; color: var(--neutral-500); margin: 0; }
+
+.charge-summary {
+  display: flex; justify-content: space-between;
+  background: var(--neutral-50); border-radius: var(--radius-md);
+  padding: 10px 14px; font-size: 14px; font-weight: 600;
+}
+
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
 .empty-state {
   text-align: center; padding: 40px 24px;
   color: var(--neutral-500); font-size: 14px;
-  background: #fff; border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-lg);
+  background: #fff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg);
 }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.text-muted { color: var(--neutral-400); font-size: 13px; }
+.error-msg { color: #ef4444; font-size: 13px; }
 </style>
