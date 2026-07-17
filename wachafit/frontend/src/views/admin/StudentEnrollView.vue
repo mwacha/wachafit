@@ -277,6 +277,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -292,6 +293,7 @@ import { userService } from '@/services/user.service'
 import profileService from '@/services/profile.service'
 import type { MembershipPlan, AdminUser } from '@/types/api'
 
+const router = useRouter()
 const steps = ['Conta & Plano', 'Dados Pessoais', 'Endereço', 'Emergência', 'Saúde', 'PAR-Q']
 const currentStep = ref(0)
 const saving = ref(false)
@@ -473,14 +475,7 @@ async function submit() {
     // 4. Saúde / PAR-Q
     await profileService.upsertStudentHealth(resolvedStudentId, health.value)
 
-    successMsg.value = 'Aluno cadastrado com sucesso!'
-    // Reset
-    currentStep.value = 0
-    account.value = { email: '', name: '', password: '', planId: '', startedAt: new Date().toISOString().slice(0, 10) }
-    personal.value = { cpf: '', rg: '', birthDate: '', gender: '', maritalStatus: '', profession: '', phone: '' }
-    address.value = { zip: '', line: '', number: '', complement: '', neighborhood: '', city: '', state: '' }
-    emergency.value = { name: '', phone: '', relationship: '' }
-    userFound.value = null; userNotFound.value = false; resolvedStudentId = ''
+    router.push('/trainer/students')
   } catch (e: any) {
     errorMsg.value = e.response?.data?.message ?? e.response?.data?.error ?? 'Erro ao concluir cadastro.'
   } finally { saving.value = false }
