@@ -21,11 +21,15 @@
             <template #empty>Nenhum aluno encontrado.</template>
             <Column field="name" header="Nome" style="min-width:140px" />
             <Column field="email" header="Email" style="min-width:180px" />
-            <Column header="Ações" style="min-width:90px">
+            <Column header="Ações" style="min-width:160px">
               <template #body="{ data }">
-                <RouterLink :to="`/trainer/students/${data.id}/overview`">
-                  <Button icon="pi pi-eye" text label="Ver" />
-                </RouterLink>
+                <div class="flex gap-1">
+                  <RouterLink :to="`/trainer/students/${data.id}/overview`">
+                    <Button icon="pi pi-eye" text label="Ver" size="small" />
+                  </RouterLink>
+                  <Button icon="pi pi-pencil" text label="Editar" size="small"
+                    @click="router.push(`/admin/students/${data.id}/edit`)" />
+                </div>
               </template>
             </Column>
           </DataTable>

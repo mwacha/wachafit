@@ -100,6 +100,11 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST'] as Role[] },
     },
     {
+      path: '/admin/students/:id/edit',
+      component: () => import('@/views/admin/StudentEditView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST'] as Role[] },
+    },
+    {
       path: '/admin/reports/revenue',
       component: () => import('@/views/admin/reports/RevenueView.vue'),
       meta: { requiresAuth: true, roles: ['CASHIER', 'MANAGER', 'ADMIN'] as Role[] },

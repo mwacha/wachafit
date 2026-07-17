@@ -40,29 +40,6 @@
           </div>
         </TabPanel>
 
-        <!-- ── Tab Dados ── -->
-        <TabPanel header="Dados">
-          <div class="tab-content">
-            <div v-if="loadingProfile" class="empty-state"><i class="pi pi-spin pi-spinner" /></div>
-            <template v-else>
-              <div class="tab-header">
-                <span class="tab-count">Dados cadastrais</span>
-                <Button icon="pi pi-pencil" label="Editar" size="small" @click="openEditProfile" />
-              </div>
-              <div class="dados-grid">
-                <div class="dado-item"><span class="dado-label">Nome</span><span>{{ studentName || '—' }}</span></div>
-                <div class="dado-item"><span class="dado-label">CPF</span><span>{{ profile?.cpf || '—' }}</span></div>
-                <div class="dado-item"><span class="dado-label">Telefone</span><span>{{ profile?.phone || '—' }}</span></div>
-                <div class="dado-item"><span class="dado-label">Nascimento</span><span>{{ profile?.birthDate || '—' }}</span></div>
-                <div class="dado-item"><span class="dado-label">Gênero</span><span>{{ profile?.gender || '—' }}</span></div>
-                <div class="dado-item"><span class="dado-label">Profissão</span><span>{{ profile?.profession || '—' }}</span></div>
-                <div class="dado-item"><span class="dado-label">Endereço</span><span>{{ fullAddress || '—' }}</span></div>
-                <div class="dado-item"><span class="dado-label">Emergência</span><span>{{ emergency || '—' }}</span></div>
-              </div>
-            </template>
-          </div>
-        </TabPanel>
-
         <!-- ── Tab Fichas de Treino ── -->
         <TabPanel header="Fichas de Treino">
           <div class="tab-content">
@@ -86,54 +63,6 @@
       </TabView>
 
       <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
-
-      <!-- Dialog: Editar Dados do Aluno -->
-      <Dialog v-model:visible="showEditProfile" header="Editar Dados do Aluno" :modal="true" style="width: min(520px, 95vw)">
-        <form @submit.prevent="submitEditProfile" class="flex flex-col gap-3 pt-2">
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-1 col-span-2">
-              <label class="field-label">Nome *</label>
-              <InputText v-model="pForm.name" required />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Telefone</label>
-              <InputText v-model="pForm.phone" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Data de Nascimento</label>
-              <InputText v-model="pForm.birthDate" type="date" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Gênero</label>
-              <Select v-model="pForm.gender" :options="['Masculino','Feminino','Outro']" showClear />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Profissão</label>
-              <InputText v-model="pForm.profession" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Cidade</label>
-              <InputText v-model="pForm.addressCity" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Estado</label>
-              <InputText v-model="pForm.addressState" maxlength="2" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Contato de emergência</label>
-              <InputText v-model="pForm.emergencyContactName" placeholder="Nome" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="field-label">Telefone emergência</label>
-              <InputText v-model="pForm.emergencyContactPhone" />
-            </div>
-          </div>
-          <div class="flex justify-end gap-2 mt-2">
-            <Button type="button" label="Cancelar" outlined @click="showEditProfile = false" />
-            <Button type="submit" label="Salvar" :loading="savingProfile" />
-          </div>
-        </form>
-      </Dialog>
 
       <!-- Dialog: Nova Avaliação -->
       <Dialog v-model:visible="showAssessment" header="Nova Avaliação" :modal="true" style="width: min(480px, 95vw)">
@@ -187,17 +116,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import { useAssessmentStore } from '@/stores/assessment.store'
-import { useAdminStore } from '@/stores/admin.store'
 import { assessmentService } from '@/services/assessment.service'
 import { goalService } from '@/services/goal.service'
 import { workoutService } from '@/services/workout.service'
-import profileService from '@/services/profile.service'
-import { userService } from '@/services/user.service'
-import type { Goal, GoalStatus, WorkoutPlan, StudentProfile } from '@/types/api'
+import type { Goal, GoalStatus, WorkoutPlan } from '@/types/api'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
@@ -205,44 +131,20 @@ import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import Menu from 'primevue/menu'
-import Select from 'primevue/select'
 import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
 
 const route = useRoute()
-const router = useRouter()
 const studentId = route.params.id as string
 const assessmentStore = useAssessmentStore()
-const adminStore = useAdminStore()
 
 const goals = ref<Goal[]>([])
 const plans = ref<WorkoutPlan[]>([])
-const profile = ref<StudentProfile | null>(null)
 const loadingPlans = ref(false)
-const loadingProfile = ref(false)
 const activatingPlan = ref<string | null>(null)
 const showAssessment = ref(false)
 const showGoal = ref(false)
-const showEditProfile = ref(false)
 const saving = ref(false)
-const savingProfile = ref(false)
-
-const studentName = computed(() => adminStore.users.find(u => u.id === studentId)?.name ?? '')
-const fullAddress = computed(() => {
-  const p = profile.value
-  if (!p?.addressCity) return null
-  return [p.addressLine, p.addressNumber, p.addressNeighborhood, p.addressCity, p.addressState].filter(Boolean).join(', ')
-})
-const emergency = computed(() => {
-  const p = profile.value
-  if (!p?.emergencyContactName) return null
-  return `${p.emergencyContactName} (${p.emergencyContactPhone ?? '—'})`
-})
-
-const pForm = ref({
-  name: '', phone: '', birthDate: '', gender: '', profession: '',
-  addressCity: '', addressState: '', emergencyContactName: '', emergencyContactPhone: '',
-})
 
 const successMsg = ref('')
 function showSuccess(msg: string) {
@@ -265,56 +167,13 @@ onMounted(async () => {
   await Promise.all([
     assessmentStore.fetchAssessments(studentId),
     goalService.list(studentId).then(g => { goals.value = g }),
-    adminStore.fetchUsers(),
     (async () => {
       loadingPlans.value = true
       try { plans.value = await workoutService.listPlans(studentId) }
       finally { loadingPlans.value = false }
     })(),
-    (async () => {
-      loadingProfile.value = true
-      try { profile.value = await profileService.getStudentProfile(studentId) }
-      finally { loadingProfile.value = false }
-    })(),
   ])
 })
-
-function openEditProfile() {
-  const p = profile.value
-  pForm.value = {
-    name: studentName.value,
-    phone: p?.phone ?? '',
-    birthDate: p?.birthDate ?? '',
-    gender: p?.gender ?? '',
-    profession: p?.profession ?? '',
-    addressCity: p?.addressCity ?? '',
-    addressState: p?.addressState ?? '',
-    emergencyContactName: p?.emergencyContactName ?? '',
-    emergencyContactPhone: p?.emergencyContactPhone ?? '',
-  }
-  showEditProfile.value = true
-}
-
-async function submitEditProfile() {
-  savingProfile.value = true
-  try {
-    await userService.update(studentId, { name: pForm.value.name, role: 'STUDENT' })
-    const updated = await profileService.updateStudentProfile(studentId, {
-      phone: pForm.value.phone || undefined,
-      birthDate: pForm.value.birthDate || undefined,
-      gender: pForm.value.gender || undefined,
-      profession: pForm.value.profession || undefined,
-      addressCity: pForm.value.addressCity || undefined,
-      addressState: pForm.value.addressState || undefined,
-      emergencyContactName: pForm.value.emergencyContactName || undefined,
-      emergencyContactPhone: pForm.value.emergencyContactPhone || undefined,
-    })
-    profile.value = updated
-    await adminStore.fetchUsers()
-    showEditProfile.value = false
-    showSuccess('Dados atualizados.')
-  } finally { savingProfile.value = false }
-}
 
 function goalSeverity(status: string) {
   return status === 'ACHIEVED' ? 'success' : status === 'EXPIRED' ? 'danger' : 'info'
@@ -401,7 +260,4 @@ async function activatePlan(planId: string) {
 .empty-state { text-align: center; padding: 32px; color: var(--neutral-400); font-size: 13px; }
 .field-label { font-size: 12px; font-weight: 600; color: var(--neutral-600); }
 .success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0; }
-.dados-grid { display: flex; flex-direction: column; gap: 8px; }
-.dado-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--neutral-100); font-size: 14px; }
-.dado-label { min-width: 130px; font-weight: 600; color: var(--neutral-500); font-size: 13px; }
 </style>
