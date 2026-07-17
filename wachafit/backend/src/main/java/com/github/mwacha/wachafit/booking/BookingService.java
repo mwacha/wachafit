@@ -51,6 +51,11 @@ public class BookingService {
             throw new BusinessException("Turma lotada");
         }
 
+        long alreadyBooked = bookingRepository.countActiveByScheduleAndStudent(req.scheduleId(), studentId);
+        if (alreadyBooked > 0) {
+            throw new BusinessException("Você já possui uma reserva ativa para esta aula");
+        }
+
         long studentOverlap = bookingRepository.countStudentOverlaps(
             studentId, schedule.getStartsAt(), schedule.getEndsAt());
         if (studentOverlap > 0) {

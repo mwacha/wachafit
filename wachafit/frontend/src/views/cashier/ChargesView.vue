@@ -73,11 +73,8 @@
             <Column header="Forma" style="min-width:130px">
               <template #body="{ data }">{{ payMethodLabel(data.paymentMethod) }}</template>
             </Column>
-            <Column header="Ações" style="min-width:130px">
+            <Column header="Ações" style="min-width:80px">
               <template #body="{ data }">
-                <Button v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
-                        icon="pi pi-check" text size="small" label="Pagar"
-                        @click="openPay(data)" />
                 <Button v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
                         icon="pi pi-times" text size="small" severity="danger"
                         @click="doCancel(data.id)" />
@@ -107,24 +104,6 @@
         </form>
       </Dialog>
 
-      <!-- Dialog: Registrar Pagamento -->
-      <Dialog v-model:visible="showPayDialog" header="Registrar Pagamento" :modal="true" style="width: min(360px, 95vw)">
-        <div class="flex flex-col gap-3 pt-2">
-          <div v-if="selectedCharge" class="charge-summary">
-            <span>R$ {{ selectedCharge.amount.toFixed(2) }}</span>
-            <span class="text-muted">Venc. {{ formatDate(selectedCharge.dueDate) }}</span>
-          </div>
-          <div class="field">
-            <label class="field-label">Forma de pagamento *</label>
-            <Select v-model="payMethod" :options="payMethodOptions" optionLabel="label" optionValue="value"
-              placeholder="Selecione" class="w-full" />
-          </div>
-          <div class="flex gap-2 justify-end">
-            <Button label="Cancelar" outlined @click="showPayDialog = false" />
-            <Button label="Confirmar pagamento" :loading="paying" :disabled="!payMethod" @click="confirmPay" />
-          </div>
-        </div>
-      </Dialog>
     </div>
   </AppLayout>
 </template>
@@ -139,7 +118,6 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
 import billingService from '@/services/billing.service'
 import { userService } from '@/services/user.service'
 import type { PaymentCharge, AdminUser } from '@/types/api'
@@ -152,23 +130,10 @@ const selectedStudent = ref<AdminUser | null>(null)
 const charges = ref<PaymentCharge[]>([])
 const loadingCharges = ref(false)
 
-const showPayDialog = ref(false)
-const selectedCharge = ref<PaymentCharge | null>(null)
-const payMethod = ref('')
-const paying = ref(false)
-
 const showNewCharge = ref(false)
 const savingCharge = ref(false)
 const chargeError = ref('')
 const chargeForm = ref({ amount: null as number | null, dueDate: '' })
-
-const payMethodOptions = [
-  { label: 'Dinheiro', value: 'CASH' },
-  { label: 'PIX', value: 'PIX' },
-  { label: 'Cartão de crédito', value: 'CREDIT_CARD' },
-  { label: 'Cartão de débito', value: 'DEBIT_CARD' },
-  { label: 'Transferência', value: 'TRANSFER' },
-]
 
 const payMethodLabels: Record<string, string> = {
   CASH: 'Dinheiro', PIX: 'PIX', CREDIT_CARD: 'Cartão crédito',
@@ -225,21 +190,6 @@ async function submitCharge() {
   } catch (e: any) {
     chargeError.value = e.response?.data?.message ?? 'Erro ao criar cobrança.'
   } finally { savingCharge.value = false }
-}
-
-function openPay(charge: PaymentCharge) {
-  selectedCharge.value = charge; payMethod.value = ''; showPayDialog.value = true
-}
-
-async function confirmPay() {
-  if (!selectedCharge.value || !payMethod.value) return
-  paying.value = true
-  try {
-    const updated = await billingService.payCharge(selectedCharge.value.id, { paymentMethod: payMethod.value })
-    const idx = charges.value.findIndex(c => c.id === updated.id)
-    if (idx !== -1) charges.value[idx] = updated
-    showPayDialog.value = false
-  } finally { paying.value = false }
 }
 
 async function doCancel(id: string) {

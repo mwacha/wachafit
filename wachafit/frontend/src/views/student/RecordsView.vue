@@ -42,4 +42,4 @@ onMounted(async () => {
 <style scoped>
 .view-wrap { display: flex; flex-direction: column; gap: 16px; max-width: 700px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
-</script>
+</style>

@@ -48,4 +48,14 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
                            com.github.mwacha.wachafit.booking.BookingStatus.PENDING)
     """)
     List<Booking> findActiveByScheduleId(@Param("scheduleId") UUID scheduleId);
+
+    @Query("""
+        SELECT COUNT(b) FROM Booking b
+        WHERE b.schedule.id = :scheduleId
+          AND b.studentId = :studentId
+          AND b.status IN (com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED,
+                           com.github.mwacha.wachafit.booking.BookingStatus.PENDING)
+    """)
+    long countActiveByScheduleAndStudent(@Param("scheduleId") UUID scheduleId,
+                                         @Param("studentId") UUID studentId);
 }

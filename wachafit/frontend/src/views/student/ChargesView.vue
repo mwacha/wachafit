@@ -18,10 +18,45 @@
               <Tag :value="statusLabel(data.status)" :severity="statusSeverity(data.status)" />
             </template>
           </Column>
-          <Column field="paymentMethod" header="Pagamento" style="min-width:110px" />
+          <Column header="Pago em" style="min-width:120px">
+            <template #body="{ data }">
+              <span v-if="data.paidAt">{{ formatDate(data.paidAt) }}</span>
+              <span v-else class="text-muted">—</span>
+            </template>
+          </Column>
+          <Column header="Forma" style="min-width:110px">
+            <template #body="{ data }">{{ payMethodLabel(data.paymentMethod) }}</template>
+          </Column>
+          <Column header="Ações" style="min-width:100px">
+            <template #body="{ data }">
+              <Button
+                v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
+                icon="pi pi-credit-card" text size="small" label="Pagar"
+                @click="openPay(data)" />
+            </template>
+          </Column>
         </DataTable>
       </div>
     </div>
+
+    <!-- Dialog: Registrar Pagamento -->
+    <Dialog v-model:visible="showPayDialog" header="Registrar Pagamento" :modal="true" style="width: min(360px, 95vw)">
+      <div class="flex flex-col gap-3 pt-2">
+        <div v-if="selectedCharge" class="charge-summary">
+          <span>R$ {{ selectedCharge.amount.toFixed(2) }}</span>
+          <span class="text-muted">Venc. {{ formatDate(selectedCharge.dueDate) }}</span>
+        </div>
+        <div class="field">
+          <label class="field-label">Forma de pagamento *</label>
+          <Select v-model="payMethod" :options="payMethodOptions" optionLabel="label" optionValue="value"
+            placeholder="Selecione" class="w-full" />
+        </div>
+        <div class="flex gap-2 justify-end">
+          <Button label="Cancelar" outlined @click="showPayDialog = false" />
+          <Button label="Confirmar pagamento" :loading="paying" :disabled="!payMethod" @click="confirmPay" />
+        </div>
+      </div>
+    </Dialog>
   </AppLayout>
 </template>
 
@@ -31,6 +66,9 @@ import AppLayout from '@/components/AppLayout.vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
 import { useAuthStore } from '@/stores/auth.store'
 import billingService from '@/services/billing.service'
 import type { PaymentCharge } from '@/types/api'
@@ -39,17 +77,55 @@ const auth = useAuthStore()
 const charges = ref<PaymentCharge[]>([])
 const loading = ref(true)
 
+const showPayDialog = ref(false)
+const selectedCharge = ref<PaymentCharge | null>(null)
+const payMethod = ref('')
+const paying = ref(false)
+
+const payMethodOptions = [
+  { label: 'Dinheiro', value: 'CASH' },
+  { label: 'PIX', value: 'PIX' },
+  { label: 'Cartão de crédito', value: 'CREDIT_CARD' },
+  { label: 'Cartão de débito', value: 'DEBIT_CARD' },
+  { label: 'Transferência', value: 'TRANSFER' },
+]
+
+const payMethodLabels: Record<string, string> = {
+  CASH: 'Dinheiro', PIX: 'PIX', CREDIT_CARD: 'Cartão crédito',
+  DEBIT_CARD: 'Cartão débito', TRANSFER: 'Transferência',
+}
+
 onMounted(async () => {
   if (auth.userId) charges.value = await billingService.listCharges(auth.userId)
   loading.value = false
 })
 
-function formatDate(d: string) { return new Date(d).toLocaleDateString('pt-BR') }
+function openPay(charge: PaymentCharge) {
+  selectedCharge.value = charge
+  payMethod.value = ''
+  showPayDialog.value = true
+}
+
+async function confirmPay() {
+  if (!selectedCharge.value || !payMethod.value) return
+  paying.value = true
+  try {
+    const updated = await billingService.payCharge(selectedCharge.value.id, { paymentMethod: payMethod.value })
+    const idx = charges.value.findIndex(c => c.id === updated.id)
+    if (idx !== -1) charges.value[idx] = updated
+    showPayDialog.value = false
+  } finally { paying.value = false }
+}
+
+function formatDate(d: string) { return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) }
 function statusLabel(s: string) {
   return { PENDING: 'Pendente', PAID: 'Pago', OVERDUE: 'Vencido', CANCELLED: 'Cancelado' }[s] ?? s
 }
 function statusSeverity(s: string) {
   return { PENDING: 'warn', PAID: 'success', OVERDUE: 'danger', CANCELLED: 'secondary' }[s] ?? 'secondary'
+}
+function payMethodLabel(m: string | null) {
+  return m ? (payMethodLabels[m] ?? m) : '—'
 }
 </script>
 
@@ -58,4 +134,12 @@ function statusSeverity(s: string) {
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
 .empty-state { text-align: center; padding: 40px; color: var(--neutral-500); font-size: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 12px; font-weight: 600; color: var(--neutral-700); }
+.text-muted { color: var(--neutral-400); font-size: 13px; }
+.charge-summary {
+  display: flex; justify-content: space-between;
+  background: var(--neutral-50); border-radius: var(--radius-md);
+  padding: 10px 14px; font-size: 14px; font-weight: 600;
+}
 </style>
