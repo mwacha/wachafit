@@ -7,5 +7,8 @@ public record UpdateGroupClassRequest(
     @NotBlank String name,
     String description,
     @Min(1) int capacity,
-    @Min(1) int durationMinutes
+    Integer durationMinutes,
+    @NotBlank String scheduleType,
+    String startTime,
+    String endTime
 ) {}

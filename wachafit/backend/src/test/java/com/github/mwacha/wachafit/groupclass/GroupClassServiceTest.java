@@ -45,7 +45,7 @@ class GroupClassServiceTest {
         when(groupClassRepository.save(any())).thenReturn(gc);
 
         GroupClassResponse res = service.create(
-            new CreateGroupClassRequest("Funcional", null, 10, 60, trainerId));
+            new CreateGroupClassRequest("Funcional", null, 10, 60, trainerId, "FLEX", null, null));
 
         assertThat(res.name()).isEqualTo("Funcional");
         assertThat(res.trainerName()).isEqualTo("Trainer Name");
@@ -56,7 +56,7 @@ class GroupClassServiceTest {
         UUID trainerId = UUID.randomUUID();
         when(userRepository.findById(trainerId)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.create(
-            new CreateGroupClassRequest("Funcional", null, 10, 60, trainerId)))
+            new CreateGroupClassRequest("Funcional", null, 10, 60, trainerId, "FLEX", null, null)))
             .isInstanceOf(NotFoundException.class);
     }
 
@@ -100,7 +100,7 @@ class GroupClassServiceTest {
         when(groupClassRepository.save(any())).thenReturn(gc);
 
         GroupClassResponse res = service.updateGroupClass(id,
-            new UpdateGroupClassRequest("Updated", "desc", 8, 30),
+            new UpdateGroupClassRequest("Updated", "desc", 8, 30, "FLEX", null, null),
             UUID.randomUUID(), Role.ADMIN);
 
         assertThat(res.name()).isEqualTo("Updated");
@@ -112,7 +112,7 @@ class GroupClassServiceTest {
         UUID id = UUID.randomUUID();
         when(groupClassRepository.findById(id)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.updateGroupClass(id,
-            new UpdateGroupClassRequest("X", null, 5, 30),
+            new UpdateGroupClassRequest("X", null, 5, 30, "FLEX", null, null),
             UUID.randomUUID(), Role.ADMIN))
             .isInstanceOf(NotFoundException.class);
     }
@@ -128,7 +128,7 @@ class GroupClassServiceTest {
         when(groupClassRepository.save(any())).thenReturn(gc);
 
         GroupClassResponse res = service.updateGroupClass(classId,
-            new UpdateGroupClassRequest("Pilates Updated", null, 10, 45),
+            new UpdateGroupClassRequest("Pilates Updated", null, 10, 45, "FLEX", null, null),
             trainerId, Role.TRAINER);
 
         assertThat(res.name()).isEqualTo("Pilates Updated");
@@ -145,7 +145,7 @@ class GroupClassServiceTest {
         when(groupClassRepository.findById(classId)).thenReturn(Optional.of(gc));
 
         assertThatThrownBy(() -> service.updateGroupClass(classId,
-            new UpdateGroupClassRequest("Yoga Hacked", null, 10, 60),
+            new UpdateGroupClassRequest("Yoga Hacked", null, 10, 60, "FLEX", null, null),
             otherTrainerId, Role.TRAINER))
             .isInstanceOf(ForbiddenException.class);
     }

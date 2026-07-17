@@ -70,6 +70,9 @@ export interface GroupClass {
   trainerId: string
   active: boolean
   createdAt: string
+  scheduleType: 'FIXED' | 'FLEX'
+  startTime: string | null
+  endTime: string | null
 }
 
 // --- Assessment ---

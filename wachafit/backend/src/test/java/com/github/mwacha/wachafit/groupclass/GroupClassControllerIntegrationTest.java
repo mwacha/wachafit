@@ -104,7 +104,7 @@ class GroupClassControllerIntegrationTest {
 
     @Test
     void create_withStudentToken_shouldReturn403() throws Exception {
-        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerId);
+        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerId, "FLEX", null, null);
         mockMvc.perform(post("/api/classes")
             .header("Authorization", "Bearer " + studentToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -135,7 +135,7 @@ class GroupClassControllerIntegrationTest {
         String trainerToken = body.get("token").asText();
 
         // Create class and assert 201
-        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerUser.getId());
+        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerUser.getId(), "FLEX", null, null);
         mockMvc.perform(post("/api/classes")
             .header("Authorization", "Bearer " + trainerToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +145,7 @@ class GroupClassControllerIntegrationTest {
 
     @Test
     void create_withoutToken_shouldReturn401() throws Exception {
-        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerId);
+        var req = new CreateGroupClassRequest("Yoga", null, 10, 60, trainerId, "FLEX", null, null);
         mockMvc.perform(post("/api/classes")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(req)))
@@ -161,7 +161,7 @@ class GroupClassControllerIntegrationTest {
 
     @Test
     void update_withStudentToken_shouldReturn403() throws Exception {
-        var req = new UpdateGroupClassRequest("Updated", null, 5, 30);
+        var req = new UpdateGroupClassRequest("Updated", null, 5, 30, "FLEX", null, null);
         mockMvc.perform(put("/api/classes/" + UUID.randomUUID())
             .header("Authorization", "Bearer " + studentToken)
             .contentType(MediaType.APPLICATION_JSON)

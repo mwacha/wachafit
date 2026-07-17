@@ -40,7 +40,10 @@ public class GroupClassService {
         gc.setName(req.name());
         gc.setDescription(req.description());
         gc.setCapacity(req.capacity());
-        gc.setDurationMinutes(req.durationMinutes());
+        gc.setScheduleType(req.scheduleType() != null ? req.scheduleType() : "FLEX");
+        gc.setStartTime(req.startTime());
+        gc.setEndTime(req.endTime());
+        gc.setDurationMinutes(resolveDuration(req.scheduleType(), req.startTime(), req.endTime(), req.durationMinutes()));
         gc.setTrainer(trainer);
         return toResponse(groupClassRepository.save(gc));
     }
@@ -54,7 +57,10 @@ public class GroupClassService {
         gc.setName(req.name());
         gc.setDescription(req.description());
         gc.setCapacity(req.capacity());
-        gc.setDurationMinutes(req.durationMinutes());
+        gc.setScheduleType(req.scheduleType() != null ? req.scheduleType() : "FLEX");
+        gc.setStartTime(req.startTime());
+        gc.setEndTime(req.endTime());
+        gc.setDurationMinutes(resolveDuration(req.scheduleType(), req.startTime(), req.endTime(), req.durationMinutes()));
         return toResponse(groupClassRepository.save(gc));
     }
 
@@ -65,6 +71,22 @@ public class GroupClassService {
         }
         gc.setActive(false);
         groupClassRepository.save(gc);
+    }
+
+    private int resolveDuration(String scheduleType, String startTime, String endTime, Integer durationMinutes) {
+        if ("FIXED".equals(scheduleType) && startTime != null && endTime != null) {
+            try {
+                String[] s = startTime.split(":");
+                String[] e = endTime.split(":");
+                int startMin = Integer.parseInt(s[0]) * 60 + Integer.parseInt(s[1]);
+                int endMin   = Integer.parseInt(e[0]) * 60 + Integer.parseInt(e[1]);
+                int diff = endMin - startMin;
+                return diff > 0 ? diff : diff + 24 * 60;
+            } catch (Exception ex) {
+                return durationMinutes != null ? durationMinutes : 60;
+            }
+        }
+        return durationMinutes != null ? durationMinutes : 60;
     }
 
     private GroupClass findOrThrow(UUID id) {
@@ -87,7 +109,10 @@ public class GroupClassService {
             gc.getTrainer().getId().toString(),
             gc.getTrainer().getName(),
             gc.isActive(),
-            gc.getCreatedAt() != null ? gc.getCreatedAt().toString() : null
+            gc.getCreatedAt() != null ? gc.getCreatedAt().toString() : null,
+            gc.getScheduleType(),
+            gc.getStartTime(),
+            gc.getEndTime()
         );
     }
 }

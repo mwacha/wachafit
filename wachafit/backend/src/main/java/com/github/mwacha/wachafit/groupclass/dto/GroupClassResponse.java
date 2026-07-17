@@ -9,5 +9,8 @@ public record GroupClassResponse(
     String trainerId,
     String trainerName,
     boolean active,
-    String createdAt
+    String createdAt,
+    String scheduleType,
+    String startTime,
+    String endTime
 ) {}

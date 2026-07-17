@@ -9,6 +9,9 @@ public record CreateGroupClassRequest(
     @NotBlank String name,
     String description,
     @Min(1) int capacity,
-    @Min(1) int durationMinutes,
-    @NotNull UUID trainerId
+    Integer durationMinutes,
+    @NotNull UUID trainerId,
+    @NotBlank String scheduleType,
+    String startTime,
+    String endTime
 ) {}
