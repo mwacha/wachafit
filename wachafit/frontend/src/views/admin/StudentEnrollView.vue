@@ -428,13 +428,12 @@ async function submit() {
   try {
     // 1. Criar conta se necessário
     if (userNotFound.value) {
-      const newUser = await userService.create({
+      const newUser = await userService.registerStudent({
         name: account.value.name,
         email: account.value.email,
         password: account.value.password,
-        role: 'STUDENT',
       })
-      resolvedStudentId = newUser.id
+      resolvedStudentId = newUser.userId
     }
 
     if (!resolvedStudentId) {
