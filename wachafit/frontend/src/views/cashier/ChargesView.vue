@@ -4,31 +4,53 @@
     <div class="view-wrap">
       <h1 class="page-title">Cobranças</h1>
 
-      <!-- Busca por aluno -->
+      <!-- Filtro -->
       <div class="search-bar">
         <div class="search-field">
-          <label class="field-label">E-mail do Aluno</label>
-          <InputText v-model="searchEmail" placeholder="buscar por email..." @keydown.enter="search" />
+          <label class="field-label">Buscar por nome ou e-mail</label>
+          <InputText v-model="search" placeholder="Digite para filtrar..." />
         </div>
-        <Button label="Buscar" icon="pi pi-search" @click="search" :loading="loading" />
       </div>
 
-      <div v-if="loading" class="empty-state">Carregando...</div>
+      <!-- Lista de alunos -->
+      <DataTable
+        :value="filteredStudents"
+        :loading="loadingStudents"
+        :rows="10"
+        :paginator="true"
+        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
+        stripedRows
+        selectionMode="single"
+        v-model:selection="selectedStudent"
+        @row-select="onStudentSelect"
+        :rowClass="rowClass"
+      >
+        <template #empty>Nenhum aluno encontrado.</template>
+        <Column field="name" header="Nome" style="min-width:160px" />
+        <Column field="email" header="E-mail" style="min-width:200px" />
+        <Column header="Status" style="min-width:90px">
+          <template #body="{ data }">
+            <Tag :severity="data.active ? 'success' : 'secondary'"
+                 :value="data.active ? 'Ativo' : 'Inativo'" />
+          </template>
+        </Column>
+      </DataTable>
 
-      <template v-else-if="foundStudent">
-        <!-- Header do aluno encontrado -->
+      <!-- Cobranças do aluno selecionado -->
+      <template v-if="selectedStudent">
         <div class="student-header">
           <div class="student-info">
             <i class="pi pi-user-circle student-icon" />
             <div>
-              <p class="student-name">{{ foundStudent.name }}</p>
-              <p class="student-email">{{ foundStudent.email }}</p>
+              <p class="student-name">{{ selectedStudent.name }}</p>
+              <p class="student-email">{{ selectedStudent.email }}</p>
             </div>
           </div>
           <Button label="Nova cobrança" icon="pi pi-plus" size="small" @click="openNewCharge" />
         </div>
 
-        <div v-if="charges.length === 0" class="empty-state">Nenhuma cobrança cadastrada.</div>
+        <div v-if="loadingCharges" class="empty-state">Carregando cobranças...</div>
+        <div v-else-if="charges.length === 0" class="empty-state">Nenhuma cobrança cadastrada.</div>
         <div v-else class="table-scroll">
           <DataTable :value="charges" stripedRows>
             <Column field="dueDate" header="Vencimento" style="min-width:120px">
@@ -48,8 +70,8 @@
                 <span v-else class="text-muted">—</span>
               </template>
             </Column>
-            <Column header="Forma" style="min-width:120px">
-              <template #body="{ data }">{{ data.paymentMethod ?? '—' }}</template>
+            <Column header="Forma" style="min-width:130px">
+              <template #body="{ data }">{{ payMethodLabel(data.paymentMethod) }}</template>
             </Column>
             <Column header="Ações" style="min-width:130px">
               <template #body="{ data }">
@@ -58,14 +80,12 @@
                         @click="openPay(data)" />
                 <Button v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
                         icon="pi pi-times" text size="small" severity="danger"
-                        @click="cancelCharge(data.id)" />
+                        @click="doCancel(data.id)" />
               </template>
             </Column>
           </DataTable>
         </div>
       </template>
-
-      <div v-else-if="searched" class="empty-state">Nenhum aluno encontrado com esse e-mail.</div>
 
       <!-- Dialog: Nova Cobrança -->
       <Dialog v-model:visible="showNewCharge" header="Nova Cobrança" :modal="true" style="width: min(380px, 95vw)">
@@ -110,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -124,11 +144,13 @@ import billingService from '@/services/billing.service'
 import { userService } from '@/services/user.service'
 import type { PaymentCharge, AdminUser } from '@/types/api'
 
+const allStudents = ref<AdminUser[]>([])
+const loadingStudents = ref(true)
+const search = ref('')
+
+const selectedStudent = ref<AdminUser | null>(null)
 const charges = ref<PaymentCharge[]>([])
-const loading = ref(false)
-const searched = ref(false)
-const searchEmail = ref('')
-const foundStudent = ref<AdminUser | null>(null)
+const loadingCharges = ref(false)
 
 const showPayDialog = ref(false)
 const selectedCharge = ref<PaymentCharge | null>(null)
@@ -148,17 +170,40 @@ const payMethodOptions = [
   { label: 'Transferência', value: 'TRANSFER' },
 ]
 
-async function search() {
-  if (!searchEmail.value) return
-  loading.value = true; searched.value = true; foundStudent.value = null; charges.value = []
+const payMethodLabels: Record<string, string> = {
+  CASH: 'Dinheiro', PIX: 'PIX', CREDIT_CARD: 'Cartão crédito',
+  DEBIT_CARD: 'Cartão débito', TRANSFER: 'Transferência',
+}
+
+onMounted(async () => {
   try {
-    const users = await userService.list({ role: 'STUDENT' })
-    const student = users.find(u => u.email.toLowerCase().includes(searchEmail.value.toLowerCase()))
-    if (student) {
-      foundStudent.value = student
-      charges.value = await billingService.listCharges(student.id)
-    }
-  } finally { loading.value = false }
+    allStudents.value = await userService.list({ role: 'STUDENT' })
+  } finally {
+    loadingStudents.value = false
+  }
+})
+
+const filteredStudents = computed(() => {
+  const q = search.value.toLowerCase()
+  if (!q) return allStudents.value
+  return allStudents.value.filter(u =>
+    u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  )
+})
+
+function rowClass(data: AdminUser) {
+  return selectedStudent.value?.id === data.id ? 'row-selected' : ''
+}
+
+async function onStudentSelect(event: { data: AdminUser }) {
+  selectedStudent.value = event.data
+  charges.value = []
+  loadingCharges.value = true
+  try {
+    charges.value = await billingService.listCharges(event.data.id)
+  } finally {
+    loadingCharges.value = false
+  }
 }
 
 function openNewCharge() {
@@ -168,10 +213,10 @@ function openNewCharge() {
 }
 
 async function submitCharge() {
-  if (!foundStudent.value || !chargeForm.value.amount || !chargeForm.value.dueDate) return
+  if (!selectedStudent.value || !chargeForm.value.amount || !chargeForm.value.dueDate) return
   savingCharge.value = true; chargeError.value = ''
   try {
-    const created = await billingService.createCharge(foundStudent.value.id, {
+    const created = await billingService.createCharge(selectedStudent.value.id, {
       amount: chargeForm.value.amount,
       dueDate: chargeForm.value.dueDate,
     })
@@ -197,7 +242,7 @@ async function confirmPay() {
   } finally { paying.value = false }
 }
 
-async function cancelCharge(id: string) {
+async function doCancel(id: string) {
   await billingService.cancelCharge(id)
   const idx = charges.value.findIndex(c => c.id === id)
   if (idx !== -1) charges.value[idx] = { ...charges.value[idx], status: 'CANCELLED' }
@@ -212,15 +257,24 @@ function statusLabel(s: string) {
 function statusSeverity(s: string) {
   return { PENDING: 'warn', PAID: 'success', OVERDUE: 'danger', CANCELLED: 'secondary' }[s] ?? 'secondary'
 }
+function payMethodLabel(m: string | null) {
+  return m ? (payMethodLabels[m] ?? m) : '—'
+}
 </script>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 960px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 
 .search-bar { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
-.search-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+.search-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 240px; max-width: 400px; }
 .field-label { font-size: 12px; font-weight: 600; color: var(--neutral-700); }
+
+/* Destaque da linha selecionada */
+:deep(.row-selected td) {
+  background: var(--blue-50) !important;
+  font-weight: 600;
+}
 
 .student-header {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
