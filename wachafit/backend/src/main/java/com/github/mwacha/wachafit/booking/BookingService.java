@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.booking;
 
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
+import com.github.mwacha.wachafit.groupclass.dto.EnrolledStudentResponse;
 import com.github.mwacha.wachafit.notification.event.BookingCancelledEvent;
 import com.github.mwacha.wachafit.notification.event.BookingConfirmedEvent;
 import com.github.mwacha.wachafit.notification.event.PersonalSessionRequestedEvent;
@@ -13,13 +14,18 @@ import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
+import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -137,6 +143,75 @@ public class BookingService {
             schedule.getStartsAt().toLocalDate().toString(),
             schedule.getStartsAt().toLocalTime().toString()
         ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<EnrolledStudentResponse> listEnrolledStudents(UUID classId) {
+        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, OffsetDateTime.now());
+        if (upcoming.isEmpty()) return List.of();
+
+        List<UUID> scheduleIds = upcoming.stream().map(Schedule::getId).toList();
+        List<Booking> bookings = bookingRepository.findActiveByScheduleIds(scheduleIds);
+
+        Map<UUID, Long> countByStudent = bookings.stream()
+            .collect(Collectors.groupingBy(Booking::getStudentId, Collectors.counting()));
+
+        List<User> users = userRepository.findAllById(countByStudent.keySet());
+
+        return users.stream()
+            .map(u -> new EnrolledStudentResponse(
+                u.getId().toString(),
+                u.getName(),
+                u.getEmail(),
+                countByStudent.getOrDefault(u.getId(), 0L).intValue()
+            ))
+            .sorted(Comparator.comparing(EnrolledStudentResponse::name))
+            .toList();
+    }
+
+    public void enrollStudentInClass(UUID classId, UUID studentId) {
+        userRepository.findById(studentId)
+            .orElseThrow(() -> new NotFoundException("Aluno não encontrado"));
+
+        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, OffsetDateTime.now());
+
+        for (Schedule schedule : upcoming) {
+            long existing = bookingRepository.countActiveByScheduleAndStudent(schedule.getId(), studentId);
+            if (existing > 0) continue;
+
+            int capacity = schedule.getGroupClass().getCapacity();
+            long confirmed = bookingRepository.countConfirmedBookings(schedule.getId());
+            if (confirmed >= capacity) continue;
+
+            Booking booking = new Booking();
+            booking.setSchedule(schedule);
+            booking.setStudentId(studentId);
+            booking.setStatus(BookingStatus.CONFIRMED);
+            bookingRepository.save(booking);
+
+            if (confirmed + 1 >= capacity) {
+                schedule.setStatus(ScheduleStatus.FULL);
+                scheduleRepository.save(schedule);
+            }
+        }
+    }
+
+    public void unenrollStudentFromClass(UUID classId, UUID studentId) {
+        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, OffsetDateTime.now());
+        if (upcoming.isEmpty()) return;
+
+        List<UUID> scheduleIds = upcoming.stream().map(Schedule::getId).toList();
+        List<Booking> bookings = bookingRepository.findActiveByScheduleIdsAndStudentId(scheduleIds, studentId);
+
+        for (Booking booking : bookings) {
+            booking.setStatus(BookingStatus.CANCELLED);
+            Schedule schedule = booking.getSchedule();
+            if (schedule.getStatus() == ScheduleStatus.FULL) {
+                schedule.setStatus(ScheduleStatus.OPEN);
+                scheduleRepository.save(schedule);
+            }
+            bookingRepository.save(booking);
+        }
     }
 
     private BookingResponse toResponse(Booking b) {

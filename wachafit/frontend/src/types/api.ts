@@ -334,6 +334,14 @@ export interface StudentHealth {
   notes: string | null
 }
 
+// --- Class Enrollment ---
+export interface EnrolledStudent {
+  studentId: string
+  name: string
+  email: string
+  upcomingBookings: number
+}
+
 // --- Progress Photos ---
 export interface Photo {
   id: string

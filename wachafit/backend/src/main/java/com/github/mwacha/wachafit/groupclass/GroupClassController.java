@@ -1,6 +1,9 @@
 package com.github.mwacha.wachafit.groupclass;
 
+import com.github.mwacha.wachafit.booking.BookingService;
 import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
+import com.github.mwacha.wachafit.groupclass.dto.EnrollStudentRequest;
+import com.github.mwacha.wachafit.groupclass.dto.EnrolledStudentResponse;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
 import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
 import jakarta.validation.Valid;
@@ -18,9 +21,11 @@ import java.util.UUID;
 public class GroupClassController {
 
     private final GroupClassService groupClassService;
+    private final BookingService bookingService;
 
-    public GroupClassController(GroupClassService groupClassService) {
+    public GroupClassController(GroupClassService groupClassService, BookingService bookingService) {
         this.groupClassService = groupClassService;
+        this.bookingService = bookingService;
     }
 
     @GetMapping
@@ -56,6 +61,32 @@ public class GroupClassController {
         @AuthenticationPrincipal com.github.mwacha.wachafit.user.User currentUser
     ) {
         groupClassService.deactivateGroupClass(id, currentUser.getId(), currentUser.getRole());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{classId}/enrolled")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    public ResponseEntity<List<EnrolledStudentResponse>> listEnrolled(@PathVariable UUID classId) {
+        return ResponseEntity.ok(bookingService.listEnrolledStudents(classId));
+    }
+
+    @PostMapping("/{classId}/enrolled")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    public ResponseEntity<Void> enrollStudent(
+        @PathVariable UUID classId,
+        @RequestBody EnrollStudentRequest req
+    ) {
+        bookingService.enrollStudentInClass(classId, UUID.fromString(req.studentId()));
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{classId}/enrolled/{studentId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    public ResponseEntity<Void> unenrollStudent(
+        @PathVariable UUID classId,
+        @PathVariable UUID studentId
+    ) {
+        bookingService.unenrollStudentFromClass(classId, studentId);
         return ResponseEntity.noContent().build();
     }
 }

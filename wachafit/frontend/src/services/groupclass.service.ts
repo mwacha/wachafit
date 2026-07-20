@@ -1,5 +1,5 @@
 import api from './api'
-import type { GroupClass } from '@/types/api'
+import type { EnrolledStudent, GroupClass } from '@/types/api'
 
 interface ClassPayload {
   name: string
@@ -18,4 +18,10 @@ export const groupClassService = {
   update: (id: string, data: ClassPayload) =>
     api.put<GroupClass>(`/api/classes/${id}`, data).then(r => r.data),
   deactivate: (id: string) => api.delete(`/api/classes/${id}`),
+  listEnrolled: (classId: string): Promise<EnrolledStudent[]> =>
+    api.get(`/api/classes/${classId}/enrolled`).then(r => r.data),
+  enrollStudent: (classId: string, studentId: string): Promise<void> =>
+    api.post(`/api/classes/${classId}/enrolled`, { studentId }),
+  unenrollStudent: (classId: string, studentId: string): Promise<void> =>
+    api.delete(`/api/classes/${classId}/enrolled/${studentId}`),
 }
