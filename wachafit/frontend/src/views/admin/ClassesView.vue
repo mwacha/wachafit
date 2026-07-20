@@ -82,13 +82,13 @@
 
       <!-- Dialog: Nova Turma -->
       <Dialog v-model:visible="showCreate" header="Nova Turma" :modal="true" style="width: min(480px, 95vw)">
-        <form @submit.prevent="submitCreate" class="flex flex-col gap-3 pt-2">
-          <div class="field">
-            <label class="field-label">Nome *</label>
-            <InputText v-model="form.name" class="w-full" required />
+        <form @submit.prevent="submitCreate" class="class-form">
+          <div class="form-field">
+            <label class="form-label">Nome *</label>
+            <InputText v-model="form.name" style="width:100%" required />
           </div>
-          <div class="field">
-            <label class="field-label">Tipo de turma *</label>
+          <div class="form-field">
+            <label class="form-label">Tipo de turma *</label>
             <div class="type-toggle">
               <button type="button"
                 :class="['toggle-btn', { active: form.scheduleType === 'FLEX' }]"
@@ -104,32 +104,32 @@
           </div>
 
           <template v-if="form.scheduleType === 'FIXED'">
-            <div class="grid grid-cols-2 gap-3">
-              <div class="field">
-                <label class="field-label">Horário início *</label>
-                <InputText v-model="form.startTime" type="time" class="w-full" required />
+            <div class="time-grid">
+              <div class="form-field">
+                <label class="form-label">Horário início *</label>
+                <InputText v-model="form.startTime" type="time" style="width:100%" required />
               </div>
-              <div class="field">
-                <label class="field-label">Horário fim *</label>
-                <InputText v-model="form.endTime" type="time" class="w-full" required />
+              <div class="form-field">
+                <label class="form-label">Horário fim *</label>
+                <InputText v-model="form.endTime" type="time" style="width:100%" required />
               </div>
             </div>
           </template>
 
           <template v-else>
-            <div class="field">
-              <label class="field-label">Duração (minutos) *</label>
-              <InputNumber v-model="form.durationMinutes" :min="1" class="w-full" required />
+            <div class="form-field">
+              <label class="form-label">Duração (minutos) *</label>
+              <InputNumber v-model="form.durationMinutes" :min="1" style="width:100%" required />
             </div>
           </template>
 
-          <div class="field">
-            <label class="field-label">Capacidade (vagas) *</label>
-            <InputNumber v-model="form.capacity" :min="1" class="w-full" required />
+          <div class="form-field">
+            <label class="form-label">Capacidade (vagas) *</label>
+            <InputNumber v-model="form.capacity" :min="1" style="width:100%" required />
           </div>
 
-          <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
-          <div class="flex justify-end gap-2 mt-1">
+          <p v-if="formError" class="form-error">{{ formError }}</p>
+          <div class="form-actions">
             <Button type="button" label="Cancelar" outlined @click="showCreate = false" />
             <Button type="submit" label="Criar" :loading="saving" />
           </div>
@@ -138,13 +138,13 @@
 
       <!-- Dialog: Editar Turma -->
       <Dialog v-model:visible="showEdit" header="Editar Turma" :modal="true" style="width: min(480px, 95vw)">
-        <form @submit.prevent="submitEdit" class="flex flex-col gap-3 pt-2">
-          <div class="field">
-            <label class="field-label">Nome *</label>
-            <InputText v-model="editForm.name" class="w-full" required />
+        <form @submit.prevent="submitEdit" class="class-form">
+          <div class="form-field">
+            <label class="form-label">Nome *</label>
+            <InputText v-model="editForm.name" style="width:100%" required />
           </div>
-          <div class="field">
-            <label class="field-label">Tipo de turma *</label>
+          <div class="form-field">
+            <label class="form-label">Tipo de turma *</label>
             <div class="type-toggle">
               <button type="button"
                 :class="['toggle-btn', { active: editForm.scheduleType === 'FLEX' }]"
@@ -160,32 +160,32 @@
           </div>
 
           <template v-if="editForm.scheduleType === 'FIXED'">
-            <div class="grid grid-cols-2 gap-3">
-              <div class="field">
-                <label class="field-label">Horário início *</label>
-                <InputText v-model="editForm.startTime" type="time" class="w-full" required />
+            <div class="time-grid">
+              <div class="form-field">
+                <label class="form-label">Horário início *</label>
+                <InputText v-model="editForm.startTime" type="time" style="width:100%" required />
               </div>
-              <div class="field">
-                <label class="field-label">Horário fim *</label>
-                <InputText v-model="editForm.endTime" type="time" class="w-full" required />
+              <div class="form-field">
+                <label class="form-label">Horário fim *</label>
+                <InputText v-model="editForm.endTime" type="time" style="width:100%" required />
               </div>
             </div>
           </template>
 
           <template v-else>
-            <div class="field">
-              <label class="field-label">Duração (minutos) *</label>
-              <InputNumber v-model="editForm.durationMinutes" :min="1" class="w-full" required />
+            <div class="form-field">
+              <label class="form-label">Duração (minutos) *</label>
+              <InputNumber v-model="editForm.durationMinutes" :min="1" style="width:100%" required />
             </div>
           </template>
 
-          <div class="field">
-            <label class="field-label">Capacidade (vagas) *</label>
-            <InputNumber v-model="editForm.capacity" :min="1" class="w-full" required />
+          <div class="form-field">
+            <label class="form-label">Capacidade (vagas) *</label>
+            <InputNumber v-model="editForm.capacity" :min="1" style="width:100%" required />
           </div>
 
-          <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
-          <div class="flex justify-end gap-2 mt-1">
+          <p v-if="formError" class="form-error">{{ formError }}</p>
+          <div class="form-actions">
             <Button type="button" label="Cancelar" outlined @click="showEdit = false" />
             <Button type="submit" label="Salvar" :loading="saving" />
           </div>
@@ -348,8 +348,12 @@ async function deactivate(id: string) {
 .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
-.field { display: flex; flex-direction: column; gap: 5px; }
-.field-label { font-size: 12px; font-weight: 600; color: var(--neutral-700); }
+.class-form { display: flex; flex-direction: column; gap: 20px; padding-top: 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.form-error { color: var(--red-600); font-size: 13px; margin: 0; }
+.time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 .type-toggle { display: flex; gap: 8px; }
 .toggle-btn {
