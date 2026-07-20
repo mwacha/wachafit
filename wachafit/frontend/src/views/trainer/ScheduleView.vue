@@ -31,7 +31,7 @@
             <div v-for="s in slotsForDay(day.iso)" :key="s.id"
               :class="['slot-card', `slot-${s.type.toLowerCase()}`, { cancelled: s.status === 'CANCELLED' }]">
               <div class="slot-time">{{ formatTime(s.startsAt) }} – {{ formatTime(s.endsAt) }}</div>
-              <div class="slot-type-label">{{ s.type === 'CLASS' ? (s.groupClassName || 'Aula coletiva') : 'Personal' }}</div>
+              <div class="slot-type-label">{{ s.type === 'CLASS' ? (s.groupClassName || 'Aula coletiva') : 'Sessão individual' }}</div>
 
               <!-- Alunos confirmados -->
               <div v-if="s.bookedStudents?.length" class="student-list">
@@ -58,7 +58,7 @@
       <Dialog v-model:visible="showCreate" header="Novo Horário" :modal="true"
         :style="{ width: 'min(440px, 95vw)' }">
         <form @submit.prevent="submitCreate" class="flex flex-col gap-3 pt-2">
-          <Select v-model="form.type" :options="['CLASS','PERSONAL']" placeholder="Tipo" required />
+          <Select v-model="form.type" :options="scheduleTypeOptions" optionLabel="label" optionValue="value" placeholder="Tipo" required />
           <DatePicker v-model="form.startsAt" showTime hourFormat="24" dateFormat="yy-mm-dd"
             placeholder="Início" required />
           <DatePicker v-model="form.endsAt" showTime hourFormat="24" dateFormat="yy-mm-dd"
@@ -76,6 +76,7 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { scheduleTypeOptions } from '@/utils/labels'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import DatePicker from 'primevue/datepicker'

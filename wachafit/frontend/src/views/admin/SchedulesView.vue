@@ -10,21 +10,25 @@
       <div class="filter-row">
         <DatePicker v-model="filterDate" placeholder="Filtrar por data" dateFormat="yy-mm-dd"
           @update:modelValue="loadSchedules" showButtonBar />
-        <Select v-model="filterType" :options="['CLASS','PERSONAL']" placeholder="Tipo" showClear
-          @update:modelValue="loadSchedules" />
+        <Select v-model="filterType" :options="scheduleTypeOptions" optionLabel="label" optionValue="value"
+          placeholder="Tipo" showClear @update:modelValue="loadSchedules" />
       </div>
 
       <div class="table-scroll">
         <DataTable :value="scheduleStore.schedules" :loading="scheduleStore.loading" stripedRows>
           <template #empty>Nenhuma aula agendada.</template>
-          <Column field="type" header="Tipo" style="min-width:100px" />
+          <Column header="Tipo" style="min-width:100px">
+            <template #body="{ data }">{{ scheduleTypeLabel[data.type] ?? data.type }}</template>
+          </Column>
           <Column header="Início" style="min-width:160px">
             <template #body="{ data }">{{ formatDate(data.startsAt) }}</template>
           </Column>
           <Column header="Fim" style="min-width:160px">
             <template #body="{ data }">{{ formatDate(data.endsAt) }}</template>
           </Column>
-          <Column field="status" header="Status" style="min-width:100px" />
+          <Column header="Status" style="min-width:100px">
+            <template #body="{ data }">{{ scheduleStatusLabel[data.status] ?? data.status }}</template>
+          </Column>
           <Column header="Ações" style="min-width:80px">
             <template #body="{ data }">
               <Button v-if="data.status !== 'CANCELLED'" icon="pi pi-times" severity="danger" text
@@ -36,7 +40,7 @@
 
       <Dialog v-model:visible="showCreate" header="Novo Horário" :modal="true" style="width: min(460px, 95vw)">
         <form @submit.prevent="submitCreate" class="flex flex-col gap-3">
-          <Select v-model="form.type" :options="['CLASS','PERSONAL']" placeholder="Tipo" required />
+          <Select v-model="form.type" :options="scheduleTypeOptions" optionLabel="label" optionValue="value" placeholder="Tipo" required />
           <label class="text-sm font-medium">Início</label>
           <DatePicker v-model="form.startsAt" showTime hourFormat="24" dateFormat="yy-mm-dd" required />
           <label class="text-sm font-medium">Fim</label>
@@ -54,6 +58,7 @@ import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { scheduleTypeLabel, scheduleStatusLabel, scheduleTypeOptions } from '@/utils/labels'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'

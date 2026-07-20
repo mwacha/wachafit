@@ -72,6 +72,7 @@ import Select from 'primevue/select'
 import { useAuthStore } from '@/stores/auth.store'
 import billingService from '@/services/billing.service'
 import type { PaymentCharge } from '@/types/api'
+import { chargeStatusLabel, chargeStatusSeverity, payMethodLabel as payMethodLabelMap, payMethodOptions } from '@/utils/labels'
 
 const auth = useAuthStore()
 const charges = ref<PaymentCharge[]>([])
@@ -82,18 +83,6 @@ const selectedCharge = ref<PaymentCharge | null>(null)
 const payMethod = ref('')
 const paying = ref(false)
 
-const payMethodOptions = [
-  { label: 'Dinheiro', value: 'CASH' },
-  { label: 'PIX', value: 'PIX' },
-  { label: 'Cartão de crédito', value: 'CREDIT_CARD' },
-  { label: 'Cartão de débito', value: 'DEBIT_CARD' },
-  { label: 'Transferência', value: 'TRANSFER' },
-]
-
-const payMethodLabels: Record<string, string> = {
-  CASH: 'Dinheiro', PIX: 'PIX', CREDIT_CARD: 'Cartão crédito',
-  DEBIT_CARD: 'Cartão débito', TRANSFER: 'Transferência',
-}
 
 onMounted(async () => {
   if (auth.userId) charges.value = await billingService.listCharges(auth.userId)
@@ -118,15 +107,9 @@ async function confirmPay() {
 }
 
 function formatDate(d: string) { return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) }
-function statusLabel(s: string) {
-  return { PENDING: 'Pendente', PAID: 'Pago', OVERDUE: 'Vencido', CANCELLED: 'Cancelado' }[s] ?? s
-}
-function statusSeverity(s: string) {
-  return { PENDING: 'warn', PAID: 'success', OVERDUE: 'danger', CANCELLED: 'secondary' }[s] ?? 'secondary'
-}
-function payMethodLabel(m: string | null) {
-  return m ? (payMethodLabels[m] ?? m) : '—'
-}
+function statusLabel(s: string) { return chargeStatusLabel[s] ?? s }
+function statusSeverity(s: string) { return chargeStatusSeverity[s] ?? 'secondary' }
+function payMethodLabel(m: string | null) { return m ? (payMethodLabelMap[m] ?? m) : '—' }
 </script>
 
 <style scoped>

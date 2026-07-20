@@ -6,7 +6,9 @@
       <div class="table-scroll">
         <DataTable :value="bookingStore.bookings" :loading="bookingStore.loading" stripedRows>
           <Column field="scheduleId" header="Horário" style="min-width:180px" />
-          <Column field="status" header="Status" style="min-width:100px" />
+          <Column header="Status" style="min-width:100px">
+            <template #body="{ data }">{{ bookingStatusLabel[data.status] ?? data.status }}</template>
+          </Column>
           <Column header="Reservado em" style="min-width:160px">
             <template #body="{ data }">{{ new Date(data.bookedAt).toLocaleString('pt-BR') }}</template>
           </Column>
@@ -30,6 +32,7 @@
 import { onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useBookingStore } from '@/stores/booking.store'
+import { bookingStatusLabel } from '@/utils/labels'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'

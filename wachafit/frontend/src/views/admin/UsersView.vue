@@ -12,7 +12,9 @@
           <template #empty>Nenhum usuário cadastrado.</template>
           <Column field="name" header="Nome" style="min-width:140px" />
           <Column field="email" header="Email" style="min-width:180px" />
-          <Column field="role" header="Perfil" style="min-width:100px" />
+          <Column header="Perfil" style="min-width:100px">
+            <template #body="{ data }">{{ roleLabel[data.role] ?? data.role }}</template>
+          </Column>
           <Column header="Status" style="min-width:90px">
             <template #body="{ data }">
               <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativo' : 'Inativo'" />
@@ -33,7 +35,7 @@
           <InputText v-model="form.name" placeholder="Nome" required />
           <InputText v-model="form.email" type="email" placeholder="Email" required />
           <Password v-model="form.password" placeholder="Senha" :feedback="false" required />
-          <Select v-model="form.role" :options="['ADMIN','MANAGER','TRAINER','RECEPTIONIST','CASHIER','STUDENT']" placeholder="Perfil" required />
+          <Select v-model="form.role" :options="roleOptions" optionLabel="label" optionValue="value" placeholder="Perfil" required />
           <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
           <Button type="submit" label="Criar" :loading="saving" />
         </form>
@@ -42,7 +44,7 @@
       <Dialog v-model:visible="showEdit" header="Editar Usuário" :modal="true" style="width: min(420px, 95vw)">
         <form @submit.prevent="submitEdit" class="flex flex-col gap-3">
           <InputText v-model="editForm.name" placeholder="Nome" required />
-          <Select v-model="editForm.role" :options="['ADMIN','MANAGER','TRAINER','RECEPTIONIST','CASHIER','STUDENT']" placeholder="Perfil" required />
+          <Select v-model="editForm.role" :options="roleOptions" optionLabel="label" optionValue="value" placeholder="Perfil" required />
           <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
           <Button type="submit" label="Salvar" :loading="saving" />
         </form>
@@ -56,6 +58,7 @@ import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useAdminStore } from '@/stores/admin.store'
 import { userService } from '@/services/user.service'
+import { roleLabel, roleOptions } from '@/utils/labels'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'

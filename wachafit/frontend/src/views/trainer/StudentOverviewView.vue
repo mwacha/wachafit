@@ -7,7 +7,7 @@
 
       <TabView>
         <!-- ── Tab Avaliações ── -->
-        <TabPanel header="Avaliações">
+        <TabPanel value="0" header="Avaliações">
           <div class="tab-content">
             <div class="tab-header">
               <span class="tab-count">{{ assessmentStore.assessments.length }} avaliação(ões)</span>
@@ -24,7 +24,7 @@
         </TabPanel>
 
         <!-- ── Tab Metas ── -->
-        <TabPanel header="Metas">
+        <TabPanel value="1" header="Metas">
           <div class="tab-content">
             <div class="tab-header">
               <span class="tab-count">{{ goals.length }} meta(s)</span>
@@ -41,7 +41,7 @@
         </TabPanel>
 
         <!-- ── Tab Fichas de Treino ── -->
-        <TabPanel header="Fichas de Treino">
+        <TabPanel value="2" header="Fichas de Treino">
           <div class="tab-content">
             <div class="tab-header">
               <span class="tab-count">{{ plans.length }} ficha(s)</span>

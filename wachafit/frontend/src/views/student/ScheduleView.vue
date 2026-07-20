@@ -7,8 +7,8 @@
       <div class="filter-row">
         <DatePicker v-model="filterDate" placeholder="Data" dateFormat="yy-mm-dd" showButtonBar
           @update:modelValue="loadSchedules" />
-        <Select v-model="filterType" :options="['CLASS','PERSONAL']" placeholder="Tipo" showClear
-          @update:modelValue="loadSchedules" />
+        <Select v-model="filterType" :options="scheduleTypeOptions" optionLabel="label" optionValue="value"
+          placeholder="Tipo" showClear @update:modelValue="loadSchedules" />
       </div>
 
       <div v-if="scheduleStore.loading" class="empty-state">Carregando...</div>
@@ -34,6 +34,7 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { useBookingStore } from '@/stores/booking.store'
+import { scheduleTypeOptions } from '@/utils/labels'
 import Button from 'primevue/button'
 import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'

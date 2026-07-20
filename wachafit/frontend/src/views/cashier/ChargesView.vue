@@ -121,6 +121,7 @@ import InputNumber from 'primevue/inputnumber'
 import billingService from '@/services/billing.service'
 import { userService } from '@/services/user.service'
 import type { PaymentCharge, AdminUser } from '@/types/api'
+import { chargeStatusLabel, chargeStatusSeverity, payMethodLabel as payMethodLabelMap } from '@/utils/labels'
 
 const allStudents = ref<AdminUser[]>([])
 const loadingStudents = ref(true)
@@ -135,10 +136,6 @@ const savingCharge = ref(false)
 const chargeError = ref('')
 const chargeForm = ref({ amount: null as number | null, dueDate: '' })
 
-const payMethodLabels: Record<string, string> = {
-  CASH: 'Dinheiro', PIX: 'PIX', CREDIT_CARD: 'Cartão crédito',
-  DEBIT_CARD: 'Cartão débito', TRANSFER: 'Transferência',
-}
 
 onMounted(async () => {
   try {
@@ -201,15 +198,9 @@ async function doCancel(id: string) {
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 }
-function statusLabel(s: string) {
-  return { PENDING: 'Pendente', PAID: 'Pago', OVERDUE: 'Vencido', CANCELLED: 'Cancelado' }[s] ?? s
-}
-function statusSeverity(s: string) {
-  return { PENDING: 'warn', PAID: 'success', OVERDUE: 'danger', CANCELLED: 'secondary' }[s] ?? 'secondary'
-}
-function payMethodLabel(m: string | null) {
-  return m ? (payMethodLabels[m] ?? m) : '—'
-}
+function statusLabel(s: string) { return chargeStatusLabel[s] ?? s }
+function statusSeverity(s: string) { return chargeStatusSeverity[s] ?? 'secondary' }
+function payMethodLabel(m: string | null) { return m ? (payMethodLabelMap[m] ?? m) : '—' }
 </script>
 
 <style scoped>
