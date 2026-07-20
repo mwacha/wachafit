@@ -55,24 +55,24 @@
       <!-- Dialog criar/editar -->
       <Dialog v-model:visible="showDialog" :header="editingId ? 'Editar exercício' : 'Novo exercício'"
         :modal="true" style="width: min(460px, 95vw)">
-        <form @submit.prevent="submitForm" class="flex flex-col gap-3 pt-2">
-          <div class="flex flex-col gap-1">
-            <label class="field-label">Nome *</label>
-            <InputText v-model="form.name" required />
+        <form @submit.prevent="submitForm" class="exercise-form">
+          <div class="form-field">
+            <label class="form-label">Nome *</label>
+            <InputText v-model="form.name" placeholder="Ex: Supino reto" class="w-full" required />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="field-label">Grupo muscular *</label>
-            <InputText v-model="form.muscleGroup" required />
+          <div class="form-field">
+            <label class="form-label">Grupo muscular *</label>
+            <Dropdown v-model="form.muscleGroup" :options="muscleGroups" placeholder="Selecione o grupo" class="w-full" required />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="field-label">Descrição</label>
-            <Textarea v-model="form.description" rows="2" />
+          <div class="form-field">
+            <label class="form-label">Descrição</label>
+            <Textarea v-model="form.description" rows="3" placeholder="Descrição do exercício (opcional)" class="w-full" autoResize />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="field-label">URL do vídeo</label>
-            <InputText v-model="form.videoUrl" placeholder="https://..." />
+          <div class="form-field">
+            <label class="form-label">URL do vídeo</label>
+            <InputText v-model="form.videoUrl" placeholder="https://..." class="w-full" />
           </div>
-          <div class="flex justify-end gap-2 mt-2">
+          <div class="form-actions">
             <Button type="button" label="Cancelar" outlined @click="showDialog = false" />
             <Button type="submit" label="Salvar" :loading="saving" />
           </div>
@@ -192,7 +192,11 @@ async function deactivate(id: string) {
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .filters-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .search-wrap { position: relative; }
-.field-label { font-size: 12px; font-weight: 600; color: var(--neutral-600); }
 .video-link { color: var(--blue-500); font-size: 13px; display: flex; align-items: center; gap: 4px; }
 .success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0; }
+
+.exercise-form { display: flex; flex-direction: column; gap: 20px; padding: 8px 0 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 </style>
