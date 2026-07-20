@@ -57,14 +57,26 @@
       <!-- Dialog novo horário -->
       <Dialog v-model:visible="showCreate" header="Novo Horário" :modal="true"
         :style="{ width: 'min(440px, 95vw)' }">
-        <form @submit.prevent="submitCreate" class="flex flex-col gap-3 pt-2">
-          <Select v-model="form.type" :options="scheduleTypeOptions" optionLabel="label" optionValue="value" placeholder="Tipo" required />
-          <DatePicker v-model="form.startsAt" showTime hourFormat="24" dateFormat="yy-mm-dd"
-            placeholder="Início" required />
-          <DatePicker v-model="form.endsAt" showTime hourFormat="24" dateFormat="yy-mm-dd"
-            placeholder="Fim" required />
-          <p v-if="createError" class="text-red-500 text-sm">{{ createError }}</p>
-          <Button type="submit" label="Criar" :loading="saving" />
+        <form @submit.prevent="submitCreate" class="schedule-form">
+          <div class="form-field">
+            <label class="form-label">Tipo de aula</label>
+            <Select v-model="form.type" :options="scheduleTypeOptions" optionLabel="label" optionValue="value" placeholder="Selecione o tipo" class="w-full" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Início</label>
+            <DatePicker v-model="form.startsAt" showTime hourFormat="24" dateFormat="yy-mm-dd"
+              placeholder="Data e hora de início" class="w-full" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Fim</label>
+            <DatePicker v-model="form.endsAt" showTime hourFormat="24" dateFormat="yy-mm-dd"
+              placeholder="Data e hora de fim" class="w-full" required />
+          </div>
+          <p v-if="createError" class="form-error">{{ createError }}</p>
+          <div class="form-actions">
+            <Button type="button" label="Cancelar" outlined @click="showCreate = false" />
+            <Button type="submit" label="Criar horário" :loading="saving" />
+          </div>
         </form>
       </Dialog>
     </div>
@@ -236,4 +248,10 @@ onMounted(() => loadWeek())
   background: #fff; border: 1px solid var(--neutral-200);
   border-radius: var(--radius-lg);
 }
+
+.schedule-form { display: flex; flex-direction: column; gap: 20px; padding: 8px 0 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-error { font-size: 13px; color: #ef4444; margin: -8px 0; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 </style>
