@@ -27,7 +27,7 @@
               :class="['slot-card', `status-${b.status.toLowerCase()}`]"
             >
               <div class="slot-time">{{ formatTime(b.startsAt) }} – {{ formatTime(b.endsAt) }}</div>
-              <div class="slot-type">{{ b.type === 'CLASS' ? (b.groupClassName || 'Aula coletiva') : 'Sessão individual' }}</div>
+              <div class="slot-type">{{ b.type === 'CLASS' ? (b.groupClassName || 'Aula coletiva') : 'Personal' }}</div>
               <div v-if="b.trainerName" class="slot-trainer">{{ b.trainerName }}</div>
             </div>
             <div v-if="slotsForDay(day.iso).length === 0" class="day-empty">—</div>

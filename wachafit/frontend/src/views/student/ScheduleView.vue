@@ -15,7 +15,7 @@
       <div v-else class="slot-list">
         <div v-for="s in openSchedules" :key="s.id" class="slot-card">
           <div class="slot-info">
-            <div class="slot-type">{{ s.type === 'CLASS' ? 'Aula em grupo' : 'Sessão individual' }}</div>
+            <div class="slot-type">{{ s.type === 'CLASS' ? 'Aula em grupo' : 'Personal' }}</div>
             <div class="slot-time">
               {{ new Date(s.startsAt).toLocaleString('pt-BR') }} — {{ new Date(s.endsAt).toLocaleTimeString('pt-BR') }}
             </div>

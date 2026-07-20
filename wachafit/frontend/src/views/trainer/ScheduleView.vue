@@ -31,7 +31,7 @@
             <div v-for="s in slotsForDay(day.iso)" :key="s.id"
               :class="['slot-card', `slot-${s.type.toLowerCase()}`, { cancelled: s.status === 'CANCELLED' }]">
               <div class="slot-time">{{ formatTime(s.startsAt) }} – {{ formatTime(s.endsAt) }}</div>
-              <div class="slot-type-label">{{ s.type === 'CLASS' ? (s.groupClassName || 'Aula coletiva') : 'Sessão individual' }}</div>
+              <div class="slot-type-label">{{ s.type === 'CLASS' ? (s.groupClassName || 'Aula coletiva') : 'Personal' }}</div>
 
               <!-- Alunos confirmados -->
               <div v-if="s.bookedStudents?.length" class="student-list">

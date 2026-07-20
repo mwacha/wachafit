@@ -73,7 +73,7 @@ const nextScheduleName = computed(() => {
     .filter(s => s.startsAt > now)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
   if (!next) return null
-  return next.type === 'CLASS' ? (next.groupClassName || 'Aula coletiva') : 'Sessão individual'
+  return next.type === 'CLASS' ? (next.groupClassName || 'Aula coletiva') : 'Personal'
 })
 </script>
 
