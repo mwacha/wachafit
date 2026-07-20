@@ -4,82 +4,94 @@
     <div v-if="mobileOpen" class="mobile-overlay" @click="mobileOpen = false" />
 
     <!-- Sidebar -->
-    <aside class="sidebar" :class="{ 'sidebar-open': mobileOpen }" role="navigation" aria-label="Navegação principal">
-      <button class="sidebar-logo" :title="`WachaFit — ir para dashboard`" @click="goHome">
-        <span class="logo-w">W</span>
-      </button>
+    <aside :class="['sidebar', { 'sidebar-open': mobileOpen, 'sidebar-expanded': !collapsed }]"
+      role="navigation" aria-label="Navegação principal">
 
+      <!-- Logo -->
+      <div class="sidebar-top">
+        <button class="sidebar-logo" :title="`WachaFit — ir para dashboard`" @click="goHome">
+          <span class="logo-icon">W</span>
+          <span class="logo-text">WachaFit</span>
+        </button>
+      </div>
+
+      <!-- Nav links -->
       <nav class="sidebar-nav">
-        <!-- Admin links -->
+        <!-- Admin -->
         <template v-if="auth.role === 'ADMIN'">
-          <RouterLink to="/admin" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
-          <RouterLink to="/admin/users" class="nav-item" active-class="active" title="Usuários" aria-label="Usuários" @click="mobileOpen = false"><i class="pi pi-users" /></RouterLink>
-          <RouterLink to="/trainer/students" class="nav-item" active-class="active" title="Alunos" aria-label="Alunos" @click="mobileOpen = false"><i class="pi pi-users" /></RouterLink>
-          <RouterLink to="/admin/classes" class="nav-item" active-class="active" title="Turmas" aria-label="Turmas" @click="mobileOpen = false"><i class="pi pi-th-large" /></RouterLink>
-          <RouterLink to="/admin/schedules" class="nav-item" active-class="active" title="Agenda" aria-label="Agenda" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
-          <RouterLink to="/admin/membership-plans" class="nav-item" active-class="active" title="Planos" aria-label="Planos" @click="mobileOpen = false"><i class="pi pi-credit-card" /></RouterLink>
-          <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Receita" aria-label="Receita" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
-          <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" title="Comissões" aria-label="Comissões" @click="mobileOpen = false"><i class="pi pi-dollar" /></RouterLink>
-          <RouterLink to="/exercises" class="nav-item" active-class="active" title="Exercícios" aria-label="Exercícios" @click="mobileOpen = false"><i class="pi pi-list" /></RouterLink>
+          <RouterLink to="/admin"                    class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+          <RouterLink to="/admin/users"              class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-users" /><span class="nav-label">Usuários</span></RouterLink>
+          <RouterLink to="/trainer/students"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-id-card" /><span class="nav-label">Alunos</span></RouterLink>
+          <RouterLink to="/admin/classes"            class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-th-large" /><span class="nav-label">Turmas</span></RouterLink>
+          <RouterLink to="/admin/schedules"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Agenda</span></RouterLink>
+          <RouterLink to="/admin/membership-plans"   class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-credit-card" /><span class="nav-label">Planos</span></RouterLink>
+          <RouterLink to="/admin/reports/revenue"    class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-line" /><span class="nav-label">Receita</span></RouterLink>
+          <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-dollar" /><span class="nav-label">Comissões</span></RouterLink>
+          <RouterLink to="/exercises"                class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-list" /><span class="nav-label">Exercícios</span></RouterLink>
         </template>
 
-        <!-- Manager links -->
+        <!-- Manager -->
         <template v-else-if="auth.role === 'MANAGER'">
-          <RouterLink to="/manager" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
-          <RouterLink to="/admin/membership-plans" class="nav-item" active-class="active" title="Planos" aria-label="Planos" @click="mobileOpen = false"><i class="pi pi-credit-card" /></RouterLink>
-          <RouterLink to="/admin/reports/revenue" class="nav-item" active-class="active" title="Receita" aria-label="Receita" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
-          <RouterLink to="/admin/reports/overdue" class="nav-item" active-class="active" title="Inadimplentes" aria-label="Inadimplentes" @click="mobileOpen = false"><i class="pi pi-exclamation-triangle" /></RouterLink>
-          <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" title="Comissões" aria-label="Comissões" @click="mobileOpen = false"><i class="pi pi-dollar" /></RouterLink>
+          <RouterLink to="/manager"                  class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+          <RouterLink to="/admin/membership-plans"   class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-credit-card" /><span class="nav-label">Planos</span></RouterLink>
+          <RouterLink to="/admin/reports/revenue"    class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-bar" /><span class="nav-label">Receita</span></RouterLink>
+          <RouterLink to="/admin/reports/overdue"    class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-exclamation-triangle" /><span class="nav-label">Inadimplentes</span></RouterLink>
+          <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-dollar" /><span class="nav-label">Comissões</span></RouterLink>
         </template>
 
-        <!-- Cashier links -->
+        <!-- Cashier -->
         <template v-else-if="auth.role === 'CASHIER'">
-          <RouterLink to="/cashier" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
-          <RouterLink to="/cashier/charges" class="nav-item" active-class="active" title="Cobranças" aria-label="Cobranças" @click="mobileOpen = false"><i class="pi pi-money-bill" /></RouterLink>
-          <RouterLink to="/cashier/cash-flow" class="nav-item" active-class="active" title="Fluxo de Caixa" aria-label="Fluxo de Caixa" @click="mobileOpen = false"><i class="pi pi-chart-line" /></RouterLink>
+          <RouterLink to="/cashier"                  class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+          <RouterLink to="/cashier/charges"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
+          <RouterLink to="/cashier/cash-flow"        class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-line" /><span class="nav-label">Fluxo de Caixa</span></RouterLink>
         </template>
 
-        <!-- Receptionist links -->
+        <!-- Receptionist -->
         <template v-else-if="auth.role === 'RECEPTIONIST'">
-          <RouterLink to="/reception" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
-          <RouterLink to="/reception/enroll" class="nav-item" active-class="active" title="Nova Matrícula" aria-label="Nova Matrícula" @click="mobileOpen = false"><i class="pi pi-user-plus" /></RouterLink>
-          <RouterLink to="/reception/charges" class="nav-item" active-class="active" title="Cobranças" aria-label="Cobranças" @click="mobileOpen = false"><i class="pi pi-money-bill" /></RouterLink>
+          <RouterLink to="/reception"                class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+          <RouterLink to="/reception/enroll"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-user-plus" /><span class="nav-label">Nova Matrícula</span></RouterLink>
+          <RouterLink to="/reception/charges"        class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
         </template>
 
-        <!-- Trainer links -->
+        <!-- Trainer -->
         <template v-else-if="auth.role === 'TRAINER'">
-          <RouterLink to="/trainer" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
-          <RouterLink to="/trainer/schedule" class="nav-item" active-class="active" title="Minha Agenda" aria-label="Minha Agenda" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
-          <RouterLink to="/trainer/students" class="nav-item" active-class="active" title="Alunos" aria-label="Alunos" @click="mobileOpen = false"><i class="pi pi-users" /></RouterLink>
-          <RouterLink to="/trainer/profile" class="nav-item" active-class="active" title="Meu Perfil" aria-label="Meu Perfil" @click="mobileOpen = false"><i class="pi pi-user" /></RouterLink>
-          <RouterLink to="/exercises" class="nav-item" active-class="active" title="Exercícios" aria-label="Exercícios" @click="mobileOpen = false"><i class="pi pi-list" /></RouterLink>
+          <RouterLink to="/trainer"                  class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+          <RouterLink to="/trainer/schedule"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Minha Agenda</span></RouterLink>
+          <RouterLink to="/trainer/students"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-users" /><span class="nav-label">Alunos</span></RouterLink>
+          <RouterLink to="/trainer/profile"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-user" /><span class="nav-label">Meu Perfil</span></RouterLink>
+          <RouterLink to="/exercises"                class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-list" /><span class="nav-label">Exercícios</span></RouterLink>
         </template>
 
-        <!-- Student links -->
+        <!-- Student -->
         <template v-else-if="auth.role === 'STUDENT'">
-          <RouterLink to="/student" class="nav-item" active-class="active" title="Dashboard" aria-label="Dashboard" @click="mobileOpen = false"><i class="pi pi-home" /></RouterLink>
-          <RouterLink to="/student/schedule" class="nav-item" active-class="active" title="Aulas Disponíveis" aria-label="Aulas Disponíveis" @click="mobileOpen = false"><i class="pi pi-calendar" /></RouterLink>
-          <RouterLink to="/student/bookings" class="nav-item" active-class="active" title="Minhas Reservas" aria-label="Minhas Reservas" @click="mobileOpen = false"><i class="pi pi-bookmark" /></RouterLink>
-          <RouterLink to="/student/calendar" class="nav-item" active-class="active" title="Meu Calendário" aria-label="Meu Calendário" @click="mobileOpen = false"><i class="pi pi-calendar-plus" /></RouterLink>
-          <RouterLink to="/student/workout" class="nav-item" active-class="active" title="Treino" aria-label="Treino" @click="mobileOpen = false"><i class="pi pi-bolt" /></RouterLink>
-          <RouterLink to="/student/records" class="nav-item" active-class="active" title="Recordes" aria-label="Recordes" @click="mobileOpen = false"><i class="pi pi-trophy" /></RouterLink>
-          <RouterLink to="/student/evolution" class="nav-item" active-class="active" title="Evolução" aria-label="Evolução" @click="mobileOpen = false"><i class="pi pi-chart-bar" /></RouterLink>
-          <RouterLink to="/student/goals" class="nav-item" active-class="active" title="Metas" aria-label="Metas" @click="mobileOpen = false"><i class="pi pi-flag" /></RouterLink>
-          <RouterLink to="/student/photos" class="nav-item" active-class="active" title="Fotos" aria-label="Fotos" @click="mobileOpen = false"><i class="pi pi-image" /></RouterLink>
-          <RouterLink to="/student/profile" class="nav-item" active-class="active" title="Meu Perfil" aria-label="Meu Perfil" @click="mobileOpen = false"><i class="pi pi-user" /></RouterLink>
-          <RouterLink to="/student/subscription" class="nav-item" active-class="active" title="Meu Plano" aria-label="Meu Plano" @click="mobileOpen = false"><i class="pi pi-id-card" /></RouterLink>
-          <RouterLink to="/student/charges" class="nav-item" active-class="active" title="Cobranças" aria-label="Cobranças" @click="mobileOpen = false"><i class="pi pi-money-bill" /></RouterLink>
+          <RouterLink to="/student"                  class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+          <RouterLink to="/student/schedule"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Aulas</span></RouterLink>
+          <RouterLink to="/student/bookings"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-bookmark" /><span class="nav-label">Reservas</span></RouterLink>
+          <RouterLink to="/student/calendar"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar-plus" /><span class="nav-label">Calendário</span></RouterLink>
+          <RouterLink to="/student/workout"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-bolt" /><span class="nav-label">Treino</span></RouterLink>
+          <RouterLink to="/student/records"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-trophy" /><span class="nav-label">Recordes</span></RouterLink>
+          <RouterLink to="/student/evolution"        class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-bar" /><span class="nav-label">Evolução</span></RouterLink>
+          <RouterLink to="/student/goals"            class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-flag" /><span class="nav-label">Metas</span></RouterLink>
+          <RouterLink to="/student/photos"           class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-image" /><span class="nav-label">Fotos</span></RouterLink>
+          <RouterLink to="/student/profile"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-user" /><span class="nav-label">Perfil</span></RouterLink>
+          <RouterLink to="/student/subscription"     class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-id-card" /><span class="nav-label">Meu Plano</span></RouterLink>
+          <RouterLink to="/student/charges"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
         </template>
       </nav>
 
+      <!-- Footer -->
       <div class="sidebar-footer">
-        <button
-          class="user-avatar"
-          :title="`${auth.role} — clique para sair`"
-          :aria-label="`Usuário ${auth.role}, clique para sair`"
-          @click="handleLogout"
-        >
-          {{ userInitial }}
+        <!-- Toggle collapse/expand -->
+        <button class="nav-item toggle-btn" :title="collapsed ? 'Expandir menu' : 'Recolher menu'"
+          @click="toggleCollapse">
+          <i :class="collapsed ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'" />
+          <span class="nav-label">Recolher</span>
+        </button>
+
+        <!-- User / logout -->
+        <button class="nav-item user-btn" :title="`${auth.role} — clique para sair`" @click="handleLogout">
+          <span class="user-avatar">{{ userInitial }}</span>
+          <span class="nav-label user-logout-label">Sair</span>
         </button>
       </div>
     </aside>
@@ -97,12 +109,7 @@
         <div class="topbar-right">
           <div class="search-wrap">
             <i class="pi pi-search search-icon" aria-hidden="true" />
-            <input
-              class="search-input"
-              type="search"
-              placeholder="Buscar..."
-              aria-label="Buscar"
-            />
+            <input class="search-input" type="search" placeholder="Buscar..." aria-label="Buscar" />
           </div>
           <button class="logout-btn" title="Sair" aria-label="Sair" @click="handleLogout">
             <i class="pi pi-sign-out" />
@@ -127,19 +134,21 @@ const auth = useAuthStore()
 const router = useRouter()
 const currentTime = ref('')
 const mobileOpen = ref(false)
+
+const STORAGE_KEY = 'sidebar-collapsed'
+const collapsed = ref(localStorage.getItem(STORAGE_KEY) !== 'false')
+
+function toggleCollapse() {
+  collapsed.value = !collapsed.value
+  localStorage.setItem(STORAGE_KEY, String(collapsed.value))
+}
+
 let timer: ReturnType<typeof setInterval>
 
-function dashboardRoute() {
-  return auth.role ? roleDashboards[auth.role] : '/login'
-}
-
-function goHome() {
-  router.push(dashboardRoute())
-  mobileOpen.value = false
-}
+function dashboardRoute() { return auth.role ? roleDashboards[auth.role] : '/login' }
+function goHome() { router.push(dashboardRoute()); mobileOpen.value = false }
 
 const userInitial = computed(() => auth.role?.charAt(0) ?? 'U')
-
 const greeting = computed(() => {
   const labels: Record<string, string> = {
     ADMIN: 'Admin', MANAGER: 'Gerente', CASHIER: 'Caixa',
@@ -158,10 +167,7 @@ function tick() {
 onMounted(() => { tick(); timer = setInterval(tick, 60_000) })
 onUnmounted(() => clearInterval(timer))
 
-function handleLogout() {
-  auth.logout()
-  router.push('/login')
-}
+function handleLogout() { auth.logout(); router.push('/login') }
 </script>
 
 <style scoped>
@@ -179,69 +185,158 @@ function handleLogout() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 0;
+  padding: 12px 0;
   position: sticky;
   top: 0;
   height: 100dvh;
+  overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 30;
+}
+.sidebar-expanded {
+  width: 220px;
+  align-items: stretch;
 }
 
+/* ── Logo ── */
+.sidebar-top {
+  padding: 0 12px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
 .sidebar-logo {
-  width: 38px; height: 38px;
-  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 10px;
   background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
   box-shadow: var(--shadow-logo);
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  margin-bottom: 20px;
-  cursor: pointer;
-  border: none;
-}
-.logo-w {
   font-family: var(--font-display);
-  font-weight: 800; font-size: 18px; color: #fff; line-height: 1;
+  font-weight: 800; font-size: 17px; color: #fff;
   user-select: none;
 }
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition: max-width 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.2s;
+}
+.sidebar-expanded .logo-text {
+  max-width: 140px;
+  opacity: 1;
+}
 
+/* ── Nav ── */
 .sidebar-nav {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 12px;
+  scrollbar-width: none;
+}
+.sidebar-nav::-webkit-scrollbar { display: none; }
+.sidebar-expanded .sidebar-nav {
+  align-items: stretch;
 }
 
 .nav-item {
-  width: 44px; height: 44px;
-  border-radius: 12px;
+  width: 44px; height: 42px;
+  border-radius: 11px;
   display: flex; align-items: center; justify-content: center;
+  gap: 0;
   background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--neutral-600);
-  font-size: 18px;
-  transition: background 0.15s, color 0.15s;
+  color: var(--neutral-500);
+  font-size: 17px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, width 0.25s, padding 0.25s, gap 0.25s, border-radius 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
 }
-.nav-item:not(.disabled):hover { background: rgba(255,255,255,0.05); color: var(--neutral-300); }
+.nav-item:hover { background: rgba(255,255,255,0.07); color: var(--neutral-200); }
 .nav-item.active { background: var(--blue-500); color: #fff; }
 .nav-item:focus-visible { outline: 2px solid var(--blue-400); outline-offset: 2px; }
-.nav-item.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+
+.sidebar-expanded .nav-item {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0 14px;
+  gap: 12px;
+  border-radius: 10px;
 }
 
-.sidebar-footer { margin-top: auto; padding-top: 12px; }
+/* Labels */
+.nav-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition: max-width 0.2s cubic-bezier(0.4,0,0.2,1), opacity 0.15s;
+}
+.sidebar-expanded .nav-label {
+  max-width: 160px;
+  opacity: 1;
+}
+
+/* ── Footer ── */
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 8px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.sidebar-expanded .sidebar-footer {
+  align-items: stretch;
+}
+
+.toggle-btn {
+  color: var(--neutral-500);
+  font-size: 15px;
+}
+.toggle-btn:hover { color: var(--neutral-300); }
+
+.user-btn { font-size: 14px; color: var(--neutral-400); }
+.user-btn:hover { color: var(--neutral-200); }
 
 .user-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 28px; height: 28px; border-radius: 50%;
   background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
-  box-shadow: 0 4px 14px rgba(65,117,245,0.38);
-  border: none; cursor: pointer;
-  color: #fff; font-family: var(--font-display);
-  font-weight: 700; font-size: 14px;
   display: flex; align-items: center; justify-content: center;
-  transition: transform 0.15s;
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 12px; color: #fff;
+  flex-shrink: 0;
 }
-.user-avatar:hover { transform: scale(1.05); }
+
+.user-logout-label { color: var(--neutral-400); }
 
 /* ── Main ── */
 .main-area {
@@ -292,8 +387,6 @@ function handleLogout() {
 .search-input:focus { border-color: var(--blue-500); box-shadow: var(--shadow-focus); }
 .search-input::placeholder { color: var(--neutral-500); }
 
-.topbar-cta { height: 38px !important; padding: 0 16px !important; font-size: 13px !important; white-space: nowrap; }
-
 .logout-btn {
   width: 38px; height: 38px;
   display: flex; align-items: center; justify-content: center;
@@ -321,10 +414,17 @@ function handleLogout() {
 
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed; left: -68px; top: 0; height: 100dvh;
-    z-index: 50; transition: left 0.25s ease;
+    position: fixed; left: -240px; top: 0; height: 100dvh;
+    z-index: 50; transition: left 0.25s ease, width 0.25s ease;
+    width: 220px !important;
+    align-items: stretch !important;
   }
   .sidebar.sidebar-open { left: 0; }
+  .sidebar.sidebar-open .logo-text,
+  .sidebar.sidebar-open .nav-label { max-width: 160px; opacity: 1; }
+  .sidebar.sidebar-open .nav-item { width: 100%; justify-content: flex-start; padding: 0 14px; gap: 12px; }
+  .sidebar.sidebar-open .sidebar-nav { align-items: stretch; }
+  .sidebar.sidebar-open .sidebar-footer { align-items: stretch; }
   .hamburger { display: flex; }
   .search-wrap { display: none; }
   .topbar { padding: 10px 14px; gap: 8px; }
