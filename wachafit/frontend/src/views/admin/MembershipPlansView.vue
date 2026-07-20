@@ -33,14 +33,31 @@
       </div>
 
       <Dialog v-model:visible="showDialog" :header="editing ? 'Editar Plano' : 'Novo Plano'" :modal="true" style="width: min(420px, 95vw)">
-        <form @submit.prevent="save" class="flex flex-col gap-3 pt-2">
-          <InputText v-model="form.name" placeholder="Nome do plano" required />
-          <InputText v-model="form.description" placeholder="Descrição (opcional)" />
-          <InputNumber v-model="form.durationMonths" placeholder="Duração (meses)" :min="1" required />
-          <InputNumber v-model="form.price" placeholder="Preço (R$)" :min="0.01" :minFractionDigits="2" required />
-          <InputNumber v-model="form.maxClassesPerWeek" placeholder="Máx. aulas/semana (opcional)" :min="1" />
-          <div class="flex gap-2 justify-end mt-2">
-            <Button type="button" label="Cancelar" class="p-button-text" @click="showDialog = false" />
+        <form @submit.prevent="save" class="plan-form">
+          <div class="form-field">
+            <label class="form-label">Nome do plano *</label>
+            <InputText v-model="form.name" placeholder="Ex: Plano Mensal" class="w-full" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Descrição</label>
+            <InputText v-model="form.description" placeholder="Descrição opcional" class="w-full" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label">Duração (meses) *</label>
+              <InputNumber v-model="form.durationMonths" :min="1" class="w-full" required />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Preço (R$) *</label>
+              <InputNumber v-model="form.price" :min="0.01" :minFractionDigits="2" mode="currency" currency="BRL" locale="pt-BR" class="w-full" required />
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Máx. aulas por semana</label>
+            <InputNumber v-model="form.maxClassesPerWeek" :min="1" placeholder="Sem limite" class="w-full" />
+          </div>
+          <div class="form-actions">
+            <Button type="button" label="Cancelar" outlined @click="showDialog = false" />
             <Button type="submit" label="Salvar" :loading="saving" />
           </div>
         </form>
@@ -114,4 +131,10 @@ async function deactivate(id: string) {
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
 .empty-state { text-align: center; padding: 40px; color: var(--neutral-500); }
+
+.plan-form { display: flex; flex-direction: column; gap: 20px; padding: 8px 0 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-row { display: flex; gap: 14px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 </style>
