@@ -33,7 +33,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
         SELECT * FROM schedules s
         WHERE (CAST(:from AS timestamptz) IS NULL OR s.starts_at >= CAST(:from AS timestamptz))
           AND (CAST(:to AS timestamptz) IS NULL OR s.ends_at <= CAST(:to AS timestamptz))
-          AND (:date IS NULL OR CAST(s.starts_at AS date) = CAST(:date AS date))
+          AND (CAST(:date AS date) IS NULL OR CAST(s.starts_at AS date) = CAST(:date AS date))
           AND (CAST(:trainerId AS uuid) IS NULL OR s.trainer_id = CAST(:trainerId AS uuid))
           AND (CAST(:type AS varchar) IS NULL OR s.type = CAST(:type AS varchar))
           AND s.status != 'CANCELLED'
