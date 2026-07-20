@@ -244,6 +244,16 @@ export interface CashFlowDay {
   overdue: number
 }
 
+export interface EnrollmentTrend {
+  month: string
+  newEnrollments: number
+}
+
+export interface AttendanceRank {
+  studentName: string
+  bookingCount: number
+}
+
 // --- Trainer Profile ---
 export interface TrainerProfile {
   userId: string

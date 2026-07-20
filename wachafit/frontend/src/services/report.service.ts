@@ -1,5 +1,5 @@
 import api from './api'
-import type { RevenueReport, OverdueStudent, SubscriptionStats, TrainerCommission, CashFlowDay } from '@/types/api'
+import type { RevenueReport, OverdueStudent, SubscriptionStats, TrainerCommission, CashFlowDay, EnrollmentTrend, AttendanceRank } from '@/types/api'
 
 export default {
   async getRevenue(from: string, to: string): Promise<RevenueReport[]> {
@@ -24,6 +24,16 @@ export default {
 
   async getCashFlow(from: string, to: string): Promise<CashFlowDay[]> {
     const res = await api.get('/api/reports/cash-flow', { params: { from, to } })
+    return res.data
+  },
+
+  async getEnrollmentTrend(months = 12): Promise<EnrollmentTrend[]> {
+    const res = await api.get('/api/reports/enrollment-trend', { params: { months } })
+    return res.data
+  },
+
+  async getAttendanceRanking(days = 30, limit = 10): Promise<AttendanceRank[]> {
+    const res = await api.get('/api/reports/attendance-ranking', { params: { days, limit } })
     return res.data
   },
 }

@@ -86,6 +86,39 @@ public class ReportRepository {
     }
 
     @SuppressWarnings("unchecked")
+    public List<Object[]> getEnrollmentTrendRows(LocalDate from) {
+        String sql = """
+            SELECT TO_CHAR(DATE_TRUNC('month', started_at), 'YYYY-MM') AS month,
+                   COUNT(*) AS cnt
+            FROM member_subscriptions
+            WHERE started_at >= :from
+            GROUP BY 1
+            ORDER BY 1
+            """;
+        return em.createNativeQuery(sql)
+            .setParameter("from", from)
+            .getResultList();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Object[]> getAttendanceRankingRows(LocalDate from, int limit) {
+        String sql = """
+            SELECT u.name, COUNT(b.id) AS cnt
+            FROM bookings b
+            JOIN users u ON u.id = b.student_id
+            WHERE b.status = 'CONFIRMED'
+              AND b.booked_at >= :from
+            GROUP BY u.id, u.name
+            ORDER BY cnt DESC
+            LIMIT :limit
+            """;
+        return em.createNativeQuery(sql)
+            .setParameter("from", from.atStartOfDay())
+            .setParameter("limit", limit)
+            .getResultList();
+    }
+
+    @SuppressWarnings("unchecked")
     public List<Object[]> getCashFlowRows(LocalDate from, LocalDate to) {
         String sql = """
             SELECT due_date,

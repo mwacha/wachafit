@@ -50,6 +50,21 @@ public class ReportController {
         return service.getTrainerCommissions(from, to);
     }
 
+    @GetMapping("/enrollment-trend")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public List<EnrollmentTrend> getEnrollmentTrend(
+            @RequestParam(defaultValue = "12") int months) {
+        return service.getEnrollmentTrend(months);
+    }
+
+    @GetMapping("/attendance-ranking")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public List<AttendanceRank> getAttendanceRanking(
+            @RequestParam(defaultValue = "30") int days,
+            @RequestParam(defaultValue = "10") int limit) {
+        return service.getAttendanceRanking(days, limit);
+    }
+
     @GetMapping("/cash-flow")
     @PreAuthorize("hasAnyRole('CASHIER','MANAGER','ADMIN')")
     public List<CashFlowDay> getCashFlow(

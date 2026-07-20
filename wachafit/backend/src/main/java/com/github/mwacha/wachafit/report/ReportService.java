@@ -72,6 +72,24 @@ public class ReportService {
         }).toList();
     }
 
+    public List<EnrollmentTrend> getEnrollmentTrend(int months) {
+        LocalDate from = LocalDate.now().withDayOfMonth(1).minusMonths(months - 1);
+        return reportRepo.getEnrollmentTrendRows(from).stream().map(row -> {
+            String month = (String) row[0];
+            int count = ((Number) row[1]).intValue();
+            return new EnrollmentTrend(month, count);
+        }).toList();
+    }
+
+    public List<AttendanceRank> getAttendanceRanking(int days, int limit) {
+        LocalDate from = LocalDate.now().minusDays(days);
+        return reportRepo.getAttendanceRankingRows(from, limit).stream().map(row -> {
+            String name = (String) row[0];
+            int count = ((Number) row[1]).intValue();
+            return new AttendanceRank(name, count);
+        }).toList();
+    }
+
     public List<CashFlowDay> getCashFlow(LocalDate from, LocalDate to) {
         return reportRepo.getCashFlowRows(from, to).stream().map(row -> {
             LocalDate date = ((Date) row[0]).toLocalDate();
