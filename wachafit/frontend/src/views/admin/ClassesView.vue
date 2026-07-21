@@ -25,15 +25,20 @@
               <span v-else>{{ data.durationMinutes }} min</span>
             </template>
           </Column>
-          <Column field="capacity" header="Vagas" style="min-width:80px" />
+          <Column header="Vagas" style="min-width:100px">
+            <template #body="{ data }">
+              <span class="vagas-badge" :class="vagasClass(data)">
+                {{ data.capacity - data.enrolledCount }}/{{ data.capacity }}
+              </span>
+            </template>
+          </Column>
           <Column header="Status" style="min-width:90px">
             <template #body="{ data }">
               <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativa' : 'Inativa'" />
             </template>
           </Column>
-          <Column header="Ações" style="min-width:150px">
+          <Column header="Ações" style="min-width:100px">
             <template #body="{ data }">
-              <Button icon="pi pi-users" text v-tooltip.top="'Gerenciar Alunos'" @click="openEnroll(data)" />
               <Button icon="pi pi-pencil" text @click="openEdit(data)" />
               <Button v-if="data.active" icon="pi pi-trash" severity="danger" text @click="deactivate(data.id)" />
             </template>
@@ -114,6 +119,16 @@
                 <InputText v-model="form.endTime" type="time" style="width:100%" required />
               </div>
             </div>
+            <div class="form-field">
+              <label class="form-label">Dias da semana *</label>
+              <div class="days-row">
+                <button v-for="d in DAY_OPTIONS" :key="d.key" type="button"
+                  :class="['day-btn', { active: form.daysOfWeek.includes(d.key) }]"
+                  @click="toggleDay(form.daysOfWeek, d.key)">
+                  {{ d.label }}
+                </button>
+              </div>
+            </div>
           </template>
 
           <template v-else>
@@ -170,6 +185,16 @@
                 <InputText v-model="editForm.endTime" type="time" style="width:100%" required />
               </div>
             </div>
+            <div class="form-field">
+              <label class="form-label">Dias da semana *</label>
+              <div class="days-row">
+                <button v-for="d in DAY_OPTIONS" :key="d.key" type="button"
+                  :class="['day-btn', { active: editForm.daysOfWeek.includes(d.key) }]"
+                  @click="toggleDay(editForm.daysOfWeek, d.key)">
+                  {{ d.label }}
+                </button>
+              </div>
+            </div>
           </template>
 
           <template v-else>
@@ -196,13 +221,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useAdminStore } from '@/stores/admin.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { groupClassService } from '@/services/groupclass.service'
-import { userService } from '@/services/user.service'
-import type { EnrolledStudent, GroupClass } from '@/types/api'
+import type { GroupClass } from '@/types/api'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -210,7 +234,29 @@ import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
+
+const DAY_OPTIONS = [
+  { key: 'MON', label: 'Seg' },
+  { key: 'TUE', label: 'Ter' },
+  { key: 'WED', label: 'Qua' },
+  { key: 'THU', label: 'Qui' },
+  { key: 'FRI', label: 'Sex' },
+  { key: 'SAT', label: 'Sáb' },
+  { key: 'SUN', label: 'Dom' },
+]
+
+function toggleDay(arr: string[], key: string) {
+  const idx = arr.indexOf(key)
+  if (idx >= 0) arr.splice(idx, 1)
+  else arr.push(key)
+}
+
+function vagasClass(data: GroupClass) {
+  const pct = data.capacity > 0 ? data.enrolledCount / data.capacity : 0
+  if (pct >= 1) return 'vagas-full'
+  if (pct >= 0.8) return 'vagas-almost'
+  return 'vagas-ok'
+}
 
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
@@ -220,68 +266,8 @@ const editingId = ref<string | null>(null)
 const saving = ref(false)
 const formError = ref<string | null>(null)
 
-// --- Gerenciar Alunos ---
-const showEnroll = ref(false)
-const enrollingClass = ref<GroupClass | null>(null)
-const enrolledStudents = ref<EnrolledStudent[]>([])
-const enrolledLoading = ref(false)
-const studentsLoading = ref(false)
-const enrolling = ref(false)
-const enrollError = ref<string | null>(null)
-const selectedStudentId = ref<string | null>(null)
-const allStudents = ref<{ id: string; name: string; email: string }[]>([])
 
-const studentOptions = computed(() =>
-  allStudents.value.map(s => ({ label: `${s.name} (${s.email})`, value: s.id }))
-)
-
-async function openEnroll(cls: GroupClass) {
-  enrollingClass.value = cls
-  enrolledStudents.value = []
-  selectedStudentId.value = null
-  enrollError.value = null
-  showEnroll.value = true
-
-  enrolledLoading.value = true
-  studentsLoading.value = true
-  try {
-    const [enrolled, students] = await Promise.all([
-      groupClassService.listEnrolled(cls.id),
-      userService.list({ role: 'STUDENT' }),
-    ])
-    enrolledStudents.value = enrolled
-    allStudents.value = students
-  } finally {
-    enrolledLoading.value = false
-    studentsLoading.value = false
-  }
-}
-
-async function doEnroll() {
-  if (!enrollingClass.value || !selectedStudentId.value) return
-  enrolling.value = true
-  enrollError.value = null
-  try {
-    await groupClassService.enrollStudent(enrollingClass.value.id, selectedStudentId.value)
-    selectedStudentId.value = null
-    enrolledStudents.value = await groupClassService.listEnrolled(enrollingClass.value.id)
-  } catch (e: any) {
-    enrollError.value = e.response?.data?.message ?? 'Erro ao adicionar aluno.'
-  } finally { enrolling.value = false }
-}
-
-async function doUnenroll(studentId: string) {
-  if (!enrollingClass.value) return
-  enrollError.value = null
-  try {
-    await groupClassService.unenrollStudent(enrollingClass.value.id, studentId)
-    enrolledStudents.value = await groupClassService.listEnrolled(enrollingClass.value.id)
-  } catch (e: any) {
-    enrollError.value = e.response?.data?.message ?? 'Erro ao remover aluno.'
-  }
-}
-
-const defaultForm = () => ({ name: '', capacity: 10, scheduleType: 'FLEX', durationMinutes: 60, startTime: '', endTime: '' })
+const defaultForm = () => ({ name: '', capacity: 10, scheduleType: 'FLEX', durationMinutes: 60, startTime: '', endTime: '', daysOfWeek: [] as string[] })
 const form = ref(defaultForm())
 const editForm = ref(defaultForm())
 
@@ -302,6 +288,7 @@ function openEdit(cls: GroupClass) {
     durationMinutes: cls.durationMinutes,
     startTime: cls.startTime?.slice(0, 5) ?? '',
     endTime: cls.endTime?.slice(0, 5) ?? '',
+    daysOfWeek: cls.daysOfWeek ? [...cls.daysOfWeek] : [],
   }
   formError.value = null
   showEdit.value = true
@@ -309,9 +296,9 @@ function openEdit(cls: GroupClass) {
 
 function buildPayload(f: typeof form.value) {
   if (f.scheduleType === 'FIXED') {
-    return { name: f.name, capacity: f.capacity, scheduleType: 'FIXED', startTime: f.startTime, endTime: f.endTime }
+    return { name: f.name, capacity: f.capacity, scheduleType: 'FIXED', startTime: f.startTime, endTime: f.endTime, daysOfWeek: f.daysOfWeek }
   }
-  return { name: f.name, capacity: f.capacity, scheduleType: 'FLEX', durationMinutes: f.durationMinutes }
+  return { name: f.name, capacity: f.capacity, scheduleType: 'FLEX', durationMinutes: f.durationMinutes, daysOfWeek: null }
 }
 
 async function submitCreate() {
@@ -369,21 +356,20 @@ async function deactivate(id: string) {
   color: var(--blue-700); font-weight: 600;
 }
 
-/* Gerenciar Alunos dialog */
-.enroll-dialog { display: flex; flex-direction: column; gap: 16px; padding-top: 4px; }
-.add-student-row { display: flex; gap: 10px; align-items: center; }
-.enroll-loading { text-align: center; padding: 24px; color: var(--neutral-400); }
-.enroll-empty { text-align: center; padding: 24px; color: var(--neutral-400); font-size: 14px; }
-.enrolled-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
-.enrolled-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px; border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-md); background: #fafafa;
+/* Vagas badge */
+.vagas-badge { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.vagas-ok    { background: var(--green-50, #f0fdf4); color: var(--green-700, #15803d); }
+.vagas-almost{ background: #fffbf0; color: var(--orange-600, #ea580c); }
+.vagas-full  { background: #fff5f5; color: var(--red-600, #dc2626); }
+
+/* Days selector */
+.days-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.day-btn {
+  padding: 5px 10px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--neutral-200); background: #fff;
+  font-size: 12px; font-weight: 600; color: var(--neutral-600);
+  cursor: pointer; transition: all .12s;
 }
-.enrolled-info { display: flex; flex-direction: column; gap: 2px; }
-.enrolled-name { font-size: 14px; font-weight: 600; color: var(--neutral-800); }
-.enrolled-email { font-size: 12px; color: var(--neutral-500); }
-.enrolled-meta { display: flex; align-items: center; gap: 6px; }
-.enrolled-count { font-size: 12px; color: var(--neutral-500); white-space: nowrap; }
-.enroll-error { color: var(--red-600); font-size: 13px; margin: 0; }
+.day-btn:hover { border-color: var(--blue-400); color: var(--blue-600); }
+.day-btn.active { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-700); }
 </style>

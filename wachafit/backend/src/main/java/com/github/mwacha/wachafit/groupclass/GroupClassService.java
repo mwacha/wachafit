@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.groupclass;
 
+import com.github.mwacha.wachafit.booking.BookingRepository;
 import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
 import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
@@ -11,6 +12,8 @@ import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,18 +23,23 @@ public class GroupClassService {
 
     private final GroupClassRepository groupClassRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
-    public GroupClassService(GroupClassRepository groupClassRepository, UserRepository userRepository) {
+    public GroupClassService(GroupClassRepository groupClassRepository,
+                             UserRepository userRepository,
+                             BookingRepository bookingRepository) {
         this.groupClassRepository = groupClassRepository;
         this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Transactional(readOnly = true)
     public List<GroupClassResponse> list(Boolean active) {
+        var now = OffsetDateTime.now();
         List<GroupClass> classes = active != null
             ? groupClassRepository.findByActive(active)
             : groupClassRepository.findAll();
-        return classes.stream().map(this::toResponse).toList();
+        return classes.stream().map(gc -> toResponse(gc, now)).toList();
     }
 
     public GroupClassResponse create(CreateGroupClassRequest req) {
@@ -44,8 +52,9 @@ public class GroupClassService {
         gc.setStartTime(req.startTime());
         gc.setEndTime(req.endTime());
         gc.setDurationMinutes(resolveDuration(req.scheduleType(), req.startTime(), req.endTime(), req.durationMinutes()));
+        gc.setDaysOfWeek(req.daysOfWeek() != null ? String.join(",", req.daysOfWeek()) : null);
         gc.setTrainer(trainer);
-        return toResponse(groupClassRepository.save(gc));
+        return toResponse(groupClassRepository.save(gc), OffsetDateTime.now());
     }
 
     public GroupClassResponse updateGroupClass(UUID id, UpdateGroupClassRequest req,
@@ -61,7 +70,8 @@ public class GroupClassService {
         gc.setStartTime(req.startTime());
         gc.setEndTime(req.endTime());
         gc.setDurationMinutes(resolveDuration(req.scheduleType(), req.startTime(), req.endTime(), req.durationMinutes()));
-        return toResponse(groupClassRepository.save(gc));
+        gc.setDaysOfWeek(req.daysOfWeek() != null ? String.join(",", req.daysOfWeek()) : null);
+        return toResponse(groupClassRepository.save(gc), OffsetDateTime.now());
     }
 
     public void deactivateGroupClass(UUID id, UUID currentUserId, Role currentUserRole) {
@@ -99,7 +109,11 @@ public class GroupClassService {
             .orElseThrow(() -> new NotFoundException("Profissional não encontrado: " + trainerId));
     }
 
-    private GroupClassResponse toResponse(GroupClass gc) {
+    private GroupClassResponse toResponse(GroupClass gc, OffsetDateTime now) {
+        int enrolled = (int) bookingRepository.countEnrolledStudentsByClassId(gc.getId(), now);
+        List<String> days = gc.getDaysOfWeek() != null
+            ? Arrays.asList(gc.getDaysOfWeek().split(","))
+            : null;
         return new GroupClassResponse(
             gc.getId().toString(),
             gc.getName(),
@@ -112,7 +126,9 @@ public class GroupClassService {
             gc.getCreatedAt() != null ? gc.getCreatedAt().toString() : null,
             gc.getScheduleType(),
             gc.getStartTime(),
-            gc.getEndTime()
+            gc.getEndTime(),
+            days,
+            enrolled
         );
     }
 }

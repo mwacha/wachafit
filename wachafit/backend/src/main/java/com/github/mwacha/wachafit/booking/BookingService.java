@@ -3,6 +3,8 @@ package com.github.mwacha.wachafit.booking;
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
 import com.github.mwacha.wachafit.groupclass.dto.EnrolledStudentResponse;
+import com.github.mwacha.wachafit.membership.MemberSubscriptionRepository;
+import com.github.mwacha.wachafit.membership.MembershipPlanRepository;
 import com.github.mwacha.wachafit.notification.event.BookingCancelledEvent;
 import com.github.mwacha.wachafit.notification.event.BookingConfirmedEvent;
 import com.github.mwacha.wachafit.notification.event.PersonalSessionRequestedEvent;
@@ -34,15 +36,21 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
+    private final MemberSubscriptionRepository memberSubscriptionRepository;
+    private final MembershipPlanRepository membershipPlanRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public BookingService(BookingRepository bookingRepository,
                           ScheduleRepository scheduleRepository,
                           UserRepository userRepository,
+                          MemberSubscriptionRepository memberSubscriptionRepository,
+                          MembershipPlanRepository membershipPlanRepository,
                           ApplicationEventPublisher eventPublisher) {
         this.bookingRepository = bookingRepository;
         this.scheduleRepository = scheduleRepository;
         this.userRepository = userRepository;
+        this.memberSubscriptionRepository = memberSubscriptionRepository;
+        this.membershipPlanRepository = membershipPlanRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -170,10 +178,30 @@ public class BookingService {
     }
 
     public void enrollStudentInClass(UUID classId, UUID studentId) {
+        var now = OffsetDateTime.now();
+
         userRepository.findById(studentId)
             .orElseThrow(() -> new NotFoundException("Aluno não encontrado"));
 
-        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, OffsetDateTime.now());
+        long alreadyInClass = bookingRepository.countActiveByClassIdAndStudentId(classId, studentId, now);
+        if (alreadyInClass > 0) {
+            throw new BusinessException("Aluno já está inscrito nesta turma");
+        }
+
+        var subscription = memberSubscriptionRepository.findByStudentIdAndStatus(studentId, "ACTIVE")
+            .orElseThrow(() -> new BusinessException("Aluno sem plano ativo"));
+        var plan = membershipPlanRepository.findById(subscription.getPlanId())
+            .orElseThrow(() -> new NotFoundException("Plano não encontrado"));
+
+        int maxClasses = plan.getMaxClassesPerWeek() != null ? plan.getMaxClassesPerWeek() : Integer.MAX_VALUE;
+        long currentClasses = bookingRepository.countEnrolledClassesByStudentId(studentId, now);
+        if (currentClasses >= maxClasses) {
+            throw new BusinessException(
+                "Limite do plano atingido: aluno já está em " + currentClasses + " de " + maxClasses + " turma(s) permitida(s)"
+            );
+        }
+
+        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, now);
 
         for (Schedule schedule : upcoming) {
             long existing = bookingRepository.countActiveByScheduleAndStudent(schedule.getId(), studentId);
@@ -198,6 +226,7 @@ public class BookingService {
 
     public void unenrollStudentFromClass(UUID classId, UUID studentId) {
         List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, OffsetDateTime.now());
+
         if (upcoming.isEmpty()) return;
 
         List<UUID> scheduleIds = upcoming.stream().map(Schedule::getId).toList();

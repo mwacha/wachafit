@@ -76,4 +76,37 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     """)
     List<Booking> findActiveByScheduleIdsAndStudentId(@Param("scheduleIds") List<UUID> scheduleIds,
                                                        @Param("studentId") UUID studentId);
+
+    @Query("""
+        SELECT COUNT(DISTINCT b.studentId) FROM Booking b
+        WHERE b.schedule.groupClass.id = :classId
+          AND b.schedule.startsAt >= :now
+          AND b.status IN (com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED,
+                           com.github.mwacha.wachafit.booking.BookingStatus.PENDING)
+    """)
+    long countEnrolledStudentsByClassId(@Param("classId") UUID classId,
+                                        @Param("now") java.time.OffsetDateTime now);
+
+    @Query("""
+        SELECT COUNT(DISTINCT b.schedule.groupClass.id) FROM Booking b
+        WHERE b.studentId = :studentId
+          AND b.schedule.startsAt >= :now
+          AND b.schedule.groupClass IS NOT NULL
+          AND b.status IN (com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED,
+                           com.github.mwacha.wachafit.booking.BookingStatus.PENDING)
+    """)
+    long countEnrolledClassesByStudentId(@Param("studentId") UUID studentId,
+                                         @Param("now") java.time.OffsetDateTime now);
+
+    @Query("""
+        SELECT COUNT(b) FROM Booking b
+        WHERE b.schedule.groupClass.id = :classId
+          AND b.studentId = :studentId
+          AND b.schedule.startsAt >= :now
+          AND b.status IN (com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED,
+                           com.github.mwacha.wachafit.booking.BookingStatus.PENDING)
+    """)
+    long countActiveByClassIdAndStudentId(@Param("classId") UUID classId,
+                                          @Param("studentId") UUID studentId,
+                                          @Param("now") java.time.OffsetDateTime now);
 }

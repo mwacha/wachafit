@@ -61,6 +61,11 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER'] as Role[] },
     },
     {
+      path: '/admin/schedule-grid',
+      component: () => import('@/views/admin/ScheduleGridView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER'] as Role[] },
+    },
+    {
       path: '/admin/schedules',
       component: () => import('@/views/admin/SchedulesView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'CASHIER', 'TRAINER'] as Role[] },

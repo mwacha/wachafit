@@ -4,7 +4,7 @@
     <div v-if="mobileOpen" class="mobile-overlay" @click="mobileOpen = false" />
 
     <!-- Sidebar -->
-    <aside :class="['sidebar', { 'sidebar-open': mobileOpen, 'sidebar-expanded': !collapsed }]"
+    <aside :class="['sidebar', 'sidebar-expanded', { 'sidebar-open': mobileOpen }]"
       role="navigation" aria-label="Navegação principal">
 
       <!-- Logo -->
@@ -23,6 +23,7 @@
           <RouterLink to="/admin/users"              class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-users" /><span class="nav-label">Usuários</span></RouterLink>
           <RouterLink to="/trainer/students"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-id-card" /><span class="nav-label">Alunos</span></RouterLink>
           <RouterLink to="/admin/classes"            class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-th-large" /><span class="nav-label">Turmas</span></RouterLink>
+          <RouterLink to="/admin/schedule-grid"     class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-table" /><span class="nav-label">Grade</span></RouterLink>
           <RouterLink to="/admin/schedules"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Agenda</span></RouterLink>
           <RouterLink to="/admin/membership-plans"   class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-credit-card" /><span class="nav-label">Planos</span></RouterLink>
           <RouterLink to="/admin/reports/revenue"    class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-line" /><span class="nav-label">Receita</span></RouterLink>
@@ -81,14 +82,6 @@
 
       <!-- Footer -->
       <div class="sidebar-footer">
-        <!-- Toggle collapse/expand -->
-        <button class="nav-item toggle-btn" :title="collapsed ? 'Expandir menu' : 'Recolher menu'"
-          @click="toggleCollapse">
-          <i :class="collapsed ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'" />
-          <span class="nav-label">Recolher</span>
-        </button>
-
-        <!-- User / logout -->
         <button class="nav-item user-btn" :title="`${auth.role} — clique para sair`" @click="handleLogout">
           <span class="user-avatar">{{ userInitial }}</span>
           <span class="nav-label user-logout-label">Sair</span>
@@ -135,14 +128,6 @@ const router = useRouter()
 const currentTime = ref('')
 const mobileOpen = ref(false)
 
-const STORAGE_KEY = 'sidebar-collapsed'
-const collapsed = ref(localStorage.getItem(STORAGE_KEY) !== 'false')
-
-function toggleCollapse() {
-  collapsed.value = !collapsed.value
-  localStorage.setItem(STORAGE_KEY, String(collapsed.value))
-}
-
 let timer: ReturnType<typeof setInterval>
 
 function dashboardRoute() { return auth.role ? roleDashboards[auth.role] : '/login' }
@@ -179,23 +164,18 @@ function handleLogout() { auth.logout(); router.push('/login') }
 
 /* ── Sidebar ── */
 .sidebar {
-  width: 68px;
+  width: 220px;
   flex-shrink: 0;
   background: var(--dark-surface);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   padding: 12px 0;
   position: sticky;
   top: 0;
   height: 100dvh;
   overflow: hidden;
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 30;
-}
-.sidebar-expanded {
-  width: 220px;
-  align-items: stretch;
 }
 
 /* ── Logo ── */
@@ -232,14 +212,6 @@ function handleLogout() { auth.logout(); router.push('/login') }
   font-size: 15px; font-weight: 800;
   color: #fff;
   white-space: nowrap;
-  overflow: hidden;
-  max-width: 0;
-  opacity: 0;
-  transition: max-width 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.2s;
-}
-.sidebar-expanded .logo-text {
-  max-width: 140px;
-  opacity: 1;
 }
 
 /* ── Nav ── */
@@ -247,7 +219,7 @@ function handleLogout() { auth.logout(); router.push('/login') }
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 2px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -255,22 +227,19 @@ function handleLogout() { auth.logout(); router.push('/login') }
   scrollbar-width: none;
 }
 .sidebar-nav::-webkit-scrollbar { display: none; }
-.sidebar-expanded .sidebar-nav {
-  align-items: stretch;
-}
 
 .nav-item {
-  width: 44px; height: 42px;
-  border-radius: 11px;
-  display: flex; align-items: center; justify-content: center;
-  gap: 0;
+  width: 100%; height: 42px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: flex-start;
+  padding: 0 14px; gap: 12px;
   background: transparent;
   border: none;
   cursor: pointer;
   color: var(--neutral-500);
   font-size: 17px;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s, width 0.25s, padding 0.25s, gap 0.25s, border-radius 0.15s;
+  transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -279,14 +248,6 @@ function handleLogout() { auth.logout(); router.push('/login') }
 .nav-item.active { background: var(--blue-500); color: #fff; }
 .nav-item:focus-visible { outline: 2px solid var(--blue-400); outline-offset: 2px; }
 
-.sidebar-expanded .nav-item {
-  width: 100%;
-  justify-content: flex-start;
-  padding: 0 14px;
-  gap: 12px;
-  border-radius: 10px;
-}
-
 /* Labels */
 .nav-label {
   font-size: 13px;
@@ -294,13 +255,6 @@ function handleLogout() { auth.logout(); router.push('/login') }
   color: inherit;
   white-space: nowrap;
   overflow: hidden;
-  max-width: 0;
-  opacity: 0;
-  transition: max-width 0.2s cubic-bezier(0.4,0,0.2,1), opacity 0.15s;
-}
-.sidebar-expanded .nav-label {
-  max-width: 160px;
-  opacity: 1;
 }
 
 /* ── Footer ── */
@@ -309,20 +263,11 @@ function handleLogout() { auth.logout(); router.push('/login') }
   padding: 8px 12px 4px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 2px;
   width: 100%;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
-.sidebar-expanded .sidebar-footer {
-  align-items: stretch;
-}
-
-.toggle-btn {
-  color: var(--neutral-500);
-  font-size: 15px;
-}
-.toggle-btn:hover { color: var(--neutral-300); }
 
 .user-btn { font-size: 14px; color: var(--neutral-400); }
 .user-btn:hover { color: var(--neutral-200); }
@@ -415,16 +360,9 @@ function handleLogout() { auth.logout(); router.push('/login') }
 @media (max-width: 768px) {
   .sidebar {
     position: fixed; left: -240px; top: 0; height: 100dvh;
-    z-index: 50; transition: left 0.25s ease, width 0.25s ease;
-    width: 220px !important;
-    align-items: stretch !important;
+    z-index: 50; transition: left 0.25s ease;
   }
   .sidebar.sidebar-open { left: 0; }
-  .sidebar.sidebar-open .logo-text,
-  .sidebar.sidebar-open .nav-label { max-width: 160px; opacity: 1; }
-  .sidebar.sidebar-open .nav-item { width: 100%; justify-content: flex-start; padding: 0 14px; gap: 12px; }
-  .sidebar.sidebar-open .sidebar-nav { align-items: stretch; }
-  .sidebar.sidebar-open .sidebar-footer { align-items: stretch; }
   .hamburger { display: flex; }
   .search-wrap { display: none; }
   .topbar { padding: 10px 14px; gap: 8px; }

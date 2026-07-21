@@ -1,5 +1,7 @@
 package com.github.mwacha.wachafit.groupclass.dto;
 
+import java.util.List;
+
 public record GroupClassResponse(
     String id,
     String name,
@@ -12,5 +14,7 @@ public record GroupClassResponse(
     String createdAt,
     String scheduleType,
     String startTime,
-    String endTime
+    String endTime,
+    List<String> daysOfWeek,
+    int enrolledCount
 ) {}

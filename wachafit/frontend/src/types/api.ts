@@ -62,6 +62,8 @@ export interface AdminUser {
 }
 
 export interface GroupClass {
+  daysOfWeek: string[] | null
+  enrolledCount: number
   id: string
   name: string
   description: string | null

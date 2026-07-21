@@ -13,6 +13,8 @@ import com.github.mwacha.wachafit.schedule.ScheduleType;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.membership.MemberSubscriptionRepository;
+import com.github.mwacha.wachafit.membership.MembershipPlanRepository;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,11 +41,14 @@ class BookingServiceTest {
     @Mock BookingRepository bookingRepository;
     @Mock ScheduleRepository scheduleRepository;
     @Mock UserRepository userRepository;
+    @Mock MemberSubscriptionRepository memberSubscriptionRepository;
+    @Mock MembershipPlanRepository membershipPlanRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     private BookingService service;
 
     @BeforeEach void setUp() {
-        service = new BookingService(bookingRepository, scheduleRepository, userRepository, eventPublisher);
+        service = new BookingService(bookingRepository, scheduleRepository, userRepository,
+            memberSubscriptionRepository, membershipPlanRepository, eventPublisher);
     }
 
     private Schedule buildSchedule(UUID id, ScheduleType type, ScheduleStatus status, int capacity) {
