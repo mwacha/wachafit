@@ -3,10 +3,7 @@
     <div class="view-wrap">
       <div class="page-header">
         <h1 class="page-title">Grade de Horários</h1>
-        <div class="header-actions">
-          <Button icon="pi pi-refresh" text v-tooltip.top="'Atualizar'" @click="reload" :loading="loading" />
-          <Button icon="pi pi-plus" label="Nova Turma" @click="showCreate = true" />
-        </div>
+        <Button icon="pi pi-refresh" text v-tooltip.top="'Atualizar'" @click="reload" :loading="loading" />
       </div>
 
       <div v-if="loading" class="loading-state"><i class="pi pi-spin pi-spinner" /></div>
@@ -15,7 +12,7 @@
         <div v-if="hasNoFixedClasses" class="empty-grid">
           <i class="pi pi-table empty-icon" />
           <p>Nenhuma turma fixa cadastrada.</p>
-          <p class="empty-hint">Clique em <strong>Nova Turma</strong>, escolha "Aula Fixa" e selecione os dias da semana.</p>
+          <p class="empty-hint">Crie uma turma do tipo "Aula Fixa" com dias da semana em <strong>Turmas</strong>.</p>
         </div>
 
         <div v-else class="week-grid">
@@ -38,7 +35,7 @@
         </div>
       </template>
 
-      <!-- Enrollment dialog -->
+      <!-- Dialog: Associar Alunos -->
       <Dialog v-model:visible="showEnroll"
               :header="enrollingClass ? `${enrollingClass.name} — Alunos` : ''"
               :modal="true" style="width: min(540px, 95vw)">
@@ -95,43 +92,6 @@
           <p v-if="enrollError" class="enroll-error">{{ enrollError }}</p>
         </div>
       </Dialog>
-
-      <!-- Dialog: Nova Turma -->
-      <Dialog v-model:visible="showCreate" header="Nova Turma" :modal="true" style="width: min(480px, 95vw)">
-        <form @submit.prevent="submitCreate" class="class-form">
-          <div class="form-field">
-            <label class="form-label">Nome *</label>
-            <InputText v-model="createForm.name" style="width:100%" required />
-          </div>
-          <div class="form-field">
-            <label class="form-label">Horário início *</label>
-            <InputText v-model="createForm.startTime" type="time" style="width:100%" required />
-          </div>
-          <div class="form-field">
-            <label class="form-label">Horário fim *</label>
-            <InputText v-model="createForm.endTime" type="time" style="width:100%" required />
-          </div>
-          <div class="form-field">
-            <label class="form-label">Capacidade (vagas) *</label>
-            <InputNumber v-model="createForm.capacity" :min="1" style="width:100%" required />
-          </div>
-          <div class="form-field">
-            <label class="form-label">Dias da semana *</label>
-            <div class="days-row">
-              <button v-for="d in DAYS" :key="d.key" type="button"
-                :class="['day-btn', { active: createForm.daysOfWeek.includes(d.key) }]"
-                @click="toggleDay(createForm.daysOfWeek, d.key)">
-                {{ d.label.slice(0,3) }}
-              </button>
-            </div>
-          </div>
-          <p v-if="createError" class="enroll-error">{{ createError }}</p>
-          <div class="form-actions">
-            <Button type="button" label="Cancelar" outlined @click="showCreate = false" />
-            <Button type="submit" label="Criar" :loading="creating" />
-          </div>
-        </form>
-      </Dialog>
     </div>
   </AppLayout>
 </template>
@@ -141,12 +101,10 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { groupClassService } from '@/services/groupclass.service'
 import { userService } from '@/services/user.service'
-import { useAuthStore } from '@/stores/auth.store'
 import type { EnrolledStudent, GroupClass } from '@/types/api'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
 
 const DAYS = [
   { key: 'MON', label: 'Segunda' },
@@ -158,25 +116,12 @@ const DAYS = [
   { key: 'SUN', label: 'Domingo' },
 ]
 
-const auth = useAuthStore()
 const loading = ref(true)
 const classes = ref<GroupClass[]>([])
-
-// Create dialog
-const showCreate = ref(false)
-const creating = ref(false)
-const createError = ref<string | null>(null)
-const createForm = ref({ name: '', startTime: '', endTime: '', capacity: 10, daysOfWeek: [] as string[] })
 
 const hasNoFixedClasses = computed(() =>
   classes.value.filter(c => c.active && c.scheduleType === 'FIXED' && c.daysOfWeek?.length).length === 0
 )
-
-function toggleDay(arr: string[], key: string) {
-  const idx = arr.indexOf(key)
-  if (idx >= 0) arr.splice(idx, 1)
-  else arr.push(key)
-}
 
 async function reload() {
   loading.value = true
@@ -184,49 +129,7 @@ async function reload() {
   loading.value = false
 }
 
-async function submitCreate() {
-  createError.value = null
-  if (!createForm.value.name || !createForm.value.startTime || !createForm.value.endTime) {
-    createError.value = 'Preencha todos os campos obrigatórios.'
-    return
-  }
-  if (createForm.value.daysOfWeek.length === 0) {
-    createError.value = 'Selecione pelo menos um dia da semana.'
-    return
-  }
-  creating.value = true
-  try {
-    await groupClassService.create({
-      name: createForm.value.name,
-      capacity: createForm.value.capacity,
-      scheduleType: 'FIXED',
-      startTime: createForm.value.startTime,
-      endTime: createForm.value.endTime,
-      daysOfWeek: createForm.value.daysOfWeek,
-      trainerId: auth.userId!,
-    })
-    showCreate.value = false
-    createForm.value = { name: '', startTime: '', endTime: '', capacity: 10, daysOfWeek: [] }
-    await reload()
-  } catch (e: any) {
-    createError.value = e.response?.data?.message ?? 'Erro ao criar turma.'
-  } finally { creating.value = false }
-}
-
-// Dialog state
-const showEnroll = ref(false)
-const enrollingClass = ref<GroupClass | null>(null)
-const dialogLoading = ref(false)
-const enrolledStudents = ref<EnrolledStudent[]>([])
-const allStudents = ref<{ id: string; name: string; email: string }[]>([])
-const searchQuery = ref('')
-const enrollingId = ref<string | null>(null)
-const enrollError = ref<string | null>(null)
-
-onMounted(async () => {
-  classes.value = await groupClassService.list()
-  loading.value = false
-})
+onMounted(reload)
 
 function classesForDay(dayKey: string): GroupClass[] {
   return classes.value
@@ -241,6 +144,16 @@ function cardStatus(cls: GroupClass) {
   return ''
 }
 
+// Enrollment dialog
+const showEnroll = ref(false)
+const enrollingClass = ref<GroupClass | null>(null)
+const dialogLoading = ref(false)
+const enrolledStudents = ref<EnrolledStudent[]>([])
+const allStudents = ref<{ id: string; name: string; email: string }[]>([])
+const searchQuery = ref('')
+const enrollingId = ref<string | null>(null)
+const enrollError = ref<string | null>(null)
+
 async function openEnroll(cls: GroupClass) {
   enrollingClass.value = cls
   searchQuery.value = ''
@@ -254,7 +167,6 @@ async function openEnroll(cls: GroupClass) {
     ])
     enrolledStudents.value = enrolled
     if (!allStudents.value.length) allStudents.value = students as typeof allStudents.value
-    // refresh local count
     enrollingClass.value = { ...cls, enrolledCount: enrolled.length }
   } finally {
     dialogLoading.value = false
@@ -286,7 +198,6 @@ async function doEnroll(studentId: string) {
     await groupClassService.enrollStudent(enrollingClass.value.id, studentId)
     enrolledStudents.value = await groupClassService.listEnrolled(enrollingClass.value.id)
     enrollingClass.value = { ...enrollingClass.value, enrolledCount: enrolledStudents.value.length }
-    // refresh grid count
     const idx = classes.value.findIndex(c => c.id === enrollingClass.value!.id)
     if (idx >= 0) classes.value[idx] = { ...classes.value[idx], enrolledCount: enrolledStudents.value.length }
   } catch (e: any) {
@@ -313,32 +224,17 @@ async function doUnenroll(studentId: string) {
 
 <style scoped>
 .view-wrap { display: flex; flex-direction: column; gap: 20px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
-.header-actions { display: flex; align-items: center; gap: 8px; }
 .loading-state { text-align: center; padding: 60px; color: var(--neutral-400); font-size: 24px; }
 
 .empty-grid {
-  text-align: center; padding: 60px 20px; color: var(--neutral-400);
+  text-align: center; padding: 60px 20px;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .empty-icon { font-size: 40px; color: var(--neutral-300); }
-.empty-hint { font-size: 13px; color: var(--neutral-400); }
-
-/* Create form */
-.class-form { display: flex; flex-direction: column; gap: 18px; padding-top: 4px; }
-.form-field { display: flex; flex-direction: column; gap: 6px; }
-.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
-.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
-.days-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.day-btn {
-  padding: 5px 10px; border-radius: var(--radius-sm);
-  border: 1.5px solid var(--neutral-200); background: #fff;
-  font-size: 12px; font-weight: 600; color: var(--neutral-600);
-  cursor: pointer; transition: all .12s;
-}
-.day-btn:hover { border-color: var(--blue-400); color: var(--blue-600); }
-.day-btn.active { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-700); }
+.empty-grid p { color: var(--neutral-500); margin: 0; }
+.empty-hint { font-size: 13px; color: var(--neutral-400) !important; }
 
 /* Grid */
 .week-grid {
@@ -353,8 +249,9 @@ async function doUnenroll(studentId: string) {
   text-align: center; font-size: 12px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .05em;
   color: var(--neutral-500); padding: 4px 0;
+  border-bottom: 1px solid var(--neutral-200);
 }
-.day-cards { display: flex; flex-direction: column; gap: 8px; }
+.day-cards { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
 .day-empty { text-align: center; color: var(--neutral-300); font-size: 20px; padding: 16px 0; }
 
 /* Class card */
@@ -365,21 +262,20 @@ async function doUnenroll(studentId: string) {
   display: flex; flex-direction: column; gap: 4px;
 }
 .class-card:hover { border-color: var(--blue-400); box-shadow: 0 2px 8px rgba(59,130,246,.12); }
-.card-full { border-color: var(--red-300) !important; background: #fff5f5; }
-.card-almost { border-color: var(--orange-300) !important; background: #fffbf0; }
+.card-full  { border-color: var(--red-300)    !important; background: #fff5f5; }
+.card-almost{ border-color: var(--orange-300) !important; background: #fffbf0; }
 
 .card-name { font-size: 13px; font-weight: 700; color: var(--neutral-800); line-height: 1.3; }
 .card-time { font-size: 11px; color: var(--neutral-500); }
 .card-capacity {
   display: flex; align-items: center; gap: 4px;
-  font-size: 12px; font-weight: 600; color: var(--neutral-600);
-  margin-top: 2px;
+  font-size: 12px; font-weight: 600; color: var(--neutral-600); margin-top: 2px;
 }
-.card-full .card-capacity { color: var(--red-600); }
-.card-almost .card-capacity { color: var(--orange-600); }
+.card-full  .card-capacity { color: var(--red-600); }
+.card-almost.card-capacity { color: var(--orange-600); }
 .vagas-label { font-weight: 400; color: var(--neutral-400); }
 
-/* Dialog */
+/* Enrollment dialog */
 .enroll-dialog { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
 .class-info-bar {
   display: flex; gap: 16px; flex-wrap: wrap;
@@ -390,8 +286,8 @@ async function doUnenroll(studentId: string) {
 .info-item i { color: var(--blue-500); }
 
 .dialog-loading { text-align: center; padding: 32px; color: var(--neutral-400); font-size: 22px; }
-.student-section { display: flex; flex-direction: column; gap: 6px; }
-.section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--neutral-400); }
+.student-section { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--neutral-400); position: sticky; top: 0; background: #fff; padding: 2px 0; }
 
 .student-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -401,11 +297,11 @@ async function doUnenroll(studentId: string) {
 .enrolled-row { background: var(--green-50, #f0fdf4); border-color: var(--green-200, #bbf7d0); }
 
 .student-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.s-name { font-size: 13px; font-weight: 600; color: var(--neutral-800); }
+.s-name  { font-size: 13px; font-weight: 600; color: var(--neutral-800); }
 .s-email { font-size: 11px; color: var(--neutral-500); }
-.s-meta { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.s-meta  { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .s-count { font-size: 11px; color: var(--neutral-400); white-space: nowrap; }
 
-.no-results { font-size: 13px; color: var(--neutral-400); padding: 8px 4px; }
-.enroll-error { color: var(--red-600); font-size: 13px; margin: 0; }
+.no-results  { font-size: 13px; color: var(--neutral-400); padding: 8px 4px; }
+.enroll-error{ color: var(--red-600); font-size: 13px; margin: 0; }
 </style>
