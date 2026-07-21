@@ -9,7 +9,7 @@
       <div v-if="loading" class="empty-state">Carregando...</div>
 
       <div v-else class="table-scroll">
-        <DataTable :value="plans" stripedRows>
+        <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="plans" stripedRows>
           <template #empty>Nenhum plano cadastrado.</template>
           <Column field="name" header="Nome" style="min-width:140px" />
           <Column header="Duração" style="min-width:110px">

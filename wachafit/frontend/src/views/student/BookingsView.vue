@@ -4,7 +4,7 @@
     <div class="view-wrap">
       <h1 class="page-title">Minhas Reservas</h1>
       <div class="table-scroll">
-        <DataTable :value="bookingStore.bookings" :loading="bookingStore.loading" stripedRows>
+        <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="bookingStore.bookings" :loading="bookingStore.loading" stripedRows>
           <template #empty>Nenhuma reserva encontrada.</template>
           <Column header="Aula / Sessão" style="min-width:160px">
             <template #body="{ data }">

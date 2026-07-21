@@ -18,7 +18,7 @@
       <div v-if="loading" class="empty-state">Carregando...</div>
       <div v-else-if="data.length === 0" class="empty-state">Nenhum dado no período.</div>
       <div v-else class="table-scroll">
-        <DataTable :value="data" stripedRows>
+        <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="data" stripedRows>
           <Column field="name" header="Profissional" style="min-width:140px" />
           <Column field="commissionType" header="Tipo" style="min-width:100px" />
           <Column field="classesCount" header="Aulas" style="min-width:80px" />

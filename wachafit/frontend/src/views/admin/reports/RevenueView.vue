@@ -18,7 +18,7 @@
       <div v-if="loading" class="empty-state">Carregando...</div>
       <div v-else-if="data.length === 0" class="empty-state">Nenhum dado no período.</div>
       <div v-else class="table-scroll">
-        <DataTable :value="data" stripedRows>
+        <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="data" stripedRows>
           <Column field="month" header="Mês" style="min-width:100px" />
           <Column header="Total Recebido" style="min-width:140px">
             <template #body="{ data }">R$ {{ data.total.toFixed(2) }}</template>

@@ -6,7 +6,7 @@
       <div v-if="loading" class="empty-state">Carregando...</div>
       <div v-else-if="data.length === 0" class="empty-state">Nenhum aluno inadimplente.</div>
       <div v-else class="table-scroll">
-        <DataTable :value="data" stripedRows>
+        <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="data" stripedRows>
           <Column field="name" header="Aluno" style="min-width:140px" />
           <Column header="Total Devido" style="min-width:130px">
             <template #body="{ data }">R$ {{ data.totalDue.toFixed(2) }}</template>

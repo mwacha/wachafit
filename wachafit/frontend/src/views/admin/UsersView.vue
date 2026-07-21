@@ -8,7 +8,7 @@
       </div>
 
       <div class="table-scroll">
-        <DataTable :value="adminStore.users" :loading="adminStore.loading" stripedRows>
+        <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="adminStore.users" :loading="adminStore.loading" stripedRows>
           <template #empty>Nenhum usuário cadastrado.</template>
           <Column field="name" header="Nome" style="min-width:140px" />
           <Column field="email" header="Email" style="min-width:180px" />
@@ -30,23 +30,49 @@
         </DataTable>
       </div>
 
-      <Dialog v-model:visible="showCreate" header="Novo Usuário" :modal="true" style="width: min(420px, 95vw)">
-        <form @submit.prevent="submitCreate" class="flex flex-col gap-3">
-          <InputText v-model="form.name" placeholder="Nome" required />
-          <InputText v-model="form.email" type="email" placeholder="Email" required />
-          <Password v-model="form.password" placeholder="Senha" :feedback="false" required />
-          <Select v-model="form.role" :options="roleOptions" optionLabel="label" optionValue="value" placeholder="Perfil" required />
-          <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
-          <Button type="submit" label="Criar" :loading="saving" />
+      <Dialog v-model:visible="showCreate" header="Novo Usuário" :modal="true" style="width: min(440px, 95vw)">
+        <form @submit.prevent="submitCreate" class="user-form">
+          <div class="form-field">
+            <label class="form-label">Nome *</label>
+            <InputText v-model="form.name" placeholder="Nome completo" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">E-mail *</label>
+            <InputText v-model="form.email" type="email" placeholder="email@exemplo.com" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Senha *</label>
+            <Password v-model="form.password" placeholder="Senha" :feedback="false" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Perfil *</label>
+            <Select v-model="form.role" :options="roleOptions" optionLabel="label" optionValue="value"
+              placeholder="Selecione o perfil" style="width:100%" required />
+          </div>
+          <p v-if="formError" class="error-msg">{{ formError }}</p>
+          <div class="form-actions">
+            <Button type="button" label="Cancelar" outlined @click="showCreate = false" />
+            <Button type="submit" label="Criar usuário" :loading="saving" />
+          </div>
         </form>
       </Dialog>
 
-      <Dialog v-model:visible="showEdit" header="Editar Usuário" :modal="true" style="width: min(420px, 95vw)">
-        <form @submit.prevent="submitEdit" class="flex flex-col gap-3">
-          <InputText v-model="editForm.name" placeholder="Nome" required />
-          <Select v-model="editForm.role" :options="roleOptions" optionLabel="label" optionValue="value" placeholder="Perfil" required />
-          <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
-          <Button type="submit" label="Salvar" :loading="saving" />
+      <Dialog v-model:visible="showEdit" header="Editar Usuário" :modal="true" style="width: min(440px, 95vw)">
+        <form @submit.prevent="submitEdit" class="user-form">
+          <div class="form-field">
+            <label class="form-label">Nome *</label>
+            <InputText v-model="editForm.name" placeholder="Nome completo" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Perfil *</label>
+            <Select v-model="editForm.role" :options="roleOptions" optionLabel="label" optionValue="value"
+              placeholder="Selecione o perfil" style="width:100%" required />
+          </div>
+          <p v-if="formError" class="error-msg">{{ formError }}</p>
+          <div class="form-actions">
+            <Button type="button" label="Cancelar" outlined @click="showEdit = false" />
+            <Button type="submit" label="Salvar alterações" :loading="saving" />
+          </div>
         </form>
       </Dialog>
     </div>
@@ -126,10 +152,12 @@ async function submitCreate() {
 
 <style scoped>
 .view-wrap { display: flex; flex-direction: column; gap: 20px; }
-.page-header {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px;
-}
+.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
+.user-form { display: flex; flex-direction: column; gap: 18px; padding: 8px 0 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.error-msg { color: #ef4444; font-size: 13px; }
 </style>

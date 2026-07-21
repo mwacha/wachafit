@@ -15,7 +15,7 @@
         <TabPanels>
           <TabPanel value="active">
             <div class="table-scroll">
-              <DataTable :value="activeClasses" :loading="adminStore.loading" stripedRows>
+              <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="activeClasses" :loading="adminStore.loading" stripedRows>
                 <template #empty>Nenhuma turma ativa.</template>
                 <Column field="name" header="Nome" style="min-width:140px" />
                 <Column header="Tipo" style="min-width:130px">
@@ -50,7 +50,7 @@
           </TabPanel>
           <TabPanel value="inactive">
             <div class="table-scroll">
-              <DataTable :value="inactiveClasses" :loading="adminStore.loading" stripedRows>
+              <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="inactiveClasses" :loading="adminStore.loading" stripedRows>
                 <template #empty>Nenhuma turma inativa.</template>
                 <Column field="name" header="Nome" style="min-width:140px" />
                 <Column header="Tipo" style="min-width:130px">

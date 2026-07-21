@@ -52,7 +52,7 @@
         <div v-if="loadingCharges" class="empty-state">Carregando cobranças...</div>
         <div v-else-if="charges.length === 0" class="empty-state">Nenhuma cobrança cadastrada.</div>
         <div v-else class="table-scroll">
-          <DataTable :value="charges" stripedRows>
+          <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="charges" stripedRows>
             <Column field="dueDate" header="Vencimento" style="min-width:120px">
               <template #body="{ data }">{{ formatDate(data.dueDate) }}</template>
             </Column>
@@ -85,19 +85,19 @@
       </template>
 
       <!-- Dialog: Nova Cobrança -->
-      <Dialog v-model:visible="showNewCharge" header="Nova Cobrança" :modal="true" style="width: min(380px, 95vw)">
-        <form @submit.prevent="submitCharge" class="flex flex-col gap-3 pt-2">
-          <div class="field">
-            <label class="field-label">Valor (R$) *</label>
+      <Dialog v-model:visible="showNewCharge" header="Nova Cobrança" :modal="true" style="width: min(400px, 95vw)">
+        <form @submit.prevent="submitCharge" class="charge-form">
+          <div class="form-field">
+            <label class="form-label">Valor (R$) *</label>
             <InputNumber v-model="chargeForm.amount" mode="currency" currency="BRL" locale="pt-BR"
-              :min="0.01" class="w-full" required />
+              :min="0.01" fluid required />
           </div>
-          <div class="field">
-            <label class="field-label">Data de vencimento *</label>
-            <InputText v-model="chargeForm.dueDate" type="date" class="w-full" required />
+          <div class="form-field">
+            <label class="form-label">Data de vencimento *</label>
+            <InputText v-model="chargeForm.dueDate" type="date" style="width:100%" required />
           </div>
           <p v-if="chargeError" class="error-msg">{{ chargeError }}</p>
-          <div class="flex justify-end gap-2 mt-1">
+          <div class="form-actions">
             <Button type="button" label="Cancelar" outlined @click="showNewCharge = false" />
             <Button type="submit" label="Criar cobrança" :loading="savingCharge" />
           </div>
@@ -238,7 +238,10 @@ function payMethodLabel(m: string | null) { return m ? (payMethodLabelMap[m] ?? 
   color: var(--neutral-500); font-size: 14px;
   background: #fff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg);
 }
-.field { display: flex; flex-direction: column; gap: 5px; }
 .text-muted { color: var(--neutral-400); font-size: 13px; }
 .error-msg { color: #ef4444; font-size: 13px; }
+.charge-form { display: flex; flex-direction: column; gap: 20px; padding: 8px 0 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 </style>

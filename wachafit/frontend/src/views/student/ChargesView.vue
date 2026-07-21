@@ -6,7 +6,7 @@
       <div v-if="loading" class="empty-state">Carregando...</div>
       <div v-else-if="charges.length === 0" class="empty-state">Nenhuma cobrança encontrada.</div>
       <div v-else class="table-scroll">
-        <DataTable :value="charges" stripedRows>
+        <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="charges" stripedRows>
           <Column field="dueDate" header="Vencimento" style="min-width:120px">
             <template #body="{ data }">{{ formatDate(data.dueDate) }}</template>
           </Column>

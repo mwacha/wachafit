@@ -3,7 +3,7 @@
   <AppLayout>
     <div class="view-wrap">
       <h1 class="page-title">Recordes Pessoais</h1>
-      <DataTable :value="workoutStore.records" :loading="workoutStore.loading" stripedRows>
+      <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="workoutStore.records" :loading="workoutStore.loading" stripedRows>
         <template #empty>Nenhum recorde registrado.</template>
         <Column header="Exercício" style="min-width:160px">
           <template #body="{ data }">{{ exerciseNames[data.exerciseId] ?? '—' }}</template>
