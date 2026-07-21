@@ -52,7 +52,7 @@ public class GroupClassService {
         gc.setStartTime(req.startTime());
         gc.setEndTime(req.endTime());
         gc.setDurationMinutes(resolveDuration(req.scheduleType(), req.startTime(), req.endTime(), req.durationMinutes()));
-        gc.setDaysOfWeek(req.daysOfWeek() != null ? String.join(",", req.daysOfWeek()) : null);
+        gc.setDaysOfWeek(toDaysString(req.daysOfWeek()));
         gc.setTrainer(trainer);
         return toResponse(groupClassRepository.save(gc), OffsetDateTime.now());
     }
@@ -70,7 +70,7 @@ public class GroupClassService {
         gc.setStartTime(req.startTime());
         gc.setEndTime(req.endTime());
         gc.setDurationMinutes(resolveDuration(req.scheduleType(), req.startTime(), req.endTime(), req.durationMinutes()));
-        gc.setDaysOfWeek(req.daysOfWeek() != null ? String.join(",", req.daysOfWeek()) : null);
+        gc.setDaysOfWeek(toDaysString(req.daysOfWeek()));
         return toResponse(groupClassRepository.save(gc), OffsetDateTime.now());
     }
 
@@ -81,6 +81,11 @@ public class GroupClassService {
         }
         gc.setActive(false);
         groupClassRepository.save(gc);
+    }
+
+    private String toDaysString(List<String> days) {
+        if (days == null || days.isEmpty()) return null;
+        return String.join(",", days);
     }
 
     private int resolveDuration(String scheduleType, String startTime, String endTime, Integer durationMinutes) {
@@ -111,8 +116,9 @@ public class GroupClassService {
 
     private GroupClassResponse toResponse(GroupClass gc, OffsetDateTime now) {
         int enrolled = (int) bookingRepository.countEnrolledStudentsByClassId(gc.getId(), now);
-        List<String> days = gc.getDaysOfWeek() != null
-            ? Arrays.asList(gc.getDaysOfWeek().split(","))
+        String raw = gc.getDaysOfWeek();
+        List<String> days = (raw != null && !raw.isBlank())
+            ? Arrays.asList(raw.split(","))
             : null;
         return new GroupClassResponse(
             gc.getId().toString(),

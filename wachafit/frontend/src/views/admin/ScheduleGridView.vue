@@ -3,28 +3,40 @@
     <div class="view-wrap">
       <div class="page-header">
         <h1 class="page-title">Grade de Horários</h1>
+        <div class="header-actions">
+          <Button icon="pi pi-refresh" text v-tooltip.top="'Atualizar'" @click="reload" :loading="loading" />
+          <Button icon="pi pi-plus" label="Nova Turma" @click="showCreate = true" />
+        </div>
       </div>
 
       <div v-if="loading" class="loading-state"><i class="pi pi-spin pi-spinner" /></div>
 
-      <div v-else class="week-grid">
-        <div v-for="day in DAYS" :key="day.key" class="day-col">
-          <div class="day-header">{{ day.label }}</div>
-          <div class="day-cards">
-            <div v-for="cls in classesForDay(day.key)" :key="cls.id"
-                 class="class-card" :class="cardStatus(cls)" @click="openEnroll(cls)">
-              <div class="card-name">{{ cls.name }}</div>
-              <div class="card-time">{{ cls.startTime }} – {{ cls.endTime }}</div>
-              <div class="card-capacity">
-                <i class="pi pi-users" />
-                {{ cls.enrolledCount }}/{{ cls.capacity }}
-                <span class="vagas-label">vagas</span>
+      <template v-else>
+        <div v-if="hasNoFixedClasses" class="empty-grid">
+          <i class="pi pi-table empty-icon" />
+          <p>Nenhuma turma fixa cadastrada.</p>
+          <p class="empty-hint">Clique em <strong>Nova Turma</strong>, escolha "Aula Fixa" e selecione os dias da semana.</p>
+        </div>
+
+        <div v-else class="week-grid">
+          <div v-for="day in DAYS" :key="day.key" class="day-col">
+            <div class="day-header">{{ day.label }}</div>
+            <div class="day-cards">
+              <div v-for="cls in classesForDay(day.key)" :key="cls.id"
+                   class="class-card" :class="cardStatus(cls)" @click="openEnroll(cls)">
+                <div class="card-name">{{ cls.name }}</div>
+                <div class="card-time">{{ cls.startTime }} – {{ cls.endTime }}</div>
+                <div class="card-capacity">
+                  <i class="pi pi-users" />
+                  {{ cls.enrolledCount }}/{{ cls.capacity }}
+                  <span class="vagas-label">vagas</span>
+                </div>
               </div>
+              <div v-if="classesForDay(day.key).length === 0" class="day-empty">—</div>
             </div>
-            <div v-if="classesForDay(day.key).length === 0" class="day-empty">—</div>
           </div>
         </div>
-      </div>
+      </template>
 
       <!-- Enrollment dialog -->
       <Dialog v-model:visible="showEnroll"
@@ -83,6 +95,43 @@
           <p v-if="enrollError" class="enroll-error">{{ enrollError }}</p>
         </div>
       </Dialog>
+
+      <!-- Dialog: Nova Turma -->
+      <Dialog v-model:visible="showCreate" header="Nova Turma" :modal="true" style="width: min(480px, 95vw)">
+        <form @submit.prevent="submitCreate" class="class-form">
+          <div class="form-field">
+            <label class="form-label">Nome *</label>
+            <InputText v-model="createForm.name" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Horário início *</label>
+            <InputText v-model="createForm.startTime" type="time" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Horário fim *</label>
+            <InputText v-model="createForm.endTime" type="time" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Capacidade (vagas) *</label>
+            <InputNumber v-model="createForm.capacity" :min="1" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Dias da semana *</label>
+            <div class="days-row">
+              <button v-for="d in DAYS" :key="d.key" type="button"
+                :class="['day-btn', { active: createForm.daysOfWeek.includes(d.key) }]"
+                @click="toggleDay(createForm.daysOfWeek, d.key)">
+                {{ d.label.slice(0,3) }}
+              </button>
+            </div>
+          </div>
+          <p v-if="createError" class="enroll-error">{{ createError }}</p>
+          <div class="form-actions">
+            <Button type="button" label="Cancelar" outlined @click="showCreate = false" />
+            <Button type="submit" label="Criar" :loading="creating" />
+          </div>
+        </form>
+      </Dialog>
     </div>
   </AppLayout>
 </template>
@@ -92,10 +141,12 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { groupClassService } from '@/services/groupclass.service'
 import { userService } from '@/services/user.service'
+import { useAuthStore } from '@/stores/auth.store'
 import type { EnrolledStudent, GroupClass } from '@/types/api'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 
 const DAYS = [
   { key: 'MON', label: 'Segunda' },
@@ -107,8 +158,60 @@ const DAYS = [
   { key: 'SUN', label: 'Domingo' },
 ]
 
+const auth = useAuthStore()
 const loading = ref(true)
 const classes = ref<GroupClass[]>([])
+
+// Create dialog
+const showCreate = ref(false)
+const creating = ref(false)
+const createError = ref<string | null>(null)
+const createForm = ref({ name: '', startTime: '', endTime: '', capacity: 10, daysOfWeek: [] as string[] })
+
+const hasNoFixedClasses = computed(() =>
+  classes.value.filter(c => c.active && c.scheduleType === 'FIXED' && c.daysOfWeek?.length).length === 0
+)
+
+function toggleDay(arr: string[], key: string) {
+  const idx = arr.indexOf(key)
+  if (idx >= 0) arr.splice(idx, 1)
+  else arr.push(key)
+}
+
+async function reload() {
+  loading.value = true
+  classes.value = await groupClassService.list()
+  loading.value = false
+}
+
+async function submitCreate() {
+  createError.value = null
+  if (!createForm.value.name || !createForm.value.startTime || !createForm.value.endTime) {
+    createError.value = 'Preencha todos os campos obrigatórios.'
+    return
+  }
+  if (createForm.value.daysOfWeek.length === 0) {
+    createError.value = 'Selecione pelo menos um dia da semana.'
+    return
+  }
+  creating.value = true
+  try {
+    await groupClassService.create({
+      name: createForm.value.name,
+      capacity: createForm.value.capacity,
+      scheduleType: 'FIXED',
+      startTime: createForm.value.startTime,
+      endTime: createForm.value.endTime,
+      daysOfWeek: createForm.value.daysOfWeek,
+      trainerId: auth.userId!,
+    })
+    showCreate.value = false
+    createForm.value = { name: '', startTime: '', endTime: '', capacity: 10, daysOfWeek: [] }
+    await reload()
+  } catch (e: any) {
+    createError.value = e.response?.data?.message ?? 'Erro ao criar turma.'
+  } finally { creating.value = false }
+}
 
 // Dialog state
 const showEnroll = ref(false)
@@ -210,9 +313,32 @@ async function doUnenroll(studentId: string) {
 
 <style scoped>
 .view-wrap { display: flex; flex-direction: column; gap: 20px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; }
+.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .loading-state { text-align: center; padding: 60px; color: var(--neutral-400); font-size: 24px; }
+
+.empty-grid {
+  text-align: center; padding: 60px 20px; color: var(--neutral-400);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.empty-icon { font-size: 40px; color: var(--neutral-300); }
+.empty-hint { font-size: 13px; color: var(--neutral-400); }
+
+/* Create form */
+.class-form { display: flex; flex-direction: column; gap: 18px; padding-top: 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.days-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.day-btn {
+  padding: 5px 10px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--neutral-200); background: #fff;
+  font-size: 12px; font-weight: 600; color: var(--neutral-600);
+  cursor: pointer; transition: all .12s;
+}
+.day-btn:hover { border-color: var(--blue-400); color: var(--blue-600); }
+.day-btn.active { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-700); }
 
 /* Grid */
 .week-grid {
