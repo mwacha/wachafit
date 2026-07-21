@@ -23,8 +23,8 @@ export const scheduleStatusLabel: Record<string, string> = {
 }
 
 export const bookingStatusLabel: Record<string, string> = {
-  PENDING:   'Pendente',
-  CONFIRMED: 'Confirmado',
+  PENDING:   'Agendado',
+  CONFIRMED: 'Agendado',
   CANCELLED: 'Cancelado',
 }
 

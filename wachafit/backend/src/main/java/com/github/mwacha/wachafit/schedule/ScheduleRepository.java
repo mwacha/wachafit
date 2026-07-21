@@ -39,6 +39,15 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     List<Schedule> findUpcomingByClassId(@Param("classId") UUID classId,
                                           @Param("now") OffsetDateTime now);
 
+    @Query("""
+        SELECT COUNT(s) FROM Schedule s
+        WHERE s.groupClass.id = :classId
+          AND s.startsAt = :startsAt
+          AND s.status <> com.github.mwacha.wachafit.schedule.ScheduleStatus.CANCELLED
+    """)
+    long countByClassIdAndStartsAt(@Param("classId") UUID classId,
+                                   @Param("startsAt") OffsetDateTime startsAt);
+
     @Query(value = """
         SELECT * FROM schedules s
         WHERE (CAST(:from AS timestamptz) IS NULL OR s.starts_at >= CAST(:from AS timestamptz))

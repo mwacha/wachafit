@@ -65,18 +65,28 @@
 
         <!-- Student -->
         <template v-else-if="auth.role === 'STUDENT'">
-          <RouterLink to="/student"                  class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
-          <RouterLink to="/student/schedule"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Aulas</span></RouterLink>
-          <RouterLink to="/student/bookings"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-bookmark" /><span class="nav-label">Reservas</span></RouterLink>
-          <RouterLink to="/student/calendar"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar-plus" /><span class="nav-label">Calendário</span></RouterLink>
-          <RouterLink to="/student/workout"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-bolt" /><span class="nav-label">Treino</span></RouterLink>
-          <RouterLink to="/student/records"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-trophy" /><span class="nav-label">Recordes</span></RouterLink>
-          <RouterLink to="/student/evolution"        class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-bar" /><span class="nav-label">Evolução</span></RouterLink>
-          <RouterLink to="/student/goals"            class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-flag" /><span class="nav-label">Metas</span></RouterLink>
-          <RouterLink to="/student/photos"           class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-image" /><span class="nav-label">Fotos</span></RouterLink>
-          <RouterLink to="/student/profile"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-user" /><span class="nav-label">Perfil</span></RouterLink>
-          <RouterLink to="/student/subscription"     class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-id-card" /><span class="nav-label">Meu Plano</span></RouterLink>
-          <RouterLink to="/student/charges"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
+          <!-- Payment gate: se há pagamento vencido, exibe apenas Cobranças -->
+          <template v-if="billing.hasOverduePayment">
+            <div class="overdue-banner">
+              <i class="pi pi-exclamation-triangle" />
+              <span>Pagamento em atraso</span>
+            </div>
+            <RouterLink to="/student/charges" class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
+          </template>
+          <template v-else>
+            <RouterLink to="/student"                  class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+            <RouterLink to="/student/schedule"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Aulas</span></RouterLink>
+            <RouterLink to="/student/bookings"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-bookmark" /><span class="nav-label">Reservas</span></RouterLink>
+            <RouterLink to="/student/calendar"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar-plus" /><span class="nav-label">Calendário</span></RouterLink>
+            <RouterLink to="/student/workout"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-bolt" /><span class="nav-label">Treino</span></RouterLink>
+            <RouterLink to="/student/records"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-trophy" /><span class="nav-label">Recordes</span></RouterLink>
+            <RouterLink to="/student/evolution"        class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-bar" /><span class="nav-label">Evolução</span></RouterLink>
+            <RouterLink to="/student/goals"            class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-flag" /><span class="nav-label">Metas</span></RouterLink>
+            <RouterLink to="/student/photos"           class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-image" /><span class="nav-label">Fotos</span></RouterLink>
+            <RouterLink to="/student/profile"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-user" /><span class="nav-label">Perfil</span></RouterLink>
+            <RouterLink to="/student/subscription"     class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-id-card" /><span class="nav-label">Meu Plano</span></RouterLink>
+            <RouterLink to="/student/charges"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
+          </template>
         </template>
       </nav>
 
@@ -121,9 +131,11 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { useBillingStore } from '@/stores/billing.store'
 import { roleDashboards } from '@/utils/roleRoutes'
 
 const auth = useAuthStore()
+const billing = useBillingStore()
 const router = useRouter()
 const currentTime = ref('')
 const mobileOpen = ref(false)
@@ -149,7 +161,16 @@ function tick() {
   })
 }
 
-onMounted(() => { tick(); timer = setInterval(tick, 60_000) })
+onMounted(async () => {
+  tick()
+  timer = setInterval(tick, 60_000)
+  if (auth.role === 'STUDENT') {
+    await billing.fetchPaymentStatus()
+    if (billing.hasOverduePayment && router.currentRoute.value.path !== '/student/charges') {
+      router.replace('/student/charges')
+    }
+  }
+})
 onUnmounted(() => clearInterval(timer))
 
 function handleLogout() { auth.logout(); router.push('/login') }
@@ -282,6 +303,15 @@ function handleLogout() { auth.logout(); router.push('/login') }
 }
 
 .user-logout-label { color: var(--neutral-400); }
+
+.overdue-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: var(--radius-md);
+  padding: 8px 12px; margin-bottom: 4px;
+  color: #fca5a5; font-size: 12px; font-weight: 600;
+}
 
 /* ── Main ── */
 .main-area {

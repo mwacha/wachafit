@@ -7,83 +7,83 @@
         <Button label="Nova turma" icon="pi pi-plus" @click="openCreate" />
       </div>
 
-      <div class="table-scroll">
-        <DataTable :value="adminStore.classes" :loading="adminStore.loading" stripedRows>
-          <template #empty>Nenhuma turma cadastrada.</template>
-          <Column field="name" header="Nome" style="min-width:140px" />
-          <Column header="Tipo" style="min-width:130px">
-            <template #body="{ data }">
-              <Tag :severity="data.scheduleType === 'FIXED' ? 'info' : 'secondary'"
-                   :value="data.scheduleType === 'FIXED' ? 'Aula Fixa' : 'Horário Livre'" />
-            </template>
-          </Column>
-          <Column header="Horário / Duração" style="min-width:160px">
-            <template #body="{ data }">
-              <span v-if="data.scheduleType === 'FIXED' && data.startTime && data.endTime">
-                {{ data.startTime.slice(0,5) }} – {{ data.endTime.slice(0,5) }}
-              </span>
-              <span v-else>{{ data.durationMinutes }} min</span>
-            </template>
-          </Column>
-          <Column header="Vagas" style="min-width:100px">
-            <template #body="{ data }">
-              <span class="vagas-badge" :class="vagasClass(data)">
-                {{ data.capacity - data.enrolledCount }}/{{ data.capacity }}
-              </span>
-            </template>
-          </Column>
-          <Column header="Status" style="min-width:90px">
-            <template #body="{ data }">
-              <Tag :severity="data.active ? 'success' : 'danger'" :value="data.active ? 'Ativa' : 'Inativa'" />
-            </template>
-          </Column>
-          <Column header="Ações" style="min-width:100px">
-            <template #body="{ data }">
-              <Button icon="pi pi-pencil" text @click="openEdit(data)" />
-              <Button v-if="data.active" icon="pi pi-trash" severity="danger" text @click="deactivate(data.id)" />
-            </template>
-          </Column>
-        </DataTable>
-      </div>
-
-      <!-- Dialog: Gerenciar Alunos -->
-      <Dialog v-model:visible="showEnroll" :header="`Alunos — ${enrollingClass?.name ?? ''}`"
-              :modal="true" style="width: min(520px, 95vw)">
-        <div class="enroll-dialog">
-          <!-- Add student row -->
-          <div class="add-student-row">
-            <Select v-model="selectedStudentId" :options="studentOptions"
-                    optionLabel="label" optionValue="value"
-                    placeholder="Buscar aluno..." filter style="flex:1"
-                    :loading="studentsLoading" />
-            <Button label="Adicionar" icon="pi pi-plus" :loading="enrolling"
-                    :disabled="!selectedStudentId" @click="doEnroll" />
-          </div>
-
-          <div v-if="enrolledLoading" class="enroll-loading"><i class="pi pi-spin pi-spinner" /></div>
-          <div v-else-if="enrolledStudents.length === 0" class="enroll-empty">
-            Nenhum aluno inscrito nos próximos horários.
-          </div>
-          <ul v-else class="enrolled-list">
-            <li v-for="s in enrolledStudents" :key="s.studentId" class="enrolled-item">
-              <div class="enrolled-info">
-                <span class="enrolled-name">{{ s.name }}</span>
-                <span class="enrolled-email">{{ s.email }}</span>
-              </div>
-              <div class="enrolled-meta">
-                <span class="enrolled-count">{{ s.upcomingBookings }} aula{{ s.upcomingBookings !== 1 ? 's' : '' }}</span>
-                <Button icon="pi pi-times" severity="danger" text size="small"
-                        v-tooltip.top="'Remover'" @click="doUnenroll(s.studentId)" />
-              </div>
-            </li>
-          </ul>
-
-          <p v-if="enrollError" class="enroll-error">{{ enrollError }}</p>
-          <div class="flex justify-end mt-3">
-            <Button label="Fechar" outlined @click="showEnroll = false" />
-          </div>
-        </div>
-      </Dialog>
+      <Tabs value="active">
+        <TabList>
+          <Tab value="active">Ativas ({{ activeClasses.length }})</Tab>
+          <Tab value="inactive">Inativas ({{ inactiveClasses.length }})</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel value="active">
+            <div class="table-scroll">
+              <DataTable :value="activeClasses" :loading="adminStore.loading" stripedRows>
+                <template #empty>Nenhuma turma ativa.</template>
+                <Column field="name" header="Nome" style="min-width:140px" />
+                <Column header="Tipo" style="min-width:130px">
+                  <template #body="{ data }">
+                    <Tag :severity="data.scheduleType === 'FIXED' ? 'info' : 'secondary'"
+                         :value="data.scheduleType === 'FIXED' ? 'Aula Fixa' : 'Horário Livre'" />
+                  </template>
+                </Column>
+                <Column header="Horário / Duração" style="min-width:160px">
+                  <template #body="{ data }">
+                    <span v-if="data.scheduleType === 'FIXED' && data.startTime && data.endTime">
+                      {{ data.startTime.slice(0,5) }} – {{ data.endTime.slice(0,5) }}
+                    </span>
+                    <span v-else>{{ data.durationMinutes }} min</span>
+                  </template>
+                </Column>
+                <Column header="Vagas" style="min-width:100px">
+                  <template #body="{ data }">
+                    <span class="vagas-badge" :class="vagasClass(data)">
+                      {{ data.capacity - data.enrolledCount }}/{{ data.capacity }}
+                    </span>
+                  </template>
+                </Column>
+                <Column header="Ações" style="min-width:100px">
+                  <template #body="{ data }">
+                    <Button icon="pi pi-pencil" text v-tooltip.top="'Editar'" @click="openEdit(data)" />
+                    <Button icon="pi pi-trash" severity="danger" text v-tooltip.top="'Desativar'" @click="deactivate(data.id)" />
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+          </TabPanel>
+          <TabPanel value="inactive">
+            <div class="table-scroll">
+              <DataTable :value="inactiveClasses" :loading="adminStore.loading" stripedRows>
+                <template #empty>Nenhuma turma inativa.</template>
+                <Column field="name" header="Nome" style="min-width:140px" />
+                <Column header="Tipo" style="min-width:130px">
+                  <template #body="{ data }">
+                    <Tag :severity="data.scheduleType === 'FIXED' ? 'info' : 'secondary'"
+                         :value="data.scheduleType === 'FIXED' ? 'Aula Fixa' : 'Horário Livre'" />
+                  </template>
+                </Column>
+                <Column header="Horário / Duração" style="min-width:160px">
+                  <template #body="{ data }">
+                    <span v-if="data.scheduleType === 'FIXED' && data.startTime && data.endTime">
+                      {{ data.startTime.slice(0,5) }} – {{ data.endTime.slice(0,5) }}
+                    </span>
+                    <span v-else>{{ data.durationMinutes }} min</span>
+                  </template>
+                </Column>
+                <Column header="Vagas" style="min-width:100px">
+                  <template #body="{ data }">
+                    <span class="vagas-badge vagas-ok">{{ data.capacity }}</span>
+                  </template>
+                </Column>
+                <Column header="Ações" style="min-width:100px">
+                  <template #body="{ data }">
+                    <Button icon="pi pi-undo" severity="success" text
+                            v-tooltip.top="'Reativar'" :loading="reactivatingId === data.id"
+                            @click="reactivate(data.id)" />
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
 
       <!-- Dialog: Nova Turma -->
       <Dialog v-model:visible="showCreate" header="Nova Turma" :modal="true" style="width: min(480px, 95vw)">
@@ -221,7 +221,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import AppLayout from '@/components/AppLayout.vue'
 import { useAdminStore } from '@/stores/admin.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -234,6 +235,11 @@ import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
+import TabPanel from 'primevue/tabpanel'
 
 const DAY_OPTIONS = [
   { key: 'MON', label: 'Seg' },
@@ -258,8 +264,12 @@ function vagasClass(data: GroupClass) {
   return 'vagas-ok'
 }
 
+const toast = useToast()
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
+
+const activeClasses = computed(() => adminStore.classes.filter(c => c.active))
+const inactiveClasses = computed(() => adminStore.classes.filter(c => !c.active))
 const showCreate = ref(false)
 const showEdit = ref(false)
 const editingId = ref<string | null>(null)
@@ -327,6 +337,26 @@ async function submitEdit() {
 async function deactivate(id: string) {
   await groupClassService.deactivate(id)
   await adminStore.fetchClasses()
+}
+
+const reactivatingId = ref<string | null>(null)
+
+async function reactivate(id: string) {
+  reactivatingId.value = id
+  try {
+    await groupClassService.reactivate(id)
+    await adminStore.fetchClasses()
+    toast.add({ severity: 'success', summary: 'Turma reativada', detail: 'A turma foi reativada com sucesso.', life: 4000 })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Não foi possível reativar',
+      detail: e.response?.data?.message ?? 'Erro ao reativar turma.',
+      life: 6000,
+    })
+  } finally {
+    reactivatingId.value = null
+  }
 }
 </script>
 

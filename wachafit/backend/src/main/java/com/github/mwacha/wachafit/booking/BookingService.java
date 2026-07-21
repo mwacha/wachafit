@@ -2,6 +2,10 @@ package com.github.mwacha.wachafit.booking;
 
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
+import com.github.mwacha.wachafit.groupclass.ClassEnrollment;
+import com.github.mwacha.wachafit.groupclass.ClassEnrollmentRepository;
+import com.github.mwacha.wachafit.groupclass.GroupClass;
+import com.github.mwacha.wachafit.groupclass.GroupClassRepository;
 import com.github.mwacha.wachafit.groupclass.dto.EnrolledStudentResponse;
 import com.github.mwacha.wachafit.membership.MemberSubscriptionRepository;
 import com.github.mwacha.wachafit.membership.MembershipPlanRepository;
@@ -25,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,6 +38,8 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final ScheduleRepository scheduleRepository;
+    private final ClassEnrollmentRepository enrollmentRepository;
+    private final GroupClassRepository groupClassRepository;
     private final UserRepository userRepository;
     private final MemberSubscriptionRepository memberSubscriptionRepository;
     private final MembershipPlanRepository membershipPlanRepository;
@@ -42,12 +47,16 @@ public class BookingService {
 
     public BookingService(BookingRepository bookingRepository,
                           ScheduleRepository scheduleRepository,
+                          ClassEnrollmentRepository enrollmentRepository,
+                          GroupClassRepository groupClassRepository,
                           UserRepository userRepository,
                           MemberSubscriptionRepository memberSubscriptionRepository,
                           MembershipPlanRepository membershipPlanRepository,
                           ApplicationEventPublisher eventPublisher) {
         this.bookingRepository = bookingRepository;
         this.scheduleRepository = scheduleRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.groupClassRepository = groupClassRepository;
         this.userRepository = userRepository;
         this.memberSubscriptionRepository = memberSubscriptionRepository;
         this.membershipPlanRepository = membershipPlanRepository;
@@ -91,9 +100,7 @@ public class BookingService {
             }
         }
 
-        BookingStatus status = locked.getType() == ScheduleType.CLASS
-            ? BookingStatus.CONFIRMED
-            : BookingStatus.PENDING;
+        BookingStatus status = BookingStatus.CONFIRMED;
 
         Booking booking = new Booking();
         booking.setSchedule(locked);
@@ -120,7 +127,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingResponse> getMyBookings(UUID studentId) {
-        return bookingRepository.findByStudentIdOrderByBookedAtDesc(studentId)
+        return bookingRepository.findPersonalByStudentIdOrderByBookedAtDesc(studentId)
             .stream().map(this::toResponse).toList();
     }
 
@@ -155,92 +162,56 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<EnrolledStudentResponse> listEnrolledStudents(UUID classId) {
-        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, OffsetDateTime.now());
-        if (upcoming.isEmpty()) return List.of();
-
-        List<UUID> scheduleIds = upcoming.stream().map(Schedule::getId).toList();
-        List<Booking> bookings = bookingRepository.findActiveByScheduleIds(scheduleIds);
-
-        Map<UUID, Long> countByStudent = bookings.stream()
-            .collect(Collectors.groupingBy(Booking::getStudentId, Collectors.counting()));
-
-        List<User> users = userRepository.findAllById(countByStudent.keySet());
-
+        List<ClassEnrollment> enrollments = enrollmentRepository.findByGroupClassIdAndStatus(classId, "ACTIVE");
+        if (enrollments.isEmpty()) return List.of();
+        List<UUID> studentIds = enrollments.stream().map(ClassEnrollment::getStudentId).toList();
+        List<User> users = userRepository.findAllById(studentIds);
         return users.stream()
-            .map(u -> new EnrolledStudentResponse(
-                u.getId().toString(),
-                u.getName(),
-                u.getEmail(),
-                countByStudent.getOrDefault(u.getId(), 0L).intValue()
-            ))
+            .map(u -> new EnrolledStudentResponse(u.getId().toString(), u.getName(), u.getEmail()))
             .sorted(Comparator.comparing(EnrolledStudentResponse::name))
             .toList();
     }
 
     public void enrollStudentInClass(UUID classId, UUID studentId) {
-        var now = OffsetDateTime.now();
-
         userRepository.findById(studentId)
             .orElseThrow(() -> new NotFoundException("Aluno não encontrado"));
 
-        long alreadyInClass = bookingRepository.countActiveByClassIdAndStudentId(classId, studentId, now);
-        if (alreadyInClass > 0) {
-            throw new BusinessException("Aluno já está inscrito nesta turma");
-        }
+        enrollmentRepository.findByGroupClassIdAndStudentId(classId, studentId)
+            .filter(e -> "ACTIVE".equals(e.getStatus()))
+            .ifPresent(e -> { throw new BusinessException("Aluno já está inscrito nesta turma"); });
 
         var subscription = memberSubscriptionRepository.findByStudentIdAndStatus(studentId, "ACTIVE")
-            .orElseThrow(() -> new BusinessException("Aluno sem plano ativo"));
+            .orElseThrow(() -> new BusinessException("Aluno sem plano ativo. Associe um plano antes de inscrever em turmas."));
         var plan = membershipPlanRepository.findById(subscription.getPlanId())
             .orElseThrow(() -> new NotFoundException("Plano não encontrado"));
 
         int maxClasses = plan.getMaxClassesPerWeek() != null ? plan.getMaxClassesPerWeek() : Integer.MAX_VALUE;
-        long currentClasses = bookingRepository.countEnrolledClassesByStudentId(studentId, now);
+        long currentClasses = enrollmentRepository.countByStudentIdAndStatus(studentId, "ACTIVE");
         if (currentClasses >= maxClasses) {
             throw new BusinessException(
                 "Limite do plano atingido: aluno já está em " + currentClasses + " de " + maxClasses + " turma(s) permitida(s)"
             );
         }
 
-        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, now);
+        GroupClass gc = groupClassRepository.findById(classId)
+            .orElseThrow(() -> new NotFoundException("Turma não encontrada"));
 
-        for (Schedule schedule : upcoming) {
-            long existing = bookingRepository.countActiveByScheduleAndStudent(schedule.getId(), studentId);
-            if (existing > 0) continue;
-
-            int capacity = schedule.getGroupClass().getCapacity();
-            long confirmed = bookingRepository.countConfirmedBookings(schedule.getId());
-            if (confirmed >= capacity) continue;
-
-            Booking booking = new Booking();
-            booking.setSchedule(schedule);
-            booking.setStudentId(studentId);
-            booking.setStatus(BookingStatus.CONFIRMED);
-            bookingRepository.save(booking);
-
-            if (confirmed + 1 >= capacity) {
-                schedule.setStatus(ScheduleStatus.FULL);
-                scheduleRepository.save(schedule);
-            }
-        }
+        enrollmentRepository.findByGroupClassIdAndStudentId(classId, studentId)
+            .ifPresentOrElse(
+                e -> { e.setStatus("ACTIVE"); enrollmentRepository.save(e); },
+                () -> {
+                    ClassEnrollment e = new ClassEnrollment();
+                    e.setGroupClass(gc);
+                    e.setStudentId(studentId);
+                    enrollmentRepository.save(e);
+                }
+            );
     }
 
     public void unenrollStudentFromClass(UUID classId, UUID studentId) {
-        List<Schedule> upcoming = scheduleRepository.findUpcomingByClassId(classId, OffsetDateTime.now());
-
-        if (upcoming.isEmpty()) return;
-
-        List<UUID> scheduleIds = upcoming.stream().map(Schedule::getId).toList();
-        List<Booking> bookings = bookingRepository.findActiveByScheduleIdsAndStudentId(scheduleIds, studentId);
-
-        for (Booking booking : bookings) {
-            booking.setStatus(BookingStatus.CANCELLED);
-            Schedule schedule = booking.getSchedule();
-            if (schedule.getStatus() == ScheduleStatus.FULL) {
-                schedule.setStatus(ScheduleStatus.OPEN);
-                scheduleRepository.save(schedule);
-            }
-            bookingRepository.save(booking);
-        }
+        enrollmentRepository.findByGroupClassIdAndStudentId(classId, studentId)
+            .filter(e -> "ACTIVE".equals(e.getStatus()))
+            .ifPresent(e -> { e.setStatus("CANCELLED"); enrollmentRepository.save(e); });
     }
 
     private BookingResponse toResponse(Booking b) {

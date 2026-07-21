@@ -7,15 +7,13 @@
       <div class="filter-row">
         <DatePicker v-model="filterDate" placeholder="Data" dateFormat="yy-mm-dd" showButtonBar
           @update:modelValue="loadSchedules" />
-        <Select v-model="filterType" :options="scheduleTypeOptions" optionLabel="label" optionValue="value"
-          placeholder="Tipo" showClear @update:modelValue="loadSchedules" />
       </div>
 
       <div v-if="scheduleStore.loading" class="empty-state">Carregando...</div>
       <div v-else class="slot-list">
         <div v-for="s in openSchedules" :key="s.id" class="slot-card">
           <div class="slot-info">
-            <div class="slot-type">{{ s.type === 'CLASS' ? 'Aula em grupo' : 'Personal' }}</div>
+            <div class="slot-type">Sessão Personal</div>
             <div class="slot-time">
               {{ new Date(s.startsAt).toLocaleString('pt-BR') }} — {{ new Date(s.endsAt).toLocaleTimeString('pt-BR') }}
             </div>
@@ -34,15 +32,14 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { useBookingStore } from '@/stores/booking.store'
-import { scheduleTypeOptions } from '@/utils/labels'
+import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import DatePicker from 'primevue/datepicker'
-import Select from 'primevue/select'
 
 const scheduleStore = useScheduleStore()
 const bookingStore = useBookingStore()
+const toast = useToast()
 const filterDate = ref<Date | null>(null)
-const filterType = ref<string | null>(null)
 const booking = ref<string | null>(null)
 const bookError = ref<string | null>(null)
 
@@ -51,17 +48,22 @@ onMounted(() => loadSchedules())
 function loadSchedules() {
   scheduleStore.fetchSchedules({
     date: filterDate.value ? filterDate.value.toISOString().split('T')[0] : undefined,
-    type: filterType.value ?? undefined,
+    type: 'PERSONAL',
   })
 }
 
-const openSchedules = computed(() => scheduleStore.schedules.filter(s => s.status === 'OPEN'))
+const openSchedules = computed(() => scheduleStore.schedules.filter(s => s.status === 'OPEN' && s.type === 'PERSONAL'))
 
 async function book(scheduleId: string) {
   booking.value = scheduleId; bookError.value = null
-  try { await bookingStore.createBooking(scheduleId) }
-  catch (e: any) { bookError.value = e.response?.data?.message ?? 'Erro ao reservar' }
-  finally { booking.value = null }
+  try {
+    await bookingStore.createBooking(scheduleId)
+    toast.add({ severity: 'success', summary: 'Reserva confirmada', detail: 'Sua sessão foi agendada com sucesso!', life: 4000 })
+  } catch (e: any) {
+    bookError.value = e.response?.data?.message ?? 'Erro ao reservar'
+  } finally {
+    booking.value = null
+  }
 }
 </script>
 

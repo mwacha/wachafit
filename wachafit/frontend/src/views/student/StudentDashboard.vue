@@ -4,16 +4,8 @@
       <div v-if="loading" class="empty-state">Carregando...</div>
       <div v-else class="kpi-grid">
         <div class="kpi-card">
-          <span class="kpi-label">Minhas reservas</span>
+          <span class="kpi-label">Reservas agendadas</span>
           <span class="kpi-value">{{ totalBookings }}</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Confirmadas</span>
-          <span class="kpi-value">{{ confirmedBookings }}</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Pendentes</span>
-          <span class="kpi-value">{{ pendingBookings }}</span>
         </div>
         <div class="kpi-card kpi-highlight" v-if="nextBooking">
           <span class="kpi-label kpi-label-white">Próxima aula</span>
@@ -46,9 +38,7 @@ onMounted(async () => {
   }
 })
 
-const totalBookings = computed(() => bookingStore.bookings.length)
-const confirmedBookings = computed(() => bookingStore.bookings.filter(b => b.status === 'CONFIRMED').length)
-const pendingBookings = computed(() => bookingStore.bookings.filter(b => b.status === 'PENDING').length)
+const totalBookings = computed(() => bookingStore.bookings.filter(b => b.status !== 'CANCELLED').length)
 
 const nextBooking = computed(() => {
   const now = new Date().toISOString()

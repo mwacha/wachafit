@@ -3,6 +3,7 @@ package com.github.mwacha.wachafit.groupclass;
 import com.github.mwacha.wachafit.booking.BookingService;
 import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.dto.EnrollStudentRequest;
+import com.github.mwacha.wachafit.groupclass.dto.EnrolledClassResponse;
 import com.github.mwacha.wachafit.groupclass.dto.EnrolledStudentResponse;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
 import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
@@ -26,6 +27,14 @@ public class GroupClassController {
     public GroupClassController(GroupClassService groupClassService, BookingService bookingService) {
         this.groupClassService = groupClassService;
         this.bookingService = bookingService;
+    }
+
+    @GetMapping("/my-enrollments")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN', 'TRAINER')")
+    public ResponseEntity<List<EnrolledClassResponse>> myEnrollments(
+        @AuthenticationPrincipal com.github.mwacha.wachafit.user.User currentUser
+    ) {
+        return ResponseEntity.ok(groupClassService.getStudentEnrollments(currentUser.getId()));
     }
 
     @GetMapping
@@ -52,6 +61,12 @@ public class GroupClassController {
     ) {
         return ResponseEntity.ok(
             groupClassService.updateGroupClass(id, req, currentUser.getId(), currentUser.getRole()));
+    }
+
+    @PutMapping("/{id}/reactivate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    public ResponseEntity<GroupClassResponse> reactivate(@PathVariable UUID id) {
+        return ResponseEntity.ok(groupClassService.reactivateGroupClass(id));
     }
 
     @DeleteMapping("/{id}")

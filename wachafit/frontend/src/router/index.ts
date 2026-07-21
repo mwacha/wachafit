@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { useBillingStore } from '@/stores/billing.store'
 import { roleDashboards, publicAuthPaths } from '@/utils/roleRoutes'
 import type { Role } from '@/types/api'
 
@@ -227,6 +228,7 @@ const router = createRouter({
 
 router.beforeEach(to => {
   const auth = useAuthStore()
+  const billing = useBillingStore()
 
   // Authenticated user on any public-auth path → redirect to their dashboard
   if (publicAuthPaths.includes(to.path) && auth.isAuthenticated) {
@@ -241,6 +243,11 @@ router.beforeEach(to => {
   // Role-restricted route, wrong role → unauthorized (ADMIN bypasses all role checks)
   if (to.meta.roles && auth.role && auth.role !== 'ADMIN' && !to.meta.roles.includes(auth.role)) {
     return '/unauthorized'
+  }
+
+  // Payment gate: student with overdue payment can only access charges page
+  if (auth.role === 'STUDENT' && billing.hasOverduePayment && to.path !== '/student/charges') {
+    return '/student/charges'
   }
 })
 

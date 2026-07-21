@@ -2,7 +2,9 @@ package com.github.mwacha.wachafit.booking;
 
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
 import com.github.mwacha.wachafit.booking.dto.BookingResponse;
+import com.github.mwacha.wachafit.groupclass.ClassEnrollmentRepository;
 import com.github.mwacha.wachafit.groupclass.GroupClass;
+import com.github.mwacha.wachafit.groupclass.GroupClassRepository;
 import com.github.mwacha.wachafit.notification.event.BookingCancelledEvent;
 import com.github.mwacha.wachafit.notification.event.BookingConfirmedEvent;
 import com.github.mwacha.wachafit.notification.event.PersonalSessionRequestedEvent;
@@ -40,6 +42,8 @@ class BookingServiceTest {
 
     @Mock BookingRepository bookingRepository;
     @Mock ScheduleRepository scheduleRepository;
+    @Mock ClassEnrollmentRepository enrollmentRepository;
+    @Mock GroupClassRepository groupClassRepository;
     @Mock UserRepository userRepository;
     @Mock MemberSubscriptionRepository memberSubscriptionRepository;
     @Mock MembershipPlanRepository membershipPlanRepository;
@@ -47,8 +51,8 @@ class BookingServiceTest {
     private BookingService service;
 
     @BeforeEach void setUp() {
-        service = new BookingService(bookingRepository, scheduleRepository, userRepository,
-            memberSubscriptionRepository, membershipPlanRepository, eventPublisher);
+        service = new BookingService(bookingRepository, scheduleRepository, enrollmentRepository,
+            groupClassRepository, userRepository, memberSubscriptionRepository, membershipPlanRepository, eventPublisher);
     }
 
     private Schedule buildSchedule(UUID id, ScheduleType type, ScheduleStatus status, int capacity) {

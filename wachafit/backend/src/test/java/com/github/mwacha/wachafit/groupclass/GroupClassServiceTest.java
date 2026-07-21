@@ -3,11 +3,11 @@ package com.github.mwacha.wachafit.groupclass;
 import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
 import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
+import com.github.mwacha.wachafit.groupclass.ClassEnrollmentRepository;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
-import com.github.mwacha.wachafit.booking.BookingRepository;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,12 +28,12 @@ class GroupClassServiceTest {
 
     @Mock GroupClassRepository groupClassRepository;
     @Mock UserRepository userRepository;
-    @Mock BookingRepository bookingRepository;
+    @Mock ClassEnrollmentRepository enrollmentRepository;
     private GroupClassService service;
 
     @BeforeEach
     void setUp() {
-        service = new GroupClassService(groupClassRepository, userRepository, bookingRepository);
+        service = new GroupClassService(groupClassRepository, userRepository, enrollmentRepository);
     }
 
     @Test

@@ -10,11 +10,18 @@ import java.util.UUID;
 
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
-    List<Booking> findByStudentIdOrderByBookedAtDesc(UUID studentId);
+    @Query("""
+        SELECT b FROM Booking b
+        WHERE b.studentId = :studentId
+          AND b.schedule.type = com.github.mwacha.wachafit.schedule.ScheduleType.PERSONAL
+        ORDER BY b.bookedAt DESC
+    """)
+    List<Booking> findPersonalByStudentIdOrderByBookedAtDesc(@Param("studentId") UUID studentId);
 
     @Query("""
         SELECT COUNT(b) FROM Booking b
         WHERE b.studentId = :studentId
+          AND b.schedule.type = com.github.mwacha.wachafit.schedule.ScheduleType.PERSONAL
           AND b.status IN (com.github.mwacha.wachafit.booking.BookingStatus.PENDING,
                            com.github.mwacha.wachafit.booking.BookingStatus.CONFIRMED)
           AND b.schedule.startsAt < :endsAt

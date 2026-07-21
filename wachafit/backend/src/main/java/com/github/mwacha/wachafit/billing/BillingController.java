@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -21,6 +22,12 @@ public class BillingController {
 
     public BillingController(BillingService service) {
         this.service = service;
+    }
+
+    @GetMapping("/api/me/payment-status")
+    @PreAuthorize("hasRole('STUDENT')")
+    public Map<String, Boolean> myPaymentStatus(@AuthenticationPrincipal User currentUser) {
+        return Map.of("hasOverdue", service.hasOverduePayment(currentUser.getId()));
     }
 
     @GetMapping("/api/students/{studentId}/charges")
@@ -41,7 +48,7 @@ public class BillingController {
     }
 
     @PatchMapping("/api/charges/{id}/pay")
-    @PreAuthorize("hasAnyRole('RECEPTIONIST','CASHIER','ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST','CASHIER','ADMIN','MANAGER','STUDENT')")
     public ChargeResponse payCharge(@PathVariable UUID id,
                                     @Valid @RequestBody ManualPaymentRequest req) {
         return service.payCharge(id, req);

@@ -26,4 +26,7 @@ public interface PaymentChargeRepository extends JpaRepository<PaymentCharge, UU
 
     @Query("SELECT DISTINCT c.subscriptionId FROM PaymentCharge c WHERE c.status = 'OVERDUE' AND c.dueDate < :cutoffDate")
     List<UUID> findSubscriptionIdsWithOverdueChargesOlderThan(@Param("cutoffDate") LocalDate cutoffDate);
+
+    @Query("SELECT COUNT(c) > 0 FROM PaymentCharge c WHERE c.studentId = :studentId AND (c.status = 'OVERDUE' OR (c.status = 'PENDING' AND c.dueDate < :today))")
+    boolean existsUnpaidOverdueByStudentId(@Param("studentId") UUID studentId, @Param("today") LocalDate today);
 }

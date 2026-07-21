@@ -13,6 +13,7 @@ import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,11 @@ public class BillingService {
         this.chargeRepo = chargeRepo;
         this.subscriptionRepo = subscriptionRepo;
         this.userRepo = userRepo;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasOverduePayment(UUID studentId) {
+        return chargeRepo.existsUnpaidOverdueByStudentId(studentId, LocalDate.now());
     }
 
     @Transactional(readOnly = true)

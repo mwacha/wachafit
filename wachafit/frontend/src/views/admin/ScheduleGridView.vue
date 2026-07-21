@@ -49,7 +49,7 @@
           </div>
 
           <InputText v-model="searchQuery" placeholder="Buscar aluno pelo nome ou e-mail..."
-                     style="width:100%" @input="enrollError = null" />
+                     style="width:100%" />
 
           <div v-if="dialogLoading" class="dialog-loading"><i class="pi pi-spin pi-spinner" /></div>
           <template v-else>
@@ -61,11 +61,8 @@
                   <span class="s-name">{{ s.name }}</span>
                   <span class="s-email">{{ s.email }}</span>
                 </div>
-                <div class="s-meta">
-                  <span class="s-count">{{ s.upcomingBookings }} aula{{ s.upcomingBookings !== 1 ? 's' : '' }}</span>
-                  <Button icon="pi pi-times" severity="danger" text size="small"
-                          v-tooltip.top="'Remover'" @click="doUnenroll(s.studentId)" />
-                </div>
+                <Button icon="pi pi-times" severity="danger" text size="small"
+                        v-tooltip.top="'Remover'" @click="doUnenroll(s.studentId)" />
               </div>
             </div>
 
@@ -89,7 +86,6 @@
             </div>
           </template>
 
-          <p v-if="enrollError" class="enroll-error">{{ enrollError }}</p>
         </div>
       </Dialog>
     </div>
@@ -98,6 +94,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import AppLayout from '@/components/AppLayout.vue'
 import { groupClassService } from '@/services/groupclass.service'
 import { userService } from '@/services/user.service'
@@ -105,6 +102,8 @@ import type { EnrolledStudent, GroupClass } from '@/types/api'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+
+const toast = useToast()
 
 const DAYS = [
   { key: 'MON', label: 'Segunda' },
@@ -152,12 +151,10 @@ const enrolledStudents = ref<EnrolledStudent[]>([])
 const allStudents = ref<{ id: string; name: string; email: string }[]>([])
 const searchQuery = ref('')
 const enrollingId = ref<string | null>(null)
-const enrollError = ref<string | null>(null)
 
 async function openEnroll(cls: GroupClass) {
   enrollingClass.value = cls
   searchQuery.value = ''
-  enrollError.value = null
   showEnroll.value = true
   dialogLoading.value = true
   try {
@@ -193,7 +190,6 @@ const filteredAvailable = computed(() => {
 async function doEnroll(studentId: string) {
   if (!enrollingClass.value) return
   enrollingId.value = studentId
-  enrollError.value = null
   try {
     await groupClassService.enrollStudent(enrollingClass.value.id, studentId)
     enrolledStudents.value = await groupClassService.listEnrolled(enrollingClass.value.id)
@@ -201,7 +197,12 @@ async function doEnroll(studentId: string) {
     const idx = classes.value.findIndex(c => c.id === enrollingClass.value!.id)
     if (idx >= 0) classes.value[idx] = { ...classes.value[idx], enrolledCount: enrolledStudents.value.length }
   } catch (e: any) {
-    enrollError.value = e.response?.data?.message ?? 'Erro ao inscrever aluno.'
+    toast.add({
+      severity: 'error',
+      summary: 'Não foi possível inscrever',
+      detail: e.response?.data?.message ?? 'Erro ao inscrever aluno.',
+      life: 6000,
+    })
   } finally {
     enrollingId.value = null
   }
@@ -209,7 +210,6 @@ async function doEnroll(studentId: string) {
 
 async function doUnenroll(studentId: string) {
   if (!enrollingClass.value) return
-  enrollError.value = null
   try {
     await groupClassService.unenrollStudent(enrollingClass.value.id, studentId)
     enrolledStudents.value = await groupClassService.listEnrolled(enrollingClass.value.id)
@@ -217,7 +217,12 @@ async function doUnenroll(studentId: string) {
     const idx = classes.value.findIndex(c => c.id === enrollingClass.value!.id)
     if (idx >= 0) classes.value[idx] = { ...classes.value[idx], enrolledCount: enrolledStudents.value.length }
   } catch (e: any) {
-    enrollError.value = e.response?.data?.message ?? 'Erro ao remover aluno.'
+    toast.add({
+      severity: 'error',
+      summary: 'Erro',
+      detail: e.response?.data?.message ?? 'Erro ao remover aluno.',
+      life: 6000,
+    })
   }
 }
 </script>

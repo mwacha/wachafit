@@ -341,7 +341,15 @@ export interface EnrolledStudent {
   studentId: string
   name: string
   email: string
-  upcomingBookings: number
+}
+
+export interface EnrolledClass {
+  classId: string
+  className: string
+  trainerName: string
+  startTime: string | null
+  endTime: string | null
+  daysOfWeek: string[]
 }
 
 // --- Progress Photos ---
