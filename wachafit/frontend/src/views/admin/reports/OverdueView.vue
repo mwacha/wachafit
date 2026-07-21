@@ -36,7 +36,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+.view-wrap { display: flex; flex-direction: column; gap: 20px }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
 .empty-state { text-align: center; padding: 40px; color: var(--neutral-500); font-size: 14px; }

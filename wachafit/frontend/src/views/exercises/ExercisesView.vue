@@ -9,11 +9,11 @@
 
       <!-- Filtros -->
       <div class="filters-row">
-        <span class="p-input-icon-left search-wrap">
-          <i class="pi pi-search" />
+        <IconField class="search-field">
+          <InputIcon class="pi pi-search" />
           <InputText v-model="searchQ" placeholder="Buscar por nome..." @input="onSearch" />
-        </span>
-        <Dropdown v-model="selectedGroup" :options="muscleGroups" placeholder="Grupo muscular"
+        </IconField>
+        <Select v-model="selectedGroup" :options="muscleGroups" placeholder="Grupo muscular"
           showClear @change="onSearch" style="width:200px" />
       </div>
 
@@ -62,7 +62,7 @@
           </div>
           <div class="form-field">
             <label class="form-label">Grupo muscular *</label>
-            <Dropdown v-model="form.muscleGroup" :options="muscleGroups" placeholder="Selecione o grupo" class="w-full" required />
+            <Select v-model="form.muscleGroup" :options="muscleGroups" placeholder="Selecione o grupo" class="w-full" required />
           </div>
           <div class="form-field">
             <label class="form-label">Descrição</label>
@@ -90,12 +90,14 @@ import { useAuthStore } from '@/stores/auth.store'
 import type { Exercise } from '@/types/api'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
 import Textarea from 'primevue/textarea'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 
 const auth = useAuthStore()
 const exercises = ref<Exercise[]>([])
@@ -116,7 +118,7 @@ function showSuccess(msg: string) {
 
 const muscleGroups = [
   'Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps',
-  'Antebraço', 'Abdômen', 'Glúteos', 'Quadríceps',
+  'Antebraço', 'Abdômen', 'Glúteos', 'Perna', 'Quadríceps',
   'Isquiotibiais', 'Panturrilha', 'Cardio', 'Funcional',
 ]
 
@@ -187,11 +189,11 @@ async function deactivate(id: string) {
 </script>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; gap: 16px; max-width: 900px; }
+.view-wrap { display: flex; flex-direction: column; gap: 16px }
 .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .filters-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.search-wrap { position: relative; }
+.search-field { flex: 1; min-width: 200px; }
 .video-link { color: var(--blue-500); font-size: 13px; display: flex; align-items: center; gap: 4px; }
 .success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0; }
 

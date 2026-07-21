@@ -204,11 +204,11 @@ function payMethodLabel(m: string | null) { return m ? (payMethodLabelMap[m] ?? 
 </script>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 960px; }
+.view-wrap { display: flex; flex-direction: column; gap: 20px }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 
 .search-bar { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
-.search-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 240px; max-width: 400px; }
+.search-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 240px }
 .field-label { font-size: 12px; font-weight: 600; color: var(--neutral-700); }
 
 /* Destaque da linha selecionada */

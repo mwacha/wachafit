@@ -55,7 +55,7 @@ async function load() {
 </script>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+.view-wrap { display: flex; flex-direction: column; gap: 20px }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .filter-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .filter-field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }

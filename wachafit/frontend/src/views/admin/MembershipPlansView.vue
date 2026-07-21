@@ -126,7 +126,7 @@ async function deactivate(id: string) {
 </script>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+.view-wrap { display: flex; flex-direction: column; gap: 20px }
 .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }

@@ -19,16 +19,37 @@
       <nav class="sidebar-nav">
         <!-- Admin -->
         <template v-if="auth.role === 'ADMIN'">
-          <RouterLink to="/admin"                    class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
-          <RouterLink to="/admin/users"              class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-users" /><span class="nav-label">Usuários</span></RouterLink>
-          <RouterLink to="/trainer/students"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-id-card" /><span class="nav-label">Alunos</span></RouterLink>
-          <RouterLink to="/admin/classes"            class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-th-large" /><span class="nav-label">Turmas</span></RouterLink>
-          <RouterLink to="/admin/schedule-grid"     class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-table" /><span class="nav-label">Grade</span></RouterLink>
-          <RouterLink to="/admin/schedules"          class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Agenda</span></RouterLink>
-          <RouterLink to="/admin/membership-plans"   class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-credit-card" /><span class="nav-label">Planos</span></RouterLink>
-          <RouterLink to="/admin/reports/revenue"    class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-line" /><span class="nav-label">Receita</span></RouterLink>
-          <RouterLink to="/admin/reports/commissions" class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-dollar" /><span class="nav-label">Comissões</span></RouterLink>
-          <RouterLink to="/exercises"                class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-list" /><span class="nav-label">Exercícios</span></RouterLink>
+          <RouterLink to="/admin" class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
+
+          <!-- Grupo: Cadastros -->
+          <button class="nav-group-toggle" @click="toggleAdminGroup('cadastros')">
+            <i class="pi pi-database" />
+            <span class="nav-label">Cadastros</span>
+            <i :class="['nav-chevron pi', adminGroups.cadastros ? 'pi-chevron-up' : 'pi-chevron-down']" />
+          </button>
+          <div v-show="adminGroups.cadastros" class="nav-group-items">
+            <RouterLink to="/admin/users"             class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-users" /><span class="nav-label">Usuários</span></RouterLink>
+            <RouterLink to="/trainer/students"        class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-id-card" /><span class="nav-label">Alunos</span></RouterLink>
+            <RouterLink to="/admin/classes"           class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-th-large" /><span class="nav-label">Turmas</span></RouterLink>
+            <RouterLink to="/admin/schedule-grid"     class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-table" /><span class="nav-label">Grade</span></RouterLink>
+            <RouterLink to="/admin/schedules"         class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Agenda</span></RouterLink>
+            <RouterLink to="/admin/membership-plans"  class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-credit-card" /><span class="nav-label">Planos</span></RouterLink>
+            <RouterLink to="/exercises"               class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-list" /><span class="nav-label">Exercícios</span></RouterLink>
+          </div>
+
+          <!-- Grupo: Financeiro -->
+          <button class="nav-group-toggle" @click="toggleAdminGroup('financeiro')">
+            <i class="pi pi-wallet" />
+            <span class="nav-label">Financeiro</span>
+            <i :class="['nav-chevron pi', adminGroups.financeiro ? 'pi-chevron-up' : 'pi-chevron-down']" />
+          </button>
+          <div v-show="adminGroups.financeiro" class="nav-group-items">
+            <RouterLink to="/cashier/charges"          class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
+            <RouterLink to="/cashier/cash-flow"        class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-line" /><span class="nav-label">Fluxo de Caixa</span></RouterLink>
+            <RouterLink to="/admin/reports/revenue"    class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-chart-bar" /><span class="nav-label">Receita</span></RouterLink>
+            <RouterLink to="/admin/reports/overdue"    class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-exclamation-triangle" /><span class="nav-label">Inadimplentes</span></RouterLink>
+            <RouterLink to="/admin/reports/commissions" class="nav-item nav-sub" active-class="active" @click="mobileOpen = false"><i class="pi pi-dollar" /><span class="nav-label">Comissões</span></RouterLink>
+          </div>
         </template>
 
         <!-- Manager -->
@@ -128,8 +149,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useBillingStore } from '@/stores/billing.store'
 import { roleDashboards } from '@/utils/roleRoutes'
@@ -137,8 +158,26 @@ import { roleDashboards } from '@/utils/roleRoutes'
 const auth = useAuthStore()
 const billing = useBillingStore()
 const router = useRouter()
+const route = useRoute()
 const currentTime = ref('')
 const mobileOpen = ref(false)
+const adminGroups = reactive({ cadastros: false, financeiro: false })
+
+const CADASTROS_PATHS = ['/admin/users', '/trainer/students', '/admin/classes', '/admin/schedule-grid', '/admin/schedules', '/admin/membership-plans', '/exercises']
+const FINANCEIRO_PATHS = ['/cashier/charges', '/cashier/cash-flow', '/admin/reports']
+
+function syncAdminGroups(path: string) {
+  if (CADASTROS_PATHS.some(p => path.startsWith(p))) adminGroups.cadastros = true
+  else if (FINANCEIRO_PATHS.some(p => path.startsWith(p))) adminGroups.financeiro = true
+}
+
+function toggleAdminGroup(group: 'cadastros' | 'financeiro') {
+  const other = group === 'cadastros' ? 'financeiro' : 'cadastros'
+  adminGroups[other] = false
+  adminGroups[group] = !adminGroups[group]
+}
+
+watch(() => route.path, (path) => { if (auth.role === 'ADMIN') syncAdminGroups(path) }, { immediate: true })
 
 let timer: ReturnType<typeof setInterval>
 
@@ -268,6 +307,21 @@ function handleLogout() { auth.logout(); router.push('/login') }
 .nav-item:hover { background: rgba(255,255,255,0.07); color: var(--neutral-200); }
 .nav-item.active { background: var(--blue-500); color: #fff; }
 .nav-item:focus-visible { outline: 2px solid var(--blue-400); outline-offset: 2px; }
+
+/* Collapsible group */
+.nav-group-toggle {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius-md);
+  background: none; border: none; cursor: pointer;
+  color: var(--neutral-300); font-size: 13px; font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  margin-top: 2px;
+}
+.nav-group-toggle:hover { background: rgba(255,255,255,0.07); color: var(--neutral-100); }
+.nav-group-toggle .nav-label { flex: 1; text-align: left; }
+.nav-chevron { font-size: 11px; opacity: 0.6; }
+.nav-group-items { display: flex; flex-direction: column; gap: 2px; margin-bottom: 2px; }
+.nav-sub { padding-left: 32px !important; font-size: 13px; }
 
 /* Labels */
 .nav-label {

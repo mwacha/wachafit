@@ -7,23 +7,38 @@
         <Button label="Novo horário" icon="pi pi-plus" @click="openCreate" />
       </div>
 
-      <!-- Calendário de navegação -->
-      <div class="cal-wrap">
-        <DatePicker v-model="selectedDate" inline showButtonBar
-          @update:modelValue="loadSchedules" />
+      <!-- Navegação de semana -->
+      <div class="week-nav-card">
+        <div class="week-nav-header">
+          <button class="nav-btn" @click="prevWeek"><i class="pi pi-chevron-left" /></button>
+          <span class="month-label">{{ monthLabel }}</span>
+          <button class="nav-btn" @click="nextWeek"><i class="pi pi-chevron-right" /></button>
+          <button class="today-btn" @click="goToday">Hoje</button>
+        </div>
+        <div class="week-days">
+          <button v-for="day in weekDays" :key="day.iso"
+            :class="['day-chip', { selected: day.iso === selectedIso, today: day.isToday }]"
+            @click="selectDay(day)">
+            <span class="chip-name">{{ day.name }}</span>
+            <span class="chip-num">{{ day.num }}</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Lista do dia selecionado -->
-      <div class="day-header-row">
-        <span class="day-label">{{ dayLabel }}</span>
-        <span class="day-count">{{ scheduleStore.schedules.length }} sessão(ões)</span>
+      <!-- Cabeçalho do dia -->
+      <div class="day-info-row">
+        <span class="day-full-label">{{ selectedDayLabel }}</span>
+        <span class="session-count" v-if="!scheduleStore.loading">
+          {{ scheduleStore.schedules.length }} sessão(ões)
+        </span>
       </div>
 
+      <!-- Lista de sessões do dia -->
       <div class="table-scroll">
         <DataTable :value="scheduleStore.schedules" :loading="scheduleStore.loading"
           stripedRows paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]">
           <template #empty>Nenhuma sessão personal agendada para este dia.</template>
-          <Column header="Início" style="min-width:160px">
+          <Column header="Início" style="min-width:120px">
             <template #body="{ data }">{{ formatTime(data.startsAt) }}</template>
           </Column>
           <Column header="Fim" style="min-width:120px">
@@ -41,7 +56,7 @@
         </DataTable>
       </div>
 
-      <!-- Dialog: novo horário PERSONAL -->
+      <!-- Dialog: novo horário -->
       <Dialog v-model:visible="showCreate" header="Novo Horário Personal" :modal="true"
         style="width: min(440px, 95vw)">
         <form @submit.prevent="submitCreate" class="schedule-form">
@@ -81,23 +96,68 @@ import DatePicker from 'primevue/datepicker'
 const scheduleStore = useScheduleStore()
 const authStore = useAuthStore()
 
-const selectedDate = ref<Date>(new Date())
+const today = new Date()
+today.setHours(0, 0, 0, 0)
+
+const weekStart = ref(mondayOf(new Date()))
+const selectedDate = ref(new Date(today))
+
 const showCreate = ref(false)
 const saving = ref(false)
 const formError = ref<string | null>(null)
 const form = ref({ startsAt: null as Date | null, endsAt: null as Date | null })
 
-const dayLabel = computed(() =>
+function mondayOf(d: Date): Date {
+  const r = new Date(d); r.setHours(0, 0, 0, 0)
+  const dow = r.getDay()
+  r.setDate(r.getDate() + (dow === 0 ? -6 : 1 - dow))
+  return r
+}
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d); r.setDate(r.getDate() + n); return r
+}
+function toIso(d: Date) { return d.toISOString().split('T')[0] }
+
+const DAY_NAMES = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+
+const weekDays = computed(() =>
+  Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(weekStart.value, i)
+    return { date: d, iso: toIso(d), name: DAY_NAMES[i], num: d.getDate(), isToday: d.getTime() === today.getTime() }
+  })
+)
+
+const selectedIso = computed(() => toIso(selectedDate.value))
+
+const monthLabel = computed(() => {
+  const months = weekDays.value.map(d => d.date.getMonth())
+  const unique = [...new Set(months)]
+  const fmt = (m: number) => new Date(weekStart.value.getFullYear(), m).toLocaleDateString('pt-BR', { month: 'long' })
+  const year = weekStart.value.getFullYear()
+  return unique.length === 1
+    ? `${fmt(unique[0])} ${year}`
+    : `${fmt(unique[0])} / ${fmt(unique[1])} ${year}`
+})
+
+const selectedDayLabel = computed(() =>
   selectedDate.value.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 )
 
-onMounted(() => loadSchedules())
+function prevWeek() { weekStart.value = addDays(weekStart.value, -7) }
+function nextWeek() { weekStart.value = addDays(weekStart.value, 7) }
+function goToday() {
+  weekStart.value = mondayOf(new Date())
+  selectedDate.value = new Date(today)
+  loadSchedules()
+}
+
+function selectDay(day: { date: Date; iso: string }) {
+  selectedDate.value = new Date(day.date)
+  loadSchedules()
+}
 
 function loadSchedules() {
-  const date = selectedDate.value instanceof Date
-    ? selectedDate.value.toISOString().split('T')[0]
-    : undefined
-  scheduleStore.fetchSchedules({ date, type: 'PERSONAL' })
+  scheduleStore.fetchSchedules({ date: toIso(selectedDate.value), type: 'PERSONAL' })
 }
 
 function formatTime(iso: string) {
@@ -129,35 +189,77 @@ async function submitCreate() {
     formError.value = e.response?.data?.message ?? 'Erro ao criar horário'
   } finally { saving.value = false }
 }
+
+onMounted(() => loadSchedules())
 </script>
 
 <style scoped>
 .view-wrap { display: flex; flex-direction: column; gap: 20px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 
-.cal-wrap {
-  display: flex;
-  justify-content: flex-start;
-}
-.cal-wrap :deep(.p-datepicker) {
+/* Semana */
+.week-nav-card {
+  background: #fff;
   border: 1px solid var(--neutral-200);
   border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
   box-shadow: var(--shadow-card);
 }
-
-.day-header-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 4px 2px;
+.week-nav-header {
+  display: flex; align-items: center; gap: 8px;
 }
-.day-label {
-  font-size: 15px; font-weight: 600; color: var(--neutral-800);
+.nav-btn {
+  width: 32px; height: 32px;
+  background: none; border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md); cursor: pointer;
+  color: var(--neutral-600); font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.nav-btn:hover { background: var(--neutral-100); }
+.month-label {
+  flex: 1; text-align: center;
+  font-size: 14px; font-weight: 700; color: var(--neutral-800);
   text-transform: capitalize;
 }
-.day-count { font-size: 13px; color: var(--neutral-500); }
+.today-btn {
+  padding: 4px 12px; font-size: 12px; font-weight: 600;
+  background: none; border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-md); cursor: pointer; color: var(--neutral-600);
+  transition: background 0.15s;
+}
+.today-btn:hover { background: var(--neutral-100); }
+
+.week-days {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+}
+.day-chip {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px 4px; border-radius: var(--radius-md);
+  border: 1.5px solid transparent; cursor: pointer;
+  background: var(--neutral-50); transition: all 0.15s;
+}
+.day-chip:hover { background: var(--neutral-100); }
+.day-chip.today { border-color: var(--blue-400); }
+.day-chip.selected { background: var(--blue-500); border-color: var(--blue-500); }
+.day-chip.selected .chip-name,
+.day-chip.selected .chip-num { color: #fff; }
+
+.chip-name { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--neutral-500); }
+.chip-num  { font-size: 18px; font-weight: 700; color: var(--neutral-800); line-height: 1.3; }
+
+/* Cabeçalho do dia */
+.day-info-row {
+  display: flex; align-items: center; justify-content: space-between; padding: 0 2px;
+}
+.day-full-label { font-size: 14px; font-weight: 600; color: var(--neutral-700); text-transform: capitalize; }
+.session-count  { font-size: 13px; color: var(--neutral-400); }
 
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
 
+/* Form */
 .schedule-form { display: flex; flex-direction: column; gap: 20px; padding: 8px 0 4px; }
 .form-field { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }

@@ -55,15 +55,13 @@
 
             <div v-for="(item, idx) in editor.items" :key="idx" class="items-row">
               <div class="col-exercise">
-                <AutoComplete
-                  v-model="item.exerciseDisplay"
-                  :suggestions="exerciseSuggestions"
+                <Select
+                  v-model="item.exerciseId"
+                  :options="allExercises"
                   optionLabel="name"
-                  placeholder="Buscar exercício..."
-                  :delay="300"
-                  @complete="searchExercises($event.query)"
-                  @item-select="(e) => onExerciseSelect(e.value, idx)"
-                  forceSelection
+                  optionValue="id"
+                  placeholder="Selecionar exercício..."
+                  filter
                   class="w-full"
                 />
               </div>
@@ -107,7 +105,7 @@ import type { WorkoutPlan, Exercise } from '@/types/api'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
-import AutoComplete from 'primevue/autocomplete'
+import Select from 'primevue/select'
 
 const route = useRoute()
 const studentId = route.params.id as string
@@ -117,6 +115,7 @@ const planIdFromQuery = route.query.planId as string | undefined
 const plans = ref<WorkoutPlan[]>([])
 const loadingPlans = ref(false)
 const selectedPlanId = ref<string | null>(null)
+const creating = ref(false)
 const saving = ref(false)
 const activating = ref(false)
 const saveError = ref<string | null>(null)
@@ -125,12 +124,11 @@ function showSuccess(msg: string) {
   successMsg.value = msg
   setTimeout(() => { successMsg.value = '' }, 3000)
 }
-const exerciseSuggestions = ref<Exercise[]>([])
+const allExercises = ref<Exercise[]>([])
 const exerciseMap = ref<Record<string, string>>({})
 
 interface EditorItem {
   exerciseId: string
-  exerciseDisplay: Exercise | null
   division: string
   sets: number | null
   reps: string
@@ -146,30 +144,32 @@ const editor = ref({
   items: [] as EditorItem[],
 })
 
-const editorVisible = computed(() => editor.value.name !== '' || selectedPlanId.value !== null)
+const editorVisible = computed(() => creating.value || editor.value.name !== '' || selectedPlanId.value !== null)
 const activePlan = computed(() => plans.value.find(p => p.id === selectedPlanId.value) ?? null)
 
 onMounted(async () => {
   loadingPlans.value = true
   try {
     plans.value = await workoutService.listPlans(studentId)
-    const allExercises = await exerciseService.search()
-    exerciseMap.value = Object.fromEntries(allExercises.map(e => [e.id, e.name]))
+    allExercises.value = await exerciseService.search()
+    exerciseMap.value = Object.fromEntries(allExercises.value.map(e => [e.id, e.name]))
 
     if (planIdFromQuery) {
       const found = plans.value.find(p => p.id === planIdFromQuery)
       if (found) selectPlan(found)
+    } else {
+      creating.value = true
     }
   } finally { loadingPlans.value = false }
 })
 
 function selectPlan(plan: WorkoutPlan) {
+  creating.value = false
   selectedPlanId.value = plan.id
   editor.value.name = plan.name
   editor.value.description = plan.description ?? ''
   editor.value.items = plan.items.map(item => ({
     exerciseId: item.exerciseId,
-    exerciseDisplay: { id: item.exerciseId, name: exerciseMap.value[item.exerciseId] ?? 'Exercício não encontrado' } as Exercise,
     division: item.division ?? '',
     sets: item.sets,
     reps: item.reps,
@@ -183,12 +183,12 @@ function selectPlan(plan: WorkoutPlan) {
 function newPlan() {
   selectedPlanId.value = null
   editor.value = { name: '', description: '', items: [] }
+  creating.value = true
 }
 
 function addItem() {
   editor.value.items.push({
     exerciseId: '',
-    exerciseDisplay: null,
     division: '',
     sets: null,
     reps: '',
@@ -201,14 +201,6 @@ function addItem() {
 
 function removeItem(idx: number) { editor.value.items.splice(idx, 1) }
 
-async function searchExercises(query: string) {
-  exerciseSuggestions.value = await exerciseService.search({ q: query })
-}
-
-function onExerciseSelect(exercise: Exercise, idx: number) {
-  editor.value.items[idx].exerciseId = exercise.id
-  exerciseMap.value[exercise.id] = exercise.name
-}
 
 function buildPayload() {
   return {

@@ -27,12 +27,24 @@
 
       <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
 
-      <Dialog v-model:visible="showCreate" header="Nova Meta" :modal="true" style="width: min(420px, 95vw)">
-        <form @submit.prevent="submitCreate" class="flex flex-col gap-3 pt-2">
-          <InputText v-model="form.description" placeholder="Descrição" required />
-          <InputText v-model="form.metric" placeholder="Métrica (ex: weight, body_fat)" />
-          <InputNumber v-model="form.targetValue" placeholder="Valor alvo" :minFractionDigits="1" />
-          <Button type="submit" label="Salvar" :loading="saving" />
+      <Dialog v-model:visible="showCreate" header="Nova Meta" :modal="true" style="width: min(440px, 95vw)">
+        <form @submit.prevent="submitCreate" class="goal-form">
+          <div class="form-field">
+            <label class="form-label">Descrição *</label>
+            <InputText v-model="form.description" placeholder="Ex: Perder 5kg, correr 5km..." style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Métrica</label>
+            <InputText v-model="form.metric" placeholder="Ex: weight, body_fat" style="width:100%" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Valor alvo</label>
+            <InputNumber v-model="form.targetValue" placeholder="Ex: 75" :minFractionDigits="1" fluid />
+          </div>
+          <div class="form-actions">
+            <Button type="button" label="Cancelar" outlined @click="showCreate = false" />
+            <Button type="submit" label="Salvar meta" :loading="saving" />
+          </div>
         </form>
       </Dialog>
     </div>
@@ -121,7 +133,7 @@ async function submitCreate() {
 </script>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 680px; }
+.view-wrap { display: flex; flex-direction: column; gap: 20px }
 .page-header { display: flex; align-items: center; justify-content: space-between; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .goals-list { display: flex; flex-direction: column; gap: 10px; }
@@ -137,4 +149,8 @@ async function submitCreate() {
 .goal-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .empty-state { text-align: center; padding: 40px; color: var(--neutral-400); font-size: 14px; }
 .success-msg { color: #22c55e; font-size: 0.875rem; margin-top: 0; }
+.goal-form { display: flex; flex-direction: column; gap: 18px; padding: 8px 0 4px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--neutral-700); }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 </style>
