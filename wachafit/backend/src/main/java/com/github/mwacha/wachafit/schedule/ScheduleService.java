@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.schedule;
 
+import com.github.mwacha.wachafit.booking.BookingRepository;
 import com.github.mwacha.wachafit.groupclass.GroupClass;
 import com.github.mwacha.wachafit.groupclass.GroupClassRepository;
 import com.github.mwacha.wachafit.schedule.dto.*;
@@ -7,6 +8,7 @@ import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
+import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +23,17 @@ public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final GroupClassRepository groupClassRepository;
+    private final BookingRepository bookingRepository;
+    private final UserRepository userRepository;
 
     public ScheduleService(ScheduleRepository scheduleRepository,
-                           GroupClassRepository groupClassRepository) {
+                           GroupClassRepository groupClassRepository,
+                           BookingRepository bookingRepository,
+                           UserRepository userRepository) {
         this.scheduleRepository = scheduleRepository;
         this.groupClassRepository = groupClassRepository;
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -76,6 +84,14 @@ public class ScheduleService {
     }
 
     private ScheduleResponse toResponse(Schedule s) {
+        List<BookedStudentSummary> booked = bookingRepository.findActiveByScheduleId(s.getId())
+            .stream()
+            .map(b -> {
+                String name = userRepository.findById(b.getStudentId())
+                    .map(u -> u.getName()).orElse("Aluno");
+                return new BookedStudentSummary(b.getStudentId().toString(), name, b.getStatus().name());
+            })
+            .toList();
         return new ScheduleResponse(
             s.getId().toString(),
             s.getGroupClass() != null ? s.getGroupClass().getId().toString() : null,
@@ -83,7 +99,8 @@ public class ScheduleService {
             s.getTrainerId().toString(),
             s.getType().name(), s.getStatus().name(),
             s.getStartsAt().toString(), s.getEndsAt().toString(),
-            s.getCreatedAt() != null ? s.getCreatedAt().toString() : null
+            s.getCreatedAt() != null ? s.getCreatedAt().toString() : null,
+            booked
         );
     }
 }

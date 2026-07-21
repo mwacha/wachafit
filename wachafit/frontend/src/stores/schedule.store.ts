@@ -8,7 +8,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchSchedules(params?: { date?: string; type?: string; trainerId?: string }) {
+  async function fetchSchedules(params?: { date?: string; from?: string; to?: string; type?: string; trainerId?: string }) {
     loading.value = true; error.value = null
     try { schedules.value = await scheduleService.list(params) }
     catch (e: any) { error.value = e.response?.data?.message ?? 'Erro ao carregar horários' }

@@ -29,11 +29,30 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     @Query("SELECT s FROM Schedule s WHERE s.id = :id")
     Optional<Schedule> findByIdForUpdate(@Param("id") UUID id);
 
+    @Query("""
+        SELECT s FROM Schedule s
+        WHERE s.groupClass.id = :classId
+          AND s.startsAt >= :now
+          AND s.status <> com.github.mwacha.wachafit.schedule.ScheduleStatus.CANCELLED
+        ORDER BY s.startsAt
+    """)
+    List<Schedule> findUpcomingByClassId(@Param("classId") UUID classId,
+                                          @Param("now") OffsetDateTime now);
+
+    @Query("""
+        SELECT COUNT(s) FROM Schedule s
+        WHERE s.groupClass.id = :classId
+          AND s.startsAt = :startsAt
+          AND s.status <> com.github.mwacha.wachafit.schedule.ScheduleStatus.CANCELLED
+    """)
+    long countByClassIdAndStartsAt(@Param("classId") UUID classId,
+                                   @Param("startsAt") OffsetDateTime startsAt);
+
     @Query(value = """
         SELECT * FROM schedules s
         WHERE (CAST(:from AS timestamptz) IS NULL OR s.starts_at >= CAST(:from AS timestamptz))
           AND (CAST(:to AS timestamptz) IS NULL OR s.ends_at <= CAST(:to AS timestamptz))
-          AND (:date IS NULL OR CAST(s.starts_at AS date) = CAST(:date AS date))
+          AND (CAST(:date AS date) IS NULL OR CAST(s.starts_at AS date) = CAST(:date AS date))
           AND (CAST(:trainerId AS uuid) IS NULL OR s.trainer_id = CAST(:trainerId AS uuid))
           AND (CAST(:type AS varchar) IS NULL OR s.type = CAST(:type AS varchar))
           AND s.status != 'CANCELLED'

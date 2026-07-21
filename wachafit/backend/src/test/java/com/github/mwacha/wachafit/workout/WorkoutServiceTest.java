@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.workout;
 
+import com.github.mwacha.wachafit.notification.event.WorkoutPlanAssignedEvent;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
@@ -9,9 +10,10 @@ import com.github.mwacha.wachafit.workout.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,7 +33,9 @@ class WorkoutServiceTest {
     @Mock WorkoutLogRepository logRepo;
     @Mock PersonalRecordRepository prRepo;
     @Mock UserRepository userRepo;
-    @InjectMocks WorkoutService service;
+    @Mock ApplicationEventPublisher eventPublisher;
+
+    WorkoutService service;
 
     private User trainer;
     private User student;
@@ -40,6 +44,7 @@ class WorkoutServiceTest {
 
     @BeforeEach
     void setUp() {
+        service = new WorkoutService(planRepo, itemRepo, logRepo, prRepo, userRepo, eventPublisher);
         studentId = UUID.randomUUID();
         trainerId = UUID.randomUUID();
         student = new User();
@@ -174,5 +179,44 @@ class WorkoutServiceTest {
             student);
         verify(prRepo, never()).findByStudentIdAndExerciseId(any(), any());
         verify(prRepo, never()).save(any());
+    }
+
+    @Test
+    void createPlan_shouldPublishWorkoutPlanAssignedEvent() {
+        when(userRepo.findById(studentId)).thenReturn(Optional.of(student));
+        when(planRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        CreateWorkoutPlanRequest req = new CreateWorkoutPlanRequest("Plano Verão", null, List.of());
+        service.createPlan(studentId, req, trainerId);
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(WorkoutPlanAssignedEvent.class);
+        WorkoutPlanAssignedEvent evt = (WorkoutPlanAssignedEvent) captor.getValue();
+        assertThat(evt.studentId()).isEqualTo(studentId);
+        assertThat(evt.trainerId()).isEqualTo(trainerId);
+        assertThat(evt.planName()).isEqualTo("Plano Verão");
+    }
+
+    @Test
+    void activatePlan_shouldPublishWorkoutPlanAssignedEvent() {
+        WorkoutPlan plan = new WorkoutPlan();
+        plan.setStudentId(studentId);
+        plan.setTrainerId(trainerId);
+        plan.setName("Plano B");
+        plan.setActive(false);
+        UUID planId = UUID.randomUUID();
+        try {
+            var f = WorkoutPlan.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(plan, planId);
+        } catch (Exception e) { throw new RuntimeException(e); }
+        when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
+        when(planRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        service.activatePlan(planId, trainer);
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(WorkoutPlanAssignedEvent.class);
+        WorkoutPlanAssignedEvent evt = (WorkoutPlanAssignedEvent) captor.getValue();
+        assertThat(evt.studentId()).isEqualTo(studentId);
+        assertThat(evt.planName()).isEqualTo("Plano B");
     }
 }

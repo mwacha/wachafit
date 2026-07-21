@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.user;
 
+import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.dto.CreateUserRequest;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -18,10 +20,13 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -45,7 +50,14 @@ public class UserService {
         user.setEmail(req.email());
         user.setPasswordHash(passwordEncoder.encode(req.password()));
         user.setRole(req.role());
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+        emailService.sendHtml(
+            saved.getEmail(),
+            "Bem-vindo ao WachaFit!",
+            "email/welcome",
+            Map.of("name", saved.getName())
+        );
+        return toResponse(saved);
     }
 
     public UserResponse updateUser(UUID id, UpdateUserRequest req) {

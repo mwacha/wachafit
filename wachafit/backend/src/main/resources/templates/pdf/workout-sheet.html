@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>Ficha de Treino</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #222; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; color: #1d4ed8; margin-bottom: 4px; }
+  .subtitle { color: #64748b; font-size: 11px; margin-bottom: 20px; }
+  h2 { font-size: 14px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin: 20px 0 10px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  th { background: #f1f5f9; text-align: left; padding: 6px 8px; font-size: 11px; color: #475569; border: 1px solid #e2e8f0; }
+  td { padding: 6px 8px; border: 1px solid #e2e8f0; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .no-plan { color: #94a3b8; }
+  .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; }
+</style>
+</head>
+<body>
+  <h1 th:text="${planName}">Ficha de Treino</h1>
+  <p class="subtitle">Aluno: <strong th:text="${studentName}">Nome</strong> &#8212; Profissional: <strong th:text="${trainerName}">&#8212;</strong></p>
+  <p class="subtitle" th:if="${planDescription != null}" th:text="${planDescription}"></p>
+
+  <div th:if="${!itemsByDivision.isEmpty()}">
+    <div th:each="entry : ${itemsByDivision}">
+      <h2 th:text="${entry.key != null and !entry.key.isEmpty() ? 'Divis&#227;o ' + entry.key : 'Exerc&#237;cios'}">Divis&#227;o</h2>
+      <table>
+        <tr>
+          <th>Exerc&#237;cio</th><th>S&#233;ries</th><th>Reps</th><th>Carga (kg)</th><th>Descanso (s)</th><th>Observa&#231;&#245;es</th>
+        </tr>
+        <tr th:each="item : ${entry.value}">
+          <td th:text="${item.exerciseName}">&#8212;</td>
+          <td th:text="${item.sets}">&#8212;</td>
+          <td th:text="${item.reps}">&#8212;</td>
+          <td th:text="${item.suggestedLoadKg != null ? item.suggestedLoadKg : '&#8212;'}">&#8212;</td>
+          <td th:text="${item.restSeconds != null ? item.restSeconds : '&#8212;'}">&#8212;</td>
+          <td th:text="${item.notes != null ? item.notes : ''}">&#8212;</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <p th:if="${itemsByDivision.isEmpty()}" class="no-plan">Nenhum exerc&#237;cio cadastrado.</p>
+
+  <p class="footer">WachaFit &#8212; Ficha gerada automaticamente</p>
+</body>
+</html>

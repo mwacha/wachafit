@@ -1,11 +1,13 @@
 package com.github.mwacha.wachafit.workout;
 
+import com.github.mwacha.wachafit.notification.event.WorkoutPlanAssignedEvent;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
 import com.github.mwacha.wachafit.workout.dto.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,14 +23,17 @@ public class WorkoutService {
     private final WorkoutLogRepository logRepo;
     private final PersonalRecordRepository prRepo;
     private final UserRepository userRepo;
+    private final ApplicationEventPublisher eventPublisher;
 
     public WorkoutService(WorkoutPlanRepository planRepo, WorkoutPlanItemRepository itemRepo,
-            WorkoutLogRepository logRepo, PersonalRecordRepository prRepo, UserRepository userRepo) {
+            WorkoutLogRepository logRepo, PersonalRecordRepository prRepo, UserRepository userRepo,
+            ApplicationEventPublisher eventPublisher) {
         this.planRepo = planRepo;
         this.itemRepo = itemRepo;
         this.logRepo = logRepo;
         this.prRepo = prRepo;
         this.userRepo = userRepo;
+        this.eventPublisher = eventPublisher;
     }
 
     public WorkoutPlanResponse createPlan(UUID studentId, CreateWorkoutPlanRequest req, UUID trainerId) {
@@ -55,7 +60,9 @@ public class WorkoutService {
                 plan.getItems().add(item);
             }
         }
-        return toPlanResponse(planRepo.save(plan));
+        WorkoutPlanResponse response = toPlanResponse(planRepo.save(plan));
+        eventPublisher.publishEvent(new WorkoutPlanAssignedEvent(studentId, trainerId, req.name()));
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -108,7 +115,10 @@ public class WorkoutService {
         WorkoutPlan plan = planRepo.findById(planId)
             .orElseThrow(() -> new NotFoundException("Plan not found"));
         plan.setActive(true);
-        return toPlanResponse(planRepo.save(plan));
+        WorkoutPlanResponse response = toPlanResponse(planRepo.save(plan));
+        eventPublisher.publishEvent(new WorkoutPlanAssignedEvent(
+            plan.getStudentId(), plan.getTrainerId(), plan.getName()));
+        return response;
     }
 
     public WorkoutLogResponse createLog(UUID studentId, CreateWorkoutLogRequest req, User requestingUser) {

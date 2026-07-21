@@ -107,6 +107,27 @@
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- Thymeleaf para templates de e-mail HTML e PDF -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+
+    <!-- openhtmltopdf para geração de PDF -->
+    <dependency>
+      <groupId>com.openhtmltopdf</groupId>
+      <artifactId>openhtmltopdf-pdfbox</artifactId>
+      <version>1.0.10</version>
+    </dependency>
+
+    <!-- GreenMail para testes de envio de e-mail -->
+    <dependency>
+      <groupId>com.icegreen</groupId>
+      <artifactId>greenmail-junit5</artifactId>
+      <version>2.1.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <dependencyManagement>

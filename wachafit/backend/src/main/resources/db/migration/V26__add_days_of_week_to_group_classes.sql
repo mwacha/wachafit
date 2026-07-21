@@ -1,0 +1,1 @@
+ALTER TABLE group_classes ADD COLUMN IF NOT EXISTS days_of_week VARCHAR(30);

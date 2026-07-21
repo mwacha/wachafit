@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>Evolução do Aluno</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #222; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; color: #1d4ed8; margin-bottom: 4px; }
+  .subtitle { color: #64748b; font-size: 11px; margin-bottom: 20px; }
+  h2 { font-size: 14px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin: 20px 0 10px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  th { background: #f1f5f9; text-align: left; padding: 6px 8px; font-size: 11px; color: #475569; border: 1px solid #e2e8f0; }
+  td { padding: 6px 8px; border: 1px solid #e2e8f0; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>Evolução do Aluno</h1>
+  <p class="subtitle">Aluno: <strong th:text="${studentName}">Nome</strong> &#8212; Gerado em <span th:text="${generatedAt}">data</span></p>
+
+  <h2>&#218;ltima Avalia&#231;&#227;o</h2>
+  <div th:if="${lastAssessment != null}">
+    <table>
+      <tr>
+        <th>Data</th><th>Peso (kg)</th><th>Altura (cm)</th><th>IMC</th><th>% Gordura</th>
+      </tr>
+      <tr>
+        <td th:text="${lastAssessment.assessedAt}">&#8212;</td>
+        <td th:text="${lastAssessment.weightKg != null ? lastAssessment.weightKg : '&#8212;'}">&#8212;</td>
+        <td th:text="${lastAssessment.heightCm != null ? lastAssessment.heightCm : '&#8212;'}">&#8212;</td>
+        <td th:text="${lastAssessment.bmi != null ? lastAssessment.bmi : '&#8212;'}">&#8212;</td>
+        <td th:text="${lastAssessment.bodyFatPct != null ? lastAssessment.bodyFatPct + '%' : '&#8212;'}">&#8212;</td>
+      </tr>
+    </table>
+    <div th:if="${!lastAssessment.measurements.isEmpty()}">
+      <table>
+        <tr><th>Medida</th><th>Valor (cm)</th></tr>
+        <tr th:each="m : ${lastAssessment.measurements}">
+          <td th:text="${m.bodyPart}">&#8212;</td>
+          <td th:text="${m.valueCm}">&#8212;</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <p th:if="${lastAssessment == null}" style="color:#94a3b8">Nenhuma avalia&#231;&#227;o registrada.</p>
+
+  <h2>Metas</h2>
+  <div th:if="${!goals.isEmpty()}">
+    <table>
+      <tr><th>Descri&#231;&#227;o</th><th>Status</th><th>Vencimento</th></tr>
+      <tr th:each="g : ${goals}">
+        <td th:text="${g.description}">&#8212;</td>
+        <td>
+          <span th:if="${g.status.name() == 'ACHIEVED'}" class="badge badge-green">Alcan&#231;ada</span>
+          <span th:if="${g.status.name() == 'IN_PROGRESS'}" class="badge badge-blue">Em Progresso</span>
+          <span th:if="${g.status.name() == 'EXPIRED'}" class="badge">Expirada</span>
+        </td>
+        <td th:text="${g.targetDate != null ? g.targetDate : '&#8212;'}">&#8212;</td>
+      </tr>
+    </table>
+  </div>
+  <p th:if="${goals.isEmpty()}" style="color:#94a3b8">Nenhuma meta registrada.</p>
+
+  <h2>Recordes Pessoais</h2>
+  <div th:if="${!records.isEmpty()}">
+    <table>
+      <tr><th>Exerc&#237;cio</th><th>Carga (kg)</th><th>Data</th></tr>
+      <tr th:each="r : ${records}">
+        <td th:text="${r.exerciseName}">&#8212;</td>
+        <td th:text="${r.recordLoadKg}">&#8212;</td>
+        <td th:text="${r.achievedAt}">&#8212;</td>
+      </tr>
+    </table>
+  </div>
+  <p th:if="${records.isEmpty()}" style="color:#94a3b8">Nenhum recorde registrado.</p>
+
+  <p class="footer">WachaFit &#8212; Relat&#243;rio gerado automaticamente</p>
+</body>
+</html>

@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.auth;
 
 import com.github.mwacha.wachafit.auth.dto.*;
+import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.UnauthorizedException;
 import com.github.mwacha.wachafit.shared.security.JwtUtil;
@@ -8,14 +9,13 @@ import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -26,7 +26,7 @@ public class AuthService {
     private final PasswordResetTokenRepository tokenRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final String frontendUrl;
 
     public AuthService(
@@ -34,14 +34,14 @@ public class AuthService {
         PasswordResetTokenRepository tokenRepository,
         JwtUtil jwtUtil,
         PasswordEncoder passwordEncoder,
-        JavaMailSender mailSender,
+        EmailService emailService,
         @Value("${app.frontend-url}") String frontendUrl
     ) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
         this.frontendUrl = frontendUrl;
     }
 
@@ -55,6 +55,12 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(Role.STUDENT);
         User saved = userRepository.save(user);
+        emailService.sendHtml(
+            saved.getEmail(),
+            "Bem-vindo ao WachaFit!",
+            "email/welcome",
+            Map.of("name", saved.getName())
+        );
         String token = jwtUtil.generateToken(saved);
         return new LoginResponse(token, saved.getRole().name(), saved.getId().toString());
     }
@@ -79,14 +85,13 @@ public class AuthService {
             resetToken.setToken(UUID.randomUUID().toString());
             resetToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.MINUTES));
             tokenRepository.save(resetToken);
-
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(user.getEmail());
-            message.setSubject("Redefinição de senha — Wachafit");
-            message.setText("Clique no link para redefinir sua senha:\n\n"
-                + frontendUrl + "/reset-password?token=" + resetToken.getToken()
-                + "\n\nEste link expira em 30 minutos.");
-            mailSender.send(message);
+            String resetLink = frontendUrl + "/reset-password?token=" + resetToken.getToken();
+            emailService.sendHtml(
+                user.getEmail(),
+                "Redefinição de senha — WachaFit",
+                "email/password-reset",
+                Map.of("name", user.getName(), "resetLink", resetLink)
+            );
         });
     }
 

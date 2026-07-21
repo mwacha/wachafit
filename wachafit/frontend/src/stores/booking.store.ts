@@ -23,7 +23,10 @@ export const useBookingStore = defineStore('booking', () => {
 
   async function cancelBooking(id: string) {
     await bookingService.cancel(id)
-    bookings.value = bookings.value.filter(b => b.id !== id)
+    const idx = bookings.value.findIndex(b => b.id === id)
+    if (idx !== -1) {
+      bookings.value.splice(idx, 1, { ...bookings.value[idx], status: 'CANCELLED' })
+    }
   }
 
   return { bookings, loading, error, fetchMyBookings, createBooking, cancelBooking }

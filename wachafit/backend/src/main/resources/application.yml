@@ -1,4 +1,7 @@
 spring:
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
@@ -22,5 +25,20 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:3600}
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    try-it-out-enabled: true
+
 app:
   frontend-url: ${APP_FRONTEND_URL}
+  upload-dir: ${APP_UPLOAD_DIR:uploads}
+  payment:
+    gateway: ${PAYMENT_GATEWAY:manual}
+    access-token: ${PAYMENT_ACCESS_TOKEN:}
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
+    suspend-after-days: ${PAYMENT_SUSPEND_AFTER_DAYS:5}

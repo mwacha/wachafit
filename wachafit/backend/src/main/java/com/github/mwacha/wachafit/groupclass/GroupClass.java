@@ -30,6 +30,18 @@ public class GroupClass {
     @JoinColumn(name = "trainer_id", nullable = false)
     private User trainer;
 
+    @Column(name = "schedule_type", length = 10, nullable = false)
+    private String scheduleType = "FLEX";
+
+    @Column(name = "start_time", length = 5)
+    private String startTime;
+
+    @Column(name = "end_time", length = 5)
+    private String endTime;
+
+    @Column(name = "days_of_week", length = 30)
+    private String daysOfWeek;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -47,6 +59,14 @@ public class GroupClass {
     public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
     public User getTrainer() { return trainer; }
     public void setTrainer(User trainer) { this.trainer = trainer; }
+    public String getScheduleType() { return scheduleType; }
+    public void setScheduleType(String scheduleType) { this.scheduleType = scheduleType; }
+    public String getStartTime() { return startTime; }
+    public void setStartTime(String startTime) { this.startTime = startTime; }
+    public String getEndTime() { return endTime; }
+    public void setEndTime(String endTime) { this.endTime = endTime; }
+    public String getDaysOfWeek() { return daysOfWeek; }
+    public void setDaysOfWeek(String daysOfWeek) { this.daysOfWeek = daysOfWeek; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedAt() { return createdAt; }

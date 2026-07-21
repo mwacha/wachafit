@@ -1,5 +1,5 @@
 package com.github.mwacha.wachafit.user;
 
 public enum Role {
-    ADMIN, TRAINER, STUDENT
+    ADMIN, MANAGER, RECEPTIONIST, CASHIER, TRAINER, STUDENT
 }
