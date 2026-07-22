@@ -70,6 +70,7 @@ export interface GroupClass {
   capacity: number
   durationMinutes: number
   trainerId: string
+  trainerName: string | null
   active: boolean
   createdAt: string
   scheduleType: 'FIXED' | 'FLEX'

@@ -93,6 +93,9 @@ public class GroupClassService {
         gc.setEndTime(req.endTime());
         gc.setDurationMinutes(resolveDuration(req.scheduleType(), req.startTime(), req.endTime(), req.durationMinutes()));
         gc.setDaysOfWeek(toDaysString(req.daysOfWeek()));
+        if (req.trainerId() != null) {
+            gc.setTrainer(findTrainer(req.trainerId()));
+        }
         return toResponse(groupClassRepository.save(gc));
     }
 

@@ -23,6 +23,10 @@
                    class="class-card" :class="cardStatus(cls)" @click="openEnroll(cls)">
                 <div class="card-name">{{ cls.name }}</div>
                 <div class="card-time">{{ cls.startTime }} – {{ cls.endTime }}</div>
+                <div v-if="cls.trainerName" class="card-trainer">
+                  <i class="pi pi-user" />
+                  {{ cls.trainerName }}
+                </div>
                 <div class="card-capacity">
                   <i class="pi pi-users" />
                   {{ cls.enrolledCount }}/{{ cls.capacity }}
@@ -45,6 +49,10 @@
             <span class="info-item">
               <i class="pi pi-users" />
               {{ enrollingClass.enrolledCount }}/{{ enrollingClass.capacity }} vagas
+            </span>
+            <span v-if="enrollingClass.trainerName" class="info-item">
+              <i class="pi pi-user" />
+              {{ enrollingClass.trainerName }}
             </span>
           </div>
 
@@ -272,6 +280,10 @@ async function doUnenroll(studentId: string) {
 
 .card-name { font-size: 13px; font-weight: 700; color: var(--neutral-800); line-height: 1.3; }
 .card-time { font-size: 11px; color: var(--neutral-500); }
+.card-trainer {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--blue-600); font-weight: 500;
+}
 .card-capacity {
   display: flex; align-items: center; gap: 4px;
   font-size: 12px; font-weight: 600; color: var(--neutral-600); margin-top: 2px;

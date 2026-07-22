@@ -18,6 +18,11 @@
               <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="activeClasses" :loading="adminStore.loading" stripedRows>
                 <template #empty>Nenhuma turma ativa.</template>
                 <Column field="name" header="Nome" style="min-width:140px" />
+                <Column header="Profissional" style="min-width:150px">
+                  <template #body="{ data }">
+                    <span>{{ data.trainerName ?? '—' }}</span>
+                  </template>
+                </Column>
                 <Column header="Tipo" style="min-width:130px">
                   <template #body="{ data }">
                     <Tag :severity="data.scheduleType === 'FIXED' ? 'info' : 'secondary'"
@@ -53,6 +58,11 @@
               <DataTable paginator :rows="10" :rowsPerPageOptions="[10, 25, 50]" :value="inactiveClasses" :loading="adminStore.loading" stripedRows>
                 <template #empty>Nenhuma turma inativa.</template>
                 <Column field="name" header="Nome" style="min-width:140px" />
+                <Column header="Profissional" style="min-width:150px">
+                  <template #body="{ data }">
+                    <span>{{ data.trainerName ?? '—' }}</span>
+                  </template>
+                </Column>
                 <Column header="Tipo" style="min-width:130px">
                   <template #body="{ data }">
                     <Tag :severity="data.scheduleType === 'FIXED' ? 'info' : 'secondary'"
@@ -91,6 +101,11 @@
           <div class="form-field">
             <label class="form-label">Nome *</label>
             <InputText v-model="form.name" style="width:100%" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Profissional responsável *</label>
+            <Select v-model="form.trainerId" :options="professionals" optionLabel="name" optionValue="id"
+                    placeholder="Selecionar profissional..." style="width:100%" />
           </div>
           <div class="form-field">
             <label class="form-label">Tipo de turma *</label>
@@ -159,6 +174,11 @@
             <InputText v-model="editForm.name" style="width:100%" required />
           </div>
           <div class="form-field">
+            <label class="form-label">Profissional responsável *</label>
+            <Select v-model="editForm.trainerId" :options="professionals" optionLabel="name" optionValue="id"
+                    placeholder="Selecionar profissional..." style="width:100%" />
+          </div>
+          <div class="form-field">
             <label class="form-label">Tipo de turma *</label>
             <div class="type-toggle">
               <button type="button"
@@ -225,8 +245,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import AppLayout from '@/components/AppLayout.vue'
 import { useAdminStore } from '@/stores/admin.store'
-import { useAuthStore } from '@/stores/auth.store'
 import { groupClassService } from '@/services/groupclass.service'
+import { userService } from '@/services/user.service'
 import type { GroupClass } from '@/types/api'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
@@ -235,6 +255,7 @@ import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
 import Tabs from 'primevue/tabs'
 import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
@@ -266,7 +287,6 @@ function vagasClass(data: GroupClass) {
 
 const toast = useToast()
 const adminStore = useAdminStore()
-const authStore = useAuthStore()
 
 const activeClasses = computed(() => adminStore.classes.filter(c => c.active))
 const inactiveClasses = computed(() => adminStore.classes.filter(c => !c.active))
@@ -276,12 +296,19 @@ const editingId = ref<string | null>(null)
 const saving = ref(false)
 const formError = ref<string | null>(null)
 
+const professionals = ref<{ id: string; name: string }[]>([])
 
-const defaultForm = () => ({ name: '', capacity: 10, scheduleType: 'FLEX', durationMinutes: 60, startTime: '', endTime: '', daysOfWeek: [] as string[] })
+const defaultForm = () => ({ name: '', capacity: 10, scheduleType: 'FLEX', durationMinutes: 60, startTime: '', endTime: '', daysOfWeek: [] as string[], trainerId: '' })
 const form = ref(defaultForm())
 const editForm = ref(defaultForm())
 
-onMounted(() => adminStore.fetchClasses())
+onMounted(async () => {
+  await adminStore.fetchClasses()
+  const users = await userService.list()
+  professionals.value = users
+    .filter(u => u.role === 'TRAINER' || u.role === 'PROFESSOR')
+    .map(u => ({ id: u.id, name: u.name }))
+})
 
 function openCreate() {
   form.value = defaultForm()
@@ -299,22 +326,25 @@ function openEdit(cls: GroupClass) {
     startTime: cls.startTime?.slice(0, 5) ?? '',
     endTime: cls.endTime?.slice(0, 5) ?? '',
     daysOfWeek: cls.daysOfWeek ? [...cls.daysOfWeek] : [],
+    trainerId: cls.trainerId ?? '',
   }
   formError.value = null
   showEdit.value = true
 }
 
 function buildPayload(f: typeof form.value) {
+  const base = { name: f.name, capacity: f.capacity, trainerId: f.trainerId }
   if (f.scheduleType === 'FIXED') {
-    return { name: f.name, capacity: f.capacity, scheduleType: 'FIXED', startTime: f.startTime, endTime: f.endTime, daysOfWeek: f.daysOfWeek }
+    return { ...base, scheduleType: 'FIXED', startTime: f.startTime, endTime: f.endTime, daysOfWeek: f.daysOfWeek }
   }
-  return { name: f.name, capacity: f.capacity, scheduleType: 'FLEX', durationMinutes: f.durationMinutes, daysOfWeek: null }
+  return { ...base, scheduleType: 'FLEX', durationMinutes: f.durationMinutes, daysOfWeek: null }
 }
 
 async function submitCreate() {
+  if (!form.value.trainerId) { formError.value = 'Selecione o profissional responsável'; return }
   saving.value = true; formError.value = null
   try {
-    await groupClassService.create({ ...buildPayload(form.value), trainerId: authStore.userId! })
+    await groupClassService.create(buildPayload(form.value))
     showCreate.value = false
     await adminStore.fetchClasses()
   } catch (e: any) {
