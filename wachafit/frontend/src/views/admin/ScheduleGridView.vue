@@ -142,7 +142,7 @@ const DAYS = [
 
 const START_HOUR = 6
 const END_HOUR = 23
-const PX_PER_MIN = 1.4
+const PX_PER_MIN = 1.0
 const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i)
 const GRID_HEIGHT = (END_HOUR - START_HOUR) * 60 * PX_PER_MIN
 
@@ -300,10 +300,10 @@ async function doUnenroll(studentId: string) {
   background: var(--neutral-50);
   flex-shrink: 0;
 }
-.time-gutter-head { width: 54px; flex-shrink: 0; }
+.time-gutter-head { width: 48px; flex-shrink: 0; }
 .day-head {
-  flex: 1; min-width: 120px; text-align: center; padding: 10px 4px;
-  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  flex: 1; min-width: 100px; text-align: center; padding: 7px 4px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .05em; color: var(--neutral-500);
   border-left: 1px solid var(--neutral-200);
 }
@@ -318,21 +318,21 @@ async function doUnenroll(studentId: string) {
 
 /* Time ruler */
 .time-gutter {
-  position: relative; width: 54px; flex-shrink: 0;
+  position: relative; width: 48px; flex-shrink: 0;
   border-right: 1px solid var(--neutral-200);
   background: var(--neutral-50);
 }
 .time-label {
   position: absolute; right: 6px;
   font-size: 10px; color: var(--neutral-400);
-  transform: translateY(-50%);
   white-space: nowrap; line-height: 1; user-select: none;
+  padding-top: 2px;
 }
 
 /* Days area */
 .days-area { display: flex; flex: 1; }
 .day-col {
-  flex: 1; min-width: 120px; position: relative;
+  flex: 1; min-width: 100px; position: relative;
   border-left: 1px solid var(--neutral-200);
 }
 .hour-line {
