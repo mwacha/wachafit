@@ -6,6 +6,7 @@ export const roleDashboards: Record<Role, string> = {
   CASHIER: '/cashier',
   RECEPTIONIST: '/reception',
   TRAINER: '/trainer',
+  PROFESSOR: '/trainer',
   STUDENT: '/student',
 }
 

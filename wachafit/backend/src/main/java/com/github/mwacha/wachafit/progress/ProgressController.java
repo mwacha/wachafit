@@ -23,7 +23,7 @@ public class ProgressController {
     public ProgressController(ProgressService service) { this.service = service; }
 
     @PostMapping(value = "/api/students/{studentId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('STUDENT','TRAINER')")
+    @PreAuthorize("hasAnyRole('STUDENT','TRAINER','PROFESSOR')")
     public ResponseEntity<PhotoResponse> upload(
             @PathVariable UUID studentId,
             @RequestParam("file") MultipartFile file,

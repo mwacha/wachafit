@@ -22,7 +22,7 @@ public class AssessmentController {
     }
 
     @PostMapping("/api/students/{studentId}/assessments")
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','PROFESSOR','ADMIN')")
     public ResponseEntity<AssessmentResponse> create(
             @PathVariable UUID studentId,
             @Valid @RequestBody CreateAssessmentRequest req,
@@ -48,7 +48,7 @@ public class AssessmentController {
     }
 
     @PutMapping("/api/assessments/{id}")
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','PROFESSOR','ADMIN')")
     public AssessmentResponse update(
             @PathVariable UUID id,
             @Valid @RequestBody CreateAssessmentRequest req,

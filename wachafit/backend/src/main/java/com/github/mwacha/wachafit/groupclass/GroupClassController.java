@@ -30,7 +30,7 @@ public class GroupClassController {
     }
 
     @GetMapping("/my-enrollments")
-    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<List<EnrolledClassResponse>> myEnrollments(
         @AuthenticationPrincipal com.github.mwacha.wachafit.user.User currentUser
     ) {
@@ -45,7 +45,7 @@ public class GroupClassController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<GroupClassResponse> create(
         @Valid @RequestBody CreateGroupClassRequest req
     ) {
@@ -53,7 +53,7 @@ public class GroupClassController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<GroupClassResponse> update(
         @PathVariable UUID id,
         @Valid @RequestBody UpdateGroupClassRequest req,
@@ -64,13 +64,13 @@ public class GroupClassController {
     }
 
     @PutMapping("/{id}/reactivate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<GroupClassResponse> reactivate(@PathVariable UUID id) {
         return ResponseEntity.ok(groupClassService.reactivateGroupClass(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<Void> deactivate(
         @PathVariable UUID id,
         @AuthenticationPrincipal com.github.mwacha.wachafit.user.User currentUser
@@ -80,13 +80,13 @@ public class GroupClassController {
     }
 
     @GetMapping("/{classId}/enrolled")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<List<EnrolledStudentResponse>> listEnrolled(@PathVariable UUID classId) {
         return ResponseEntity.ok(bookingService.listEnrolledStudents(classId));
     }
 
     @PostMapping("/{classId}/enrolled")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<Void> enrollStudent(
         @PathVariable UUID classId,
         @RequestBody EnrollStudentRequest req
@@ -96,7 +96,7 @@ public class GroupClassController {
     }
 
     @DeleteMapping("/{classId}/enrolled/{studentId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINER','PROFESSOR')")
     public ResponseEntity<Void> unenrollStudent(
         @PathVariable UUID classId,
         @PathVariable UUID studentId

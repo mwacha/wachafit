@@ -106,7 +106,7 @@ const revenueData = ref<any>(null)
 const attendanceData = ref<boolean>(false)
 
 const trainersCount = computed(() =>
-  adminStore.users.filter(u => u.role === 'TRAINER' && u.active).length
+  adminStore.users.filter(u => (u.role === 'TRAINER' || u.role === 'PROFESSOR') && u.active).length
 )
 
 // % variação última vs penúltima entrada de matrícula

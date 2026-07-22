@@ -22,7 +22,7 @@ public class WorkoutController {
     }
 
     @PostMapping("/api/students/{studentId}/workout-plans")
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','PROFESSOR','ADMIN')")
     public ResponseEntity<WorkoutPlanResponse> createPlan(
             @PathVariable UUID studentId,
             @Valid @RequestBody CreateWorkoutPlanRequest req,
@@ -48,7 +48,7 @@ public class WorkoutController {
     }
 
     @PutMapping("/api/workout-plans/{planId}")
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','PROFESSOR','ADMIN')")
     public WorkoutPlanResponse updatePlan(
             @PathVariable UUID planId,
             @Valid @RequestBody CreateWorkoutPlanRequest req,
@@ -57,7 +57,7 @@ public class WorkoutController {
     }
 
     @PatchMapping("/api/workout-plans/{planId}/activate")
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','PROFESSOR','ADMIN')")
     public WorkoutPlanResponse activatePlan(
             @PathVariable UUID planId,
             @AuthenticationPrincipal User currentUser) {

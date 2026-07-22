@@ -27,7 +27,7 @@ const router = createRouter({
     {
       path: '/trainer',
       component: () => import('@/views/trainer/TrainerDashboard.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER'] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'PROFESSOR'] as Role[] },
     },
     {
       path: '/admin',
@@ -69,29 +69,29 @@ const router = createRouter({
     {
       path: '/admin/schedules',
       component: () => import('@/views/admin/SchedulesView.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'CASHIER', 'TRAINER'] as Role[] },
+      meta: { requiresAuth: true, roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'CASHIER', 'TRAINER', 'PROFESSOR'] as Role[] },
     },
     {
       path: '/exercises',
       component: () => import('@/views/exercises/ExercisesView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'PROFESSOR', 'ADMIN'] as Role[] },
     },
 
     // --- Trainer routes ---
     {
       path: '/trainer/schedule',
       component: () => import('@/views/trainer/ScheduleView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'PROFESSOR'] as Role[] },
     },
     {
       path: '/trainer/students',
       component: () => import('@/views/trainer/StudentsView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'PROFESSOR', 'ADMIN'] as Role[] },
     },
     {
       path: '/trainer/students/:id/overview',
       component: () => import('@/views/trainer/StudentOverviewView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'PROFESSOR', 'ADMIN'] as Role[] },
     },
 
     // --- Admin/Manager shared routes ---
@@ -154,12 +154,12 @@ const router = createRouter({
     {
       path: '/trainer/profile',
       component: () => import('@/views/trainer/ProfileView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'PROFESSOR'] as Role[] },
     },
     {
       path: '/trainer/students/:id/workout',
       component: () => import('@/views/trainer/WorkoutPlanView.vue'),
-      meta: { requiresAuth: true, roles: ['TRAINER', 'ADMIN'] as Role[] },
+      meta: { requiresAuth: true, roles: ['TRAINER', 'PROFESSOR', 'ADMIN'] as Role[] },
     },
 
     // --- Student routes ---

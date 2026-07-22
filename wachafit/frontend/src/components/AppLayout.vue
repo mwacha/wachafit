@@ -75,8 +75,8 @@
           <RouterLink to="/reception/charges"        class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-money-bill" /><span class="nav-label">Cobranças</span></RouterLink>
         </template>
 
-        <!-- Trainer -->
-        <template v-else-if="auth.role === 'TRAINER'">
+        <!-- Trainer / Professor -->
+        <template v-else-if="auth.role === 'TRAINER' || auth.role === 'PROFESSOR'">
           <RouterLink to="/trainer"                  class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-home" /><span class="nav-label">Dashboard</span></RouterLink>
           <RouterLink to="/trainer/schedule"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-calendar" /><span class="nav-label">Minha Agenda</span></RouterLink>
           <RouterLink to="/trainer/students"         class="nav-item" active-class="active" @click="mobileOpen = false"><i class="pi pi-users" /><span class="nav-label">Alunos</span></RouterLink>
@@ -188,7 +188,7 @@ const userInitial = computed(() => auth.role?.charAt(0) ?? 'U')
 const greeting = computed(() => {
   const labels: Record<string, string> = {
     ADMIN: 'Admin', MANAGER: 'Gerente', CASHIER: 'Caixa',
-    RECEPTIONIST: 'Recepção', TRAINER: 'Profissional', STUDENT: 'Aluno',
+    RECEPTIONIST: 'Recepção', TRAINER: 'Profissional', PROFESSOR: 'Professor', STUDENT: 'Aluno',
   }
   return auth.role ? (labels[auth.role] ?? auth.role) : 'Usuário'
 })

@@ -37,7 +37,7 @@ public class ScheduleController {
     }
 
     @PostMapping("/api/schedules")
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','PROFESSOR')")
     public ResponseEntity<ScheduleResponse> create(
         @Valid @RequestBody ScheduleRequest req,
         @AuthenticationPrincipal User currentUser
@@ -46,7 +46,7 @@ public class ScheduleController {
     }
 
     @DeleteMapping("/api/schedules/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','PROFESSOR')")
     public ResponseEntity<Void> cancel(
         @PathVariable UUID id,
         @AuthenticationPrincipal User currentUser

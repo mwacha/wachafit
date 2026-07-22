@@ -29,13 +29,13 @@ public class ExerciseController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','PROFESSOR','ADMIN')")
     public ResponseEntity<ExerciseResponse> create(@Valid @RequestBody CreateExerciseRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TRAINER','PROFESSOR','ADMIN')")
     public ExerciseResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateExerciseRequest req) {
         return service.update(id, req);
     }

@@ -2,6 +2,7 @@ export const roleLabel: Record<string, string> = {
   ADMIN:        'Administrador',
   MANAGER:      'Gerente',
   TRAINER:      'Personal Trainer',
+  PROFESSOR:    'Professor',
   RECEPTIONIST: 'Recepcionista',
   CASHIER:      'Caixa',
   STUDENT:      'Aluno',
