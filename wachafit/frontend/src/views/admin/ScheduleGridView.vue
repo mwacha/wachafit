@@ -15,25 +15,42 @@
           <p class="empty-hint">Crie uma turma do tipo "Aula Fixa" com dias da semana em <strong>Turmas</strong>.</p>
         </div>
 
-        <div v-else class="week-grid">
-          <div v-for="day in DAYS" :key="day.key" class="day-col">
-            <div class="day-header">{{ day.label }}</div>
-            <div class="day-cards">
-              <div v-for="cls in classesForDay(day.key)" :key="cls.id"
-                   class="class-card" :class="cardStatus(cls)" @click="openEnroll(cls)">
-                <div class="card-name">{{ cls.name }}</div>
-                <div class="card-time">{{ cls.startTime }} – {{ cls.endTime }}</div>
-                <div v-if="cls.trainerName" class="card-trainer">
-                  <i class="pi pi-user" />
-                  {{ cls.trainerName }}
-                </div>
-                <div class="card-capacity">
-                  <i class="pi pi-users" />
-                  {{ cls.enrolledCount }}/{{ cls.capacity }}
-                  <span class="vagas-label">vagas</span>
+        <div v-else class="schedule-wrap">
+          <!-- Cabeçalho fixo com nomes dos dias -->
+          <div class="sched-header">
+            <div class="time-gutter-head" />
+            <div v-for="day in DAYS" :key="day.key" class="day-head">{{ day.label }}</div>
+          </div>
+          <!-- Corpo com rolagem: régua de tempo + colunas -->
+          <div class="sched-body">
+            <div class="time-gutter" :style="{ height: `${GRID_HEIGHT}px` }">
+              <div v-for="h in hours" :key="h" class="time-label"
+                   :style="{ top: `${(h - START_HOUR) * 60 * PX_PER_MIN}px` }">
+                {{ String(h).padStart(2, '0') }}:00
+              </div>
+            </div>
+            <div class="days-area">
+              <div v-for="day in DAYS" :key="day.key" class="day-col"
+                   :style="{ height: `${GRID_HEIGHT}px` }">
+                <div v-for="h in hours" :key="h" class="hour-line"
+                     :style="{ top: `${(h - START_HOUR) * 60 * PX_PER_MIN}px` }" />
+                <div v-for="cls in classesForDay(day.key)" :key="cls.id"
+                     class="class-card" :class="cardStatus(cls)"
+                     :style="cardStyle(cls)"
+                     @click="openEnroll(cls)">
+                  <div class="card-name">{{ cls.name }}</div>
+                  <div class="card-time">{{ cls.startTime?.slice(0,5) }} – {{ cls.endTime?.slice(0,5) }}</div>
+                  <div v-if="cls.trainerName" class="card-trainer">
+                    <i class="pi pi-user" />
+                    {{ cls.trainerName }}
+                  </div>
+                  <div class="card-capacity">
+                    <i class="pi pi-users" />
+                    {{ cls.enrolledCount }}/{{ cls.capacity }}
+                    <span class="vagas-label">vagas</span>
+                  </div>
                 </div>
               </div>
-              <div v-if="classesForDay(day.key).length === 0" class="day-empty">—</div>
             </div>
           </div>
         </div>
@@ -122,6 +139,24 @@ const DAYS = [
   { key: 'SAT', label: 'Sábado' },
   { key: 'SUN', label: 'Domingo' },
 ]
+
+const START_HOUR = 6
+const END_HOUR = 23
+const PX_PER_MIN = 1.4
+const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i)
+const GRID_HEIGHT = (END_HOUR - START_HOUR) * 60 * PX_PER_MIN
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
+
+function cardStyle(cls: GroupClass) {
+  if (!cls.startTime) return {}
+  const top = (timeToMinutes(cls.startTime) - START_HOUR * 60) * PX_PER_MIN
+  const height = Math.max(cls.durationMinutes * PX_PER_MIN, 44)
+  return { top: `${top}px`, height: `${height}px` }
+}
 
 const loading = ref(true)
 const classes = ref<GroupClass[]>([])
@@ -249,47 +284,86 @@ async function doUnenroll(studentId: string) {
 .empty-grid p { color: var(--neutral-500); margin: 0; }
 .empty-hint { font-size: 13px; color: var(--neutral-400) !important; }
 
-/* Grid */
-.week-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(130px, 1fr));
-  gap: 12px;
+/* Schedule wrap */
+.schedule-wrap {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  max-height: 75vh;
+}
+
+/* Fixed header */
+.sched-header {
+  display: flex;
+  border-bottom: 2px solid var(--neutral-200);
+  background: var(--neutral-50);
+  flex-shrink: 0;
+}
+.time-gutter-head { width: 54px; flex-shrink: 0; }
+.day-head {
+  flex: 1; min-width: 120px; text-align: center; padding: 10px 4px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--neutral-500);
+  border-left: 1px solid var(--neutral-200);
+}
+
+/* Scrollable body */
+.sched-body {
+  display: flex;
+  overflow-y: auto;
   overflow-x: auto;
-  padding-bottom: 8px;
+  flex: 1;
 }
-.day-col { display: flex; flex-direction: column; gap: 8px; min-width: 130px; }
-.day-header {
-  text-align: center; font-size: 12px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .05em;
-  color: var(--neutral-500); padding: 4px 0;
-  border-bottom: 1px solid var(--neutral-200);
-}
-.day-cards { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
-.day-empty { text-align: center; color: var(--neutral-300); font-size: 20px; padding: 16px 0; }
 
-/* Class card */
+/* Time ruler */
+.time-gutter {
+  position: relative; width: 54px; flex-shrink: 0;
+  border-right: 1px solid var(--neutral-200);
+  background: var(--neutral-50);
+}
+.time-label {
+  position: absolute; right: 6px;
+  font-size: 10px; color: var(--neutral-400);
+  transform: translateY(-50%);
+  white-space: nowrap; line-height: 1; user-select: none;
+}
+
+/* Days area */
+.days-area { display: flex; flex: 1; }
+.day-col {
+  flex: 1; min-width: 120px; position: relative;
+  border-left: 1px solid var(--neutral-200);
+}
+.hour-line {
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: var(--neutral-100); pointer-events: none;
+}
+
+/* Class card — absolute positioned */
 .class-card {
-  background: #fff; border: 1.5px solid var(--neutral-200);
-  border-radius: var(--radius-md); padding: 12px 10px;
+  position: absolute; left: 4px; right: 4px;
+  background: var(--blue-50); border: 1.5px solid var(--blue-200);
+  border-radius: var(--radius-md); padding: 5px 7px;
   cursor: pointer; transition: border-color .15s, box-shadow .15s;
-  display: flex; flex-direction: column; gap: 4px;
+  overflow: hidden; display: flex; flex-direction: column; gap: 2px;
+  box-sizing: border-box;
 }
-.class-card:hover { border-color: var(--blue-400); box-shadow: 0 2px 8px rgba(59,130,246,.12); }
-.card-full  { border-color: var(--red-300)    !important; background: #fff5f5; }
-.card-almost{ border-color: var(--orange-300) !important; background: #fffbf0; }
+.class-card:hover { border-color: var(--blue-400); box-shadow: 0 2px 8px rgba(59,130,246,.18); }
+.card-full   { border-color: var(--red-300)    !important; background: #fff5f5; }
+.card-almost { border-color: var(--orange-300) !important; background: #fffbf0; }
 
-.card-name { font-size: 13px; font-weight: 700; color: var(--neutral-800); line-height: 1.3; }
-.card-time { font-size: 11px; color: var(--neutral-500); }
+.card-name { font-size: 12px; font-weight: 700; color: var(--neutral-800); line-height: 1.2; }
+.card-time { font-size: 10px; color: var(--neutral-500); }
 .card-trainer {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 11px; color: var(--blue-600); font-weight: 500;
+  display: flex; align-items: center; gap: 3px;
+  font-size: 10px; color: var(--blue-600); font-weight: 500;
 }
 .card-capacity {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 12px; font-weight: 600; color: var(--neutral-600); margin-top: 2px;
+  display: flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 600; color: var(--neutral-600);
 }
 .card-full  .card-capacity { color: var(--red-600); }
-.card-almost.card-capacity { color: var(--orange-600); }
 .vagas-label { font-weight: 400; color: var(--neutral-400); }
 
 /* Enrollment dialog */
