@@ -34,7 +34,7 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 20)
     private Role role;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
