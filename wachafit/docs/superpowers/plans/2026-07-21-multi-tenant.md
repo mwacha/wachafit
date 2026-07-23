@@ -20,6 +20,8 @@
 - Role `SUPER_ADMIN` é adicionada ao enum `Role.java` e bypassa o guard de tenant em todos os endpoints
 - Novos endpoints de gerenciamento de tenants: `POST /api/super/tenants`, `GET /api/super/tenants`, protegidos por `ROLE_SUPER_ADMIN`
 - Package base: `com.github.mwacha.wachafit`
+- Testes: não há wrapper `./mvnw` neste projeto — usar o `mvn` global (ex: `cd backend && mvn test -Dtest=Classe`)
+- Colunas `created_at` (`nullable=false, insertable=false`, valor vindo do DEFAULT do banco): sempre incluir `columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"` no `@Column` da entidade JPA. Sem isso, o Hibernate `create-drop` usado pelos testes `@DataJpaTest`/`@SpringBootTest` com H2 puro (sem Testcontainers) cria a coluna sem DEFAULT e todo insert falha com `NULL not allowed`. Isso não afeta produção — lá `ddl-auto` é `validate` e o schema real vem do Flyway. NUNCA usar `TIMESTAMPTZ` no columnDefinition (sintaxe Postgres, H2 puro não entende) nem mudar `ddl-auto`/`application-test.yml` para "consertar" isso.
 
 ---
 
@@ -202,7 +204,8 @@ public class Tenant {
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
 
     public UUID getId()              { return id; }
@@ -1867,7 +1870,8 @@ public class SaasPlan {
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
 
     public UUID getId() { return id; }
@@ -2218,7 +2222,8 @@ public class TenantSubscription {
     @Column(name = "current_period_end")
     private Instant currentPeriodEnd;
 
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
 
     public UUID getId() { return id; }
@@ -2278,7 +2283,8 @@ public class TenantCharge {
     @Column(name = "paid_at")
     private OffsetDateTime paidAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
 
     public UUID getId() { return id; }
