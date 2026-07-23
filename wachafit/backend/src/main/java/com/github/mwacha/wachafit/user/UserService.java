@@ -3,6 +3,9 @@ package com.github.mwacha.wachafit.user;
 import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.Tenant;
+import com.github.mwacha.wachafit.tenant.TenantContext;
+import com.github.mwacha.wachafit.tenant.TenantRepository;
 import com.github.mwacha.wachafit.user.dto.CreateUserRequest;
 import com.github.mwacha.wachafit.user.dto.UpdateUserRequest;
 import com.github.mwacha.wachafit.user.dto.UserResponse;
@@ -19,19 +22,21 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       EmailService emailService) {
+    public UserService(UserRepository userRepository, TenantRepository tenantRepository,
+                       PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
     public List<UserResponse> listUsers(String role, Boolean active) {
-        return userRepository.findAll().stream()
+        return userRepository.findAll().stream()   // Hibernate filter filtrará por tenant (Task 4)
             .filter(u -> role == null || u.getRole().name().equals(role))
             .filter(u -> active == null || u.isActive() == active)
             .map(this::toResponse)
@@ -42,14 +47,18 @@ public class UserService {
         if (req.role() == Role.STUDENT) {
             throw new BusinessException("Não é permitido criar usuário com role STUDENT por este endpoint");
         }
-        if (userRepository.existsByEmail(req.email())) {
+        UUID tenantId = TenantContext.get();
+        if (userRepository.existsByEmailAndTenantId(req.email(), tenantId)) {
             throw new BusinessException("E-mail já cadastrado");
         }
+        Tenant tenant = tenantRepository.findById(tenantId)
+            .orElseThrow(() -> new NotFoundException("Tenant não encontrado"));
         User user = new User();
         user.setName(req.name());
         user.setEmail(req.email());
         user.setPasswordHash(passwordEncoder.encode(req.password()));
         user.setRole(req.role());
+        user.setTenant(tenant);
         User saved = userRepository.save(user);
         emailService.sendHtml(
             saved.getEmail(),

@@ -2,9 +2,13 @@ package com.github.mwacha.wachafit.user;
 
 import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.tenant.Tenant;
+import com.github.mwacha.wachafit.tenant.TenantContext;
+import com.github.mwacha.wachafit.tenant.TenantRepository;
 import com.github.mwacha.wachafit.user.dto.CreateUserRequest;
 import com.github.mwacha.wachafit.user.dto.UpdateUserRequest;
 import com.github.mwacha.wachafit.user.dto.UserResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,18 +28,27 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock UserRepository userRepository;
+    @Mock TenantRepository tenantRepository;
     @Mock EmailService emailService;
     private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private UserService userService;
+    private final UUID tenantId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder, emailService);
+        userService = new UserService(userRepository, tenantRepository, passwordEncoder, emailService);
+        TenantContext.set(tenantId);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test
     void createUser_shouldCreateTrainer() {
-        when(userRepository.existsByEmail("trainer@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailAndTenantId("trainer@example.com", tenantId)).thenReturn(false);
+        when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(new Tenant()));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
             try {
@@ -67,7 +80,7 @@ class UserServiceTest {
 
     @Test
     void createUser_shouldRejectDuplicateEmail() {
-        when(userRepository.existsByEmail("dup@example.com")).thenReturn(true);
+        when(userRepository.existsByEmailAndTenantId("dup@example.com", tenantId)).thenReturn(true);
         assertThatThrownBy(() -> userService.createUser(
             new CreateUserRequest("Dup", "dup@example.com", "senha123", Role.TRAINER)))
             .isInstanceOf(BusinessException.class);
