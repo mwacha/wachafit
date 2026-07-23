@@ -32,6 +32,7 @@ public class JwtUtil {
         return Jwts.builder()
             .subject(user.getId().toString())
             .claim("role", user.getRole().name())
+            .claim("tenantId", user.getTenant().getId().toString())
             .issuedAt(new Date())
             .expiration(new Date(System.currentTimeMillis() + expirationSeconds * 1000))
             .signWith(key)
@@ -44,6 +45,11 @@ public class JwtUtil {
 
     public String extractRole(String token) {
         return parseClaims(token).get("role", String.class);
+    }
+
+    public UUID extractTenantId(String token) {
+        String raw = parseClaims(token).get("tenantId", String.class);
+        return raw != null ? UUID.fromString(raw) : null;
     }
 
     public boolean isTokenValid(String token) {

@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.shared.security;
 
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -46,6 +48,10 @@ public class JwtFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(auth);
+                    UUID tenantId = jwtUtil.extractTenantId(token);
+                    if (tenantId != null) {
+                        TenantContext.set(tenantId);
+                    }
                 }
             } catch (Exception e) {
                 // Token was valid but user lookup failed (deleted user, DB error, malformed claim).
@@ -53,7 +59,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 log.debug("Could not authenticate from JWT token: {}", e.getMessage());
             }
         }
-        chain.doFilter(request, response);
+        try {
+            chain.doFilter(request, response);
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     private String extractToken(HttpServletRequest request) {
