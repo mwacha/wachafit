@@ -3402,6 +3402,122 @@ git commit -m "feat(saas): frontend — wizard de cadastro de academia (tenant) 
 
 ---
 
+## Task 14: Validar tenant do studentId nos endpoints de escrita (Billing/Membership/Booking)
+
+> **Origem:** achado da revisão da Task 7 (não é regressão das Tasks 1-13 — a vulnerabilidade já existia antes deste plano). Dependência real: apenas Tasks 1-4 (TenantContext, User.tenant). Executada fora de ordem (entre a Task 7 e a Task 8) por decisão do usuário ao ser avisado do problema.
+
+**Problema:** `BillingService.createManualCharge`, `MembershipService.createSubscription` e `BookingService.enrollStudentInClass` recebem um `studentId` do chamador e só checam `userRepo.findById(studentId)` (existência), nunca se esse usuário pertence ao tenant atual. Como `User` não estende `TenantAwareEntity` (guarda o tenant via `@ManyToOne Tenant`, não via a coluna crua `tenant_id` do `TenantAwareEntity`), o Hibernate `@Filter` nunca protege buscas por `id` (`findById` é um PK load, que o Hibernate `@Filter` não intercepta de qualquer forma). Um ADMIN autenticado no Tenant A pode hoje criar uma `MemberSubscription`/`PaymentCharge`/matrícula apontando para um `studentId` de outro tenant.
+
+**Files:**
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/user/UserRepository.java`
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/billing/BillingService.java`
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/membership/MembershipService.java`
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/booking/BookingService.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/billing/BillingServiceTest.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/membership/MembershipServiceTest.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/booking/BookingServiceTest.java`
+
+**Interfaces:**
+- Consumes: `TenantContext.get()` (Task 2), `User.getTenant()` (Task 2/3)
+- Produces: `UserRepository.existsByIdAndTenantId(UUID id, UUID tenantId): boolean`
+
+- [ ] **Step 1: Adicionar o método ao UserRepository**
+
+```java
+// user/UserRepository.java — adicionar:
+boolean existsByIdAndTenantId(UUID id, UUID tenantId);
+```
+
+- [ ] **Step 2: Escrever os testes que falham**
+
+Em cada um dos 3 arquivos de teste (`BillingServiceTest`, `MembershipServiceTest`, `BookingServiceTest`), adicionar um teste que injeta `TenantContext.set(...)` com um tenant diferente do usuário-alvo e espera `NotFoundException`. Exemplo para `MembershipServiceTest`:
+
+```java
+// membership/MembershipServiceTest.java — novo teste (adicionar imports de TenantContext, NotFoundException se ausentes)
+@Test
+void createSubscription_throwsNotFound_whenStudentBelongsToDifferentTenant() {
+    UUID myTenantId = UUID.randomUUID();
+    UUID studentId = UUID.randomUUID();
+    TenantContext.set(myTenantId);
+    try {
+        when(userRepo.existsByIdAndTenantId(studentId, myTenantId)).thenReturn(false);
+
+        assertThatThrownBy(() ->
+            membershipService.createSubscription(studentId, someValidRequest(), UUID.randomUUID())
+        ).isInstanceOf(NotFoundException.class);
+
+        verify(subscriptionRepo, never()).save(any());
+    } finally {
+        TenantContext.clear();
+    }
+}
+```
+
+Adapte `someValidRequest()` para o `CreateSubscriptionRequest` já usado nos outros testes da classe. Replique o mesmo padrão (setup de `TenantContext`, stub de `existsByIdAndTenantId` retornando `false`, assert de `NotFoundException`, verify de que o save correspondente nunca ocorre) em `BillingServiceTest` (para `createManualCharge`) e `BookingServiceTest` (para `enrollStudentInClass`).
+
+- [ ] **Step 3: Rodar para confirmar falha**
+
+```bash
+cd backend
+mvn test -pl . -Dtest=BillingServiceTest,MembershipServiceTest,BookingServiceTest -q 2>&1 | tail -30
+```
+Esperado: FAIL — `existsByIdAndTenantId` não existe ainda / lógica de checagem de tenant não existe.
+
+- [ ] **Step 4: Implementar a checagem nos 3 serviços**
+
+Em cada serviço, substituir o `userRepo.findById(studentId).orElseThrow(...)` (ou `userRepository`, conforme o nome do campo local) pela checagem tenant-aware, usando `TenantContext.get()`:
+
+```java
+// billing/BillingService.java — dentro de createManualCharge, substituir:
+userRepo.findById(studentId)
+    .orElseThrow(() -> new NotFoundException("Aluno não encontrado"));
+// por:
+if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+    throw new NotFoundException("Aluno não encontrado");
+}
+```
+
+```java
+// membership/MembershipService.java — dentro de createSubscription, mesma substituição:
+if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+    throw new NotFoundException("Aluno não encontrado");
+}
+```
+
+```java
+// booking/BookingService.java — dentro de enrollStudentInClass, mesma substituição
+// (o campo local chama-se userRepository, não userRepo — confirme o nome exato no arquivo):
+if (!userRepository.existsByIdAndTenantId(studentId, TenantContext.get())) {
+    throw new NotFoundException("Aluno não encontrado");
+}
+```
+
+Adicionar o import `com.github.mwacha.wachafit.tenant.TenantContext` em cada um dos 3 arquivos, caso ainda não esteja presente.
+
+> **Nota:** usar sempre `NotFoundException` (nunca uma mensagem que revele "esse aluno existe, mas em outro tenant") — evita enumeração de tenants por diferença de mensagem de erro.
+
+- [ ] **Step 5: Rodar os testes novamente**
+
+```bash
+mvn test -pl . -Dtest=BillingServiceTest,MembershipServiceTest,BookingServiceTest -q 2>&1 | tail -30
+```
+Esperado: PASS em todos os testes (os 3 novos + todos os pré-existentes das 3 classes).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add backend/src/main/java/com/github/mwacha/wachafit/user/UserRepository.java \
+        backend/src/main/java/com/github/mwacha/wachafit/billing/BillingService.java \
+        backend/src/main/java/com/github/mwacha/wachafit/membership/MembershipService.java \
+        backend/src/main/java/com/github/mwacha/wachafit/booking/BookingService.java \
+        backend/src/test/java/com/github/mwacha/wachafit/billing/BillingServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/membership/MembershipServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/booking/BookingServiceTest.java
+git commit -m "fix(tenant): valida tenant do studentId em Billing/Membership/Booking antes de aceitar"
+```
+
+---
+
 ## Considerações finais
 
 ### O que NÃO está neste plano (escopo futuro)
@@ -3415,3 +3531,5 @@ git commit -m "feat(saas): frontend — wizard de cadastro de academia (tenant) 
 ### Ordem de execução obrigatória
 
 Tasks 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 (todas sequenciais — sem paralelismo possível).
+
+Task 14 depende apenas das Tasks 1-4 (não das 5-13); foi inserida e executada entre a Task 7 e a Task 8 por corrigir uma vulnerabilidade encontrada durante a revisão da Task 7. Pode, em princípio, rodar a qualquer momento após a Task 4.
