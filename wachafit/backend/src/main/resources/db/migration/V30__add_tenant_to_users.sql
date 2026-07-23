@@ -10,8 +10,5 @@ ALTER TABLE users ALTER COLUMN tenant_id SET NOT NULL;
 -- 4. Remover a constraint UNIQUE antiga em email
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
 
--- 5. Adicionar nova constraint UNIQUE (email, tenant_id)
+-- 5. Adicionar nova constraint UNIQUE (email, tenant_id) -- já cria índice implícito, usado no login
 ALTER TABLE users ADD CONSTRAINT users_email_tenant_unique UNIQUE (email, tenant_id);
-
--- 6. Índice para busca de login
-CREATE INDEX idx_users_email_tenant ON users(email, tenant_id);
