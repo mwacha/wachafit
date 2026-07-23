@@ -1,12 +1,13 @@
 package com.github.mwacha.wachafit.assessment;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
 @Table(name = "assessment_measurements")
-public class AssessmentMeasurement {
+public class AssessmentMeasurement extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

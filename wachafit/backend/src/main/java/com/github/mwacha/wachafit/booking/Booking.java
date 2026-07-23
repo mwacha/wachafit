@@ -1,13 +1,14 @@
 package com.github.mwacha.wachafit.booking;
 
 import com.github.mwacha.wachafit.schedule.Schedule;
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "bookings")
-public class Booking {
+public class Booking extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -1,12 +1,13 @@
 package com.github.mwacha.wachafit.workout;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
 @Table(name = "workout_plan_items")
-public class WorkoutPlanItem {
+public class WorkoutPlanItem extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

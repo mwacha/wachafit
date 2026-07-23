@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.progress;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -7,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "progress_photos")
-public class ProgressPhoto {
+public class ProgressPhoto extends TenantAwareEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(name = "student_id", nullable = false) private UUID studentId;
     @Column(name = "uploaded_by", nullable = false) private UUID uploadedBy;

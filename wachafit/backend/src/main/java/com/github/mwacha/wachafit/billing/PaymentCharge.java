@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.billing;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -9,7 +10,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "payment_charges")
-public class PaymentCharge {
+public class PaymentCharge extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

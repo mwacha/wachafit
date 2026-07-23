@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.assessment;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -10,7 +11,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "physical_assessments")
-public class PhysicalAssessment {
+public class PhysicalAssessment extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.membership;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -7,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "membership_plans")
-public class MembershipPlan {
+public class MembershipPlan extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

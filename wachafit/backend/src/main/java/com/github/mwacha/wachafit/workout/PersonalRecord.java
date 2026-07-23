@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.workout;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -7,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "personal_records")
-public class PersonalRecord {
+public class PersonalRecord extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

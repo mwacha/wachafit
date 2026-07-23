@@ -1,11 +1,12 @@
 package com.github.mwacha.wachafit.exercise;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity
 @Table(name = "exercises")
-public class Exercise {
+public class Exercise extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

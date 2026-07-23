@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.membership;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -7,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "member_subscriptions")
-public class MemberSubscription {
+public class MemberSubscription extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

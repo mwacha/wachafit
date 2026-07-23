@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.schedule;
 
 import com.github.mwacha.wachafit.groupclass.GroupClass;
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -8,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "schedules")
-public class Schedule {
+public class Schedule extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.profile;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -8,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "trainer_profiles")
-public class TrainerProfile {
+public class TrainerProfile extends TenantAwareEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(name = "user_id", nullable = false, unique = true) private UUID userId;
     @Column(length = 20) private String cref;

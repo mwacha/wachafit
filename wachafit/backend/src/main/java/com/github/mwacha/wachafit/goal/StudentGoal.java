@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.goal;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -9,7 +10,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "student_goals")
-public class StudentGoal {
+public class StudentGoal extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

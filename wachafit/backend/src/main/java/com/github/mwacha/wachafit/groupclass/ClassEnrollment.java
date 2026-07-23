@@ -1,12 +1,13 @@
 package com.github.mwacha.wachafit.groupclass;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "class_enrollments")
-public class ClassEnrollment {
+public class ClassEnrollment extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

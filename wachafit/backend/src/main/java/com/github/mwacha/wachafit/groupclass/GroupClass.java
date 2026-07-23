@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.groupclass;
 
+import com.github.mwacha.wachafit.tenant.TenantAwareEntity;
 import com.github.mwacha.wachafit.user.User;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -7,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "group_classes")
-public class GroupClass {
+public class GroupClass extends TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
