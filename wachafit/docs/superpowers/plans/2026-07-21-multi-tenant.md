@@ -3599,6 +3599,38 @@ git commit -m "fix(tenant): valida tenant do studentId/trainerId em Assessment/P
 
 ---
 
+## Task 16: Validar tenant do trainerId em GroupClassService.findTrainer
+
+> **Origem:** achado da revisão da Task 15 (grep de varredura por instâncias adicionais do mesmo padrão). Mesma classe de vulnerabilidade das Tasks 14/15. Executada diretamente pelo controller da sessão (fix pequeno, padrão já validado duas vezes em revisão).
+
+**Problema:** `GroupClassService.findTrainer(UUID trainerId)` (usado por `create()` e `updateGroupClass()`) fazia `userRepository.findById(trainerId)` sem checar tenant — um ADMIN do Tenant A podia associar uma turma a um `trainerId` de outro tenant.
+
+**Files:**
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/user/UserRepository.java` (novo método `findByIdAndTenantId`)
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/groupclass/GroupClassService.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/groupclass/GroupClassServiceTest.java`
+
+**Fix aplicado:**
+
+```java
+// user/UserRepository.java — adicionado:
+Optional<User> findByIdAndTenantId(UUID id, UUID tenantId);
+```
+
+```java
+// groupclass/GroupClassService.java — findTrainer:
+private User findTrainer(UUID trainerId) {
+    return userRepository.findByIdAndTenantId(trainerId, TenantContext.get())
+        .orElseThrow(() -> new NotFoundException("Profissional não encontrado: " + trainerId));
+}
+```
+
+Testes existentes (`create_shouldReturnResponse_whenTrainerExists`, `create_shouldThrow_whenTrainerNotFound`) atualizados para stubar `findByIdAndTenantId` em vez de `findById`, com `TenantContext.set()`/`clear()` em `@BeforeEach`/`@AfterEach`. Mensagens de erro preservadas.
+
+**Resultado:** `mvn test -Dtest=GroupClassServiceTest` — 12/12 passando.
+
+---
+
 ## Considerações finais
 
 ### O que NÃO está neste plano (escopo futuro)

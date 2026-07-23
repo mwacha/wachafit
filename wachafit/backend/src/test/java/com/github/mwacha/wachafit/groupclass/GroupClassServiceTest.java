@@ -6,9 +6,11 @@ import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.ClassEnrollmentRepository;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,10 +32,17 @@ class GroupClassServiceTest {
     @Mock UserRepository userRepository;
     @Mock ClassEnrollmentRepository enrollmentRepository;
     private GroupClassService service;
+    private final UUID tenantId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         service = new GroupClassService(groupClassRepository, userRepository, enrollmentRepository);
+        TenantContext.set(tenantId);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test
@@ -43,7 +52,7 @@ class GroupClassServiceTest {
 
         GroupClass gc = buildGroupClass(UUID.randomUUID(), "Funcional", 10, 60, trainer, true);
 
-        when(userRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(userRepository.findByIdAndTenantId(trainerId, tenantId)).thenReturn(Optional.of(trainer));
         when(groupClassRepository.save(any())).thenReturn(gc);
 
         GroupClassResponse res = service.create(
@@ -56,7 +65,7 @@ class GroupClassServiceTest {
     @Test
     void create_shouldThrow_whenTrainerNotFound() {
         UUID trainerId = UUID.randomUUID();
-        when(userRepository.findById(trainerId)).thenReturn(Optional.empty());
+        when(userRepository.findByIdAndTenantId(trainerId, tenantId)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.create(
             new CreateGroupClassRequest("Funcional", null, 10, 60, trainerId, "FLEX", null, null, null)))
             .isInstanceOf(NotFoundException.class);

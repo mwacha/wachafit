@@ -7,6 +7,7 @@ import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -163,7 +164,7 @@ public class GroupClassService {
     }
 
     private User findTrainer(UUID trainerId) {
-        return userRepository.findById(trainerId)
+        return userRepository.findByIdAndTenantId(trainerId, TenantContext.get())
             .orElseThrow(() -> new NotFoundException("Profissional não encontrado: " + trainerId));
     }
 
