@@ -67,7 +67,7 @@ class ExerciseControllerIntegrationTest {
 
         var result = mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(new LoginRequest("t@t.com", "pass"))))
+                        .content(mapper.writeValueAsString(new LoginRequest("t@t.com", "pass", "personal-studio"))))
                 .andReturn();
         trainerToken = mapper.readTree(result.getResponse().getContentAsString())
                 .get("token").asText();

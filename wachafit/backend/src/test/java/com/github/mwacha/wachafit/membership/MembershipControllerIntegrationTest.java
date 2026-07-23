@@ -83,7 +83,7 @@ class MembershipControllerIntegrationTest {
         studentId = student.getId();
 
         var loginResult = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(new LoginRequest("admin@t.com", "pass")))).andReturn();
+            .content(mapper.writeValueAsString(new LoginRequest("admin@t.com", "pass", "personal-studio")))).andReturn();
         adminToken = mapper.readTree(loginResult.getResponse().getContentAsString()).get("token").asText();
 
         var planResult = mvc.perform(post("/api/membership-plans")
@@ -150,7 +150,7 @@ class MembershipControllerIntegrationTest {
             .andExpect(status().isCreated());
 
         var studentLogin = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(new LoginRequest("student@t.com", "pass")))).andReturn();
+            .content(mapper.writeValueAsString(new LoginRequest("student@t.com", "pass", "personal-studio")))).andReturn();
         String studentToken = mapper.readTree(studentLogin.getResponse().getContentAsString()).get("token").asText();
 
         mvc.perform(get("/api/students/" + studentId + "/subscription")

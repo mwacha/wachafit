@@ -63,7 +63,7 @@ class GroupClassControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new RegisterRequest("Trainer User", trainerEmail, "password123"))))
+                new RegisterRequest("Trainer User", trainerEmail, "password123", "personal-studio"))))
             .andReturn();
 
         // Promote to TRAINER role directly via repository
@@ -77,13 +77,13 @@ class GroupClassControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new RegisterRequest("Student User", studentEmail, "password123"))))
+                new RegisterRequest("Student User", studentEmail, "password123", "personal-studio"))))
             .andReturn();
 
         var result = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new LoginRequest(studentEmail, "password123"))))
+                new LoginRequest(studentEmail, "password123", "personal-studio"))))
             .andReturn();
         var body = objectMapper.readTree(result.getResponse().getContentAsString());
         studentToken = body.get("token").asText();
@@ -119,7 +119,7 @@ class GroupClassControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new RegisterRequest("Trainer User", trainerEmail, "password123"))))
+                new RegisterRequest("Trainer User", trainerEmail, "password123", "personal-studio"))))
             .andReturn();
 
         var trainerUser = userRepository.findByEmail(trainerEmail).orElseThrow();
@@ -129,7 +129,7 @@ class GroupClassControllerIntegrationTest {
         var result = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new LoginRequest(trainerEmail, "password123"))))
+                new LoginRequest(trainerEmail, "password123", "personal-studio"))))
             .andReturn();
         var body = objectMapper.readTree(result.getResponse().getContentAsString());
         String trainerToken = body.get("token").asText();

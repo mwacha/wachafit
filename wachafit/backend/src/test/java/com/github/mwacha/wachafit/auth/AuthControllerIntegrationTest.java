@@ -50,7 +50,7 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                    new RegisterRequest("Alice", "alice@test.com", "password123"))))
+                    new RegisterRequest("Alice", "alice@test.com", "password123", "personal-studio"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isNotEmpty())
             .andExpect(jsonPath("$.role").value("STUDENT"))
@@ -62,13 +62,13 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                    new RegisterRequest("Bob", "bob@test.com", "password123"))))
+                    new RegisterRequest("Bob", "bob@test.com", "password123", "personal-studio"))))
             .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                    new LoginRequest("bob@test.com", "password123"))))
+                    new LoginRequest("bob@test.com", "password123", "personal-studio"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isNotEmpty());
     }
@@ -78,13 +78,13 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                    new RegisterRequest("Carol", "carol@test.com", "password123"))))
+                    new RegisterRequest("Carol", "carol@test.com", "password123", "personal-studio"))))
             .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                    new LoginRequest("carol@test.com", "wrongpassword"))))
+                    new LoginRequest("carol@test.com", "wrongpassword", "personal-studio"))))
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.message").value("Credenciais inválidas"));
     }

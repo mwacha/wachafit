@@ -81,13 +81,13 @@ class GoalControllerIntegrationTest {
 
         var r = mvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new LoginRequest("t@t.com", "pass"))))
+                .content(mapper.writeValueAsString(new LoginRequest("t@t.com", "pass", "personal-studio"))))
             .andReturn();
         trainerToken = mapper.readTree(r.getResponse().getContentAsString()).get("token").asText();
 
         var sr = mvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new LoginRequest("s@t.com", "pass"))))
+                .content(mapper.writeValueAsString(new LoginRequest("s@t.com", "pass", "personal-studio"))))
             .andReturn();
         studentToken = mapper.readTree(sr.getResponse().getContentAsString()).get("token").asText();
     }

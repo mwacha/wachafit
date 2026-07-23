@@ -101,13 +101,13 @@ class WorkoutControllerIntegrationTest {
 
         var r = mvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new LoginRequest("t@t.com", "pass"))))
+                .content(mapper.writeValueAsString(new LoginRequest("t@t.com", "pass", "personal-studio"))))
             .andReturn();
         trainerToken = mapper.readTree(r.getResponse().getContentAsString()).get("token").asText();
 
         var r2 = mvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new LoginRequest("s@t.com", "pass"))))
+                .content(mapper.writeValueAsString(new LoginRequest("s@t.com", "pass", "personal-studio"))))
             .andReturn();
         studentToken = mapper.readTree(r2.getResponse().getContentAsString()).get("token").asText();
     }

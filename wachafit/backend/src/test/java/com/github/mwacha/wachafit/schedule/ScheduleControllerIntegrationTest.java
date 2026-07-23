@@ -65,7 +65,7 @@ class ScheduleControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new RegisterRequest("Trainer", trainerEmail, "password123"))))
+                new RegisterRequest("Trainer", trainerEmail, "password123", "personal-studio"))))
             .andReturn();
 
         var trainerUser = userRepository.findByEmail(trainerEmail).orElseThrow();
@@ -75,7 +75,7 @@ class ScheduleControllerIntegrationTest {
 
         var loginResult = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(new LoginRequest(trainerEmail, "password123"))))
+            .content(objectMapper.writeValueAsString(new LoginRequest(trainerEmail, "password123", "personal-studio"))))
             .andReturn();
         var loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString());
         trainerToken = loginBody.get("token").asText();
@@ -85,12 +85,12 @@ class ScheduleControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new RegisterRequest("Student", studentEmail, "password123"))))
+                new RegisterRequest("Student", studentEmail, "password123", "personal-studio"))))
             .andReturn();
 
         var studentResult = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(new LoginRequest(studentEmail, "password123"))))
+            .content(objectMapper.writeValueAsString(new LoginRequest(studentEmail, "password123", "personal-studio"))))
             .andReturn();
         var studentBody = objectMapper.readTree(studentResult.getResponse().getContentAsString());
         studentToken = studentBody.get("token").asText();

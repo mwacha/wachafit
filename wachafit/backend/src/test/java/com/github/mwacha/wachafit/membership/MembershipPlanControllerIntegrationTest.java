@@ -66,7 +66,7 @@ class MembershipPlanControllerIntegrationTest {
         userRepo.save(admin);
 
         var r = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(new LoginRequest("admin@t.com", "pass")))).andReturn();
+            .content(mapper.writeValueAsString(new LoginRequest("admin@t.com", "pass", "personal-studio")))).andReturn();
         adminToken = mapper.readTree(r.getResponse().getContentAsString()).get("token").asText();
     }
 

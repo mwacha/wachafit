@@ -86,7 +86,7 @@ class AssessmentControllerIntegrationTest {
 
         var loginRes = mvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new LoginRequest("trainer@test.com", "pass123"))))
+                .content(mapper.writeValueAsString(new LoginRequest("trainer@test.com", "pass123", "personal-studio"))))
             .andReturn().getResponse().getContentAsString();
         trainerToken = mapper.readTree(loginRes).get("token").asText();
     }

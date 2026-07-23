@@ -116,7 +116,7 @@ class ReportControllerIntegrationTest {
 
     private String extractToken(String email) throws Exception {
         var result = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(new LoginRequest(email, "pass")))).andReturn();
+            .content(mapper.writeValueAsString(new LoginRequest(email, "pass", "personal-studio")))).andReturn();
         return mapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
     }
 

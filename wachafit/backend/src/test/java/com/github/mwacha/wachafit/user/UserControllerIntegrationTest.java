@@ -54,13 +54,13 @@ class UserControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new RegisterRequest("Test User", "user@test.com", "password123"))))
+                new RegisterRequest("Test User", "user@test.com", "password123", "personal-studio"))))
             .andReturn();
 
         var result = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new LoginRequest("user@test.com", "password123"))))
+                new LoginRequest("user@test.com", "password123", "personal-studio"))))
             .andReturn();
         var body = objectMapper.readTree(result.getResponse().getContentAsString());
         studentToken = body.get("token").asText();
