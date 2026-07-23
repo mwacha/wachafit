@@ -161,7 +161,7 @@ class GroupClassControllerIntegrationTest {
 
     @Test
     void update_withStudentToken_shouldReturn403() throws Exception {
-        var req = new UpdateGroupClassRequest("Updated", null, 5, 30, "FLEX", null, null, null);
+        var req = new UpdateGroupClassRequest("Updated", null, 5, 30, null, "FLEX", null, null, null);
         mockMvc.perform(put("/api/classes/" + UUID.randomUUID())
             .header("Authorization", "Bearer " + studentToken)
             .contentType(MediaType.APPLICATION_JSON)
