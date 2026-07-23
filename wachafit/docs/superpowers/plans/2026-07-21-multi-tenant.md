@@ -3518,6 +3518,87 @@ git commit -m "fix(tenant): valida tenant do studentId em Billing/Membership/Boo
 
 ---
 
+## Task 15: Validar tenant do studentId/trainerId nos 5 pontos restantes (Assessment/Profile/Workout/Goal)
+
+> **Origem:** achado da própria Task 14 (busca por padrões semelhantes fora do escopo original), confirmada pela revisão. Mesma classe de vulnerabilidade, mesmo fix. Dependência real: apenas Tasks 1-4.
+
+**Problema:** o mesmo padrão inseguro da Task 14 (`userRepo.findById(id).orElseThrow(...)`, sem checar tenant) existe em mais 5 serviços:
+
+| Serviço | Método | Parâmetro | Mensagem de erro atual |
+|---|---|---|---|
+| `assessment/AssessmentService.java` | `create` | `studentId` | `"Student not found"` |
+| `profile/StudentProfileService.java` | `createProfile` | `studentId` | `"Student not found"` |
+| `profile/TrainerProfileService.java` | `upsert` | `trainerId` | `"Trainer not found"` |
+| `workout/WorkoutService.java` | `createPlan` | `studentId` | (verificar mensagem exata no arquivo) |
+| `goal/GoalService.java` | `create` | `studentId` | (verificar mensagem exata no arquivo) |
+
+Todos os 5 têm o campo `userRepo` (não `userRepository`) já injetado via construtor.
+
+**Files:**
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/assessment/AssessmentService.java`
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/profile/StudentProfileService.java`
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/profile/TrainerProfileService.java`
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/workout/WorkoutService.java`
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/goal/GoalService.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/assessment/AssessmentServiceTest.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/profile/StudentProfileServiceTest.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/profile/TrainerProfileServiceTest.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/workout/WorkoutServiceTest.java`
+- Test: `backend/src/test/java/com/github/mwacha/wachafit/goal/GoalServiceTest.java`
+
+**Interfaces:**
+- Consumes: `UserRepository.existsByIdAndTenantId(UUID, UUID)` (Task 14), `TenantContext.get()` (Task 2)
+
+- [ ] **Step 1: Escrever os 5 testes que falham**
+
+Em cada um dos 5 arquivos de teste, seguir exatamente o padrão já usado na Task 14 (ver `MembershipServiceTest.createSubscription_throwsNotFound_whenStudentBelongsToDifferentTenant` como referência): `TenantContext.set(UUID.randomUUID())` em try/finally, stub de `userRepo.existsByIdAndTenantId(id, tenantId)` retornando `false`, `assertThatThrownBy(...).isInstanceOf(NotFoundException.class)`, `verify(repo, never()).save(any())`.
+
+- [ ] **Step 2: Rodar para confirmar falha**
+
+```bash
+cd backend
+mvn test -pl . -Dtest=AssessmentServiceTest,StudentProfileServiceTest,TrainerProfileServiceTest,WorkoutServiceTest,GoalServiceTest -q 2>&1 | tail -40
+```
+
+- [ ] **Step 3: Implementar a checagem nos 5 serviços**
+
+Em cada um, substituir `userRepo.findById(id).orElseThrow(() -> new NotFoundException("..."))` por:
+
+```java
+if (!userRepo.existsByIdAndTenantId(id, TenantContext.get())) {
+    throw new NotFoundException("...");  // manter a mensagem original de cada arquivo
+}
+```
+
+(troque `id` pelo nome real do parâmetro em cada método — `studentId` ou `trainerId` — e preserve a mensagem de erro exata já existente em cada arquivo). Adicionar o import `com.github.mwacha.wachafit.tenant.TenantContext` em cada um dos 5 arquivos.
+
+Atualize também qualquer teste pré-existente desses 5 arquivos cujo mock dependia de `findById` (mesmo ajuste feito na Task 14 para os testes de caminho feliz) — troque para `existsByIdAndTenantId` retornando `true`, sem alterar nenhuma asserção de negócio.
+
+- [ ] **Step 4: Rodar os testes novamente**
+
+```bash
+mvn test -pl . -Dtest=AssessmentServiceTest,StudentProfileServiceTest,TrainerProfileServiceTest,WorkoutServiceTest,GoalServiceTest -q 2>&1 | tail -40
+```
+Esperado: PASS em todos (5 novos testes negativos + todos os pré-existentes das 5 classes).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add backend/src/main/java/com/github/mwacha/wachafit/assessment/AssessmentService.java \
+        backend/src/main/java/com/github/mwacha/wachafit/profile/StudentProfileService.java \
+        backend/src/main/java/com/github/mwacha/wachafit/profile/TrainerProfileService.java \
+        backend/src/main/java/com/github/mwacha/wachafit/workout/WorkoutService.java \
+        backend/src/main/java/com/github/mwacha/wachafit/goal/GoalService.java \
+        backend/src/test/java/com/github/mwacha/wachafit/assessment/AssessmentServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/profile/StudentProfileServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/profile/TrainerProfileServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/workout/WorkoutServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/goal/GoalServiceTest.java
+git commit -m "fix(tenant): valida tenant do studentId/trainerId em Assessment/Profile/Workout/Goal"
+```
+
+---
+
 ## Considerações finais
 
 ### O que NÃO está neste plano (escopo futuro)
