@@ -144,7 +144,7 @@ class TenantRepositoryTest {
 
 ```bash
 cd backend
-./mvnw test -pl . -Dtest=TenantRepositoryTest -q 2>&1 | tail -20
+mvn test -pl . -Dtest=TenantRepositoryTest -q 2>&1 | tail -20
 ```
 Esperado: FAIL — `Tenant` não existe ainda.
 
@@ -257,7 +257,7 @@ public record TenantResponse(String id, String name, String slug, boolean active
 - [ ] **Step 7: Rodar o teste novamente**
 
 ```bash
-./mvnw test -pl . -Dtest=TenantRepositoryTest -q 2>&1 | tail -10
+mvn test -pl . -Dtest=TenantRepositoryTest -q 2>&1 | tail -10
 ```
 Esperado: PASS (2 testes).
 
@@ -349,7 +349,7 @@ class JwtUtilTest {
 - [ ] **Step 2: Rodar o teste para confirmar que falha**
 
 ```bash
-./mvnw test -pl . -Dtest=JwtUtilTest -q 2>&1 | tail -10
+mvn test -pl . -Dtest=JwtUtilTest -q 2>&1 | tail -10
 ```
 Esperado: FAIL — `user.getTenant()` não existe ainda no User.
 
@@ -594,7 +594,7 @@ class AuthServiceTest {
 - [ ] **Step 2: Rodar para confirmar falha**
 
 ```bash
-./mvnw test -pl . -Dtest=AuthServiceTest -q 2>&1 | tail -15
+mvn test -pl . -Dtest=AuthServiceTest -q 2>&1 | tail -15
 ```
 
 - [ ] **Step 3: Criar migration V30**
@@ -787,7 +787,7 @@ public List<UserResponse> listUsers(String role, Boolean active) {
 - [ ] **Step 10: Rodar os testes**
 
 ```bash
-./mvnw test -pl . -Dtest=AuthServiceTest,JwtUtilTest -q 2>&1 | tail -15
+mvn test -pl . -Dtest=AuthServiceTest,JwtUtilTest -q 2>&1 | tail -15
 ```
 Esperado: PASS em todos (5 testes no total).
 
@@ -855,7 +855,7 @@ class TenantContextTest {
 - [ ] **Step 2: Rodar para confirmar que passa (TenantContext já existe)**
 
 ```bash
-./mvnw test -pl . -Dtest=TenantContextTest -q 2>&1 | tail -5
+mvn test -pl . -Dtest=TenantContextTest -q 2>&1 | tail -5
 ```
 Esperado: PASS (3 testes).
 
@@ -944,7 +944,7 @@ Verificar que `backend/src/main/java/.../WachafitApplication.java` não desabili
 - [ ] **Step 6: Rodar todos os testes até aqui**
 
 ```bash
-./mvnw test -pl . -Dtest="TenantContextTest,TenantRepositoryTest,AuthServiceTest,JwtUtilTest" -q 2>&1 | tail -10
+mvn test -pl . -Dtest="TenantContextTest,TenantRepositoryTest,AuthServiceTest,JwtUtilTest" -q 2>&1 | tail -10
 ```
 Esperado: PASS (todos).
 
@@ -1006,7 +1006,7 @@ END $$;
 ```bash
 # Suba o banco de dev (Docker) e rode as migrations
 cd backend
-./mvnw flyway:migrate -q 2>&1 | tail -10
+mvn flyway:migrate -q 2>&1 | tail -10
 ```
 Esperado: `Successfully applied 1 migration to schema "public"` (V31).
 
@@ -1111,14 +1111,14 @@ Remova manualmente qualquer campo `private UUID tenantId` duplicado encontrado.
 - [ ] **Step 3: Compilar para checar erros**
 
 ```bash
-./mvnw compile -q 2>&1 | grep -i error
+mvn compile -q 2>&1 | grep -i error
 ```
 Esperado: zero erros de compilação.
 
 - [ ] **Step 4: Rodar os testes de integração existentes**
 
 ```bash
-./mvnw test -pl . -q 2>&1 | tail -20
+mvn test -pl . -q 2>&1 | tail -20
 ```
 
 Se algum teste falhar por `TenantContext` null durante `@PrePersist`, adicione no `@BeforeEach` do teste afetado:
@@ -1189,7 +1189,7 @@ class ReportRepositoryTest {
 - [ ] **Step 2: Rodar para confirmar que passa**
 
 ```bash
-./mvnw test -pl . -Dtest=ReportRepositoryTest -q 2>&1 | tail -5
+mvn test -pl . -Dtest=ReportRepositoryTest -q 2>&1 | tail -5
 ```
 
 - [ ] **Step 3: Atualizar todas as queries nativas para filtrar por tenant**
@@ -1350,7 +1350,7 @@ public class ReportRepository {
 - [ ] **Step 4: Rodar o teste**
 
 ```bash
-./mvnw test -pl . -Dtest=ReportRepositoryTest -q 2>&1 | tail -5
+mvn test -pl . -Dtest=ReportRepositoryTest -q 2>&1 | tail -5
 ```
 Esperado: PASS.
 
@@ -1437,7 +1437,7 @@ class TenantControllerTest {
 - [ ] **Step 2: Rodar para confirmar falha**
 
 ```bash
-./mvnw test -pl . -Dtest=TenantControllerTest -q 2>&1 | tail -10
+mvn test -pl . -Dtest=TenantControllerTest -q 2>&1 | tail -10
 ```
 
 - [ ] **Step 3: Criar TenantService**
@@ -1554,7 +1554,7 @@ public void enableTenantFilter() {
 - [ ] **Step 6: Rodar os testes**
 
 ```bash
-./mvnw test -pl . -Dtest=TenantControllerTest -q 2>&1 | tail -10
+mvn test -pl . -Dtest=TenantControllerTest -q 2>&1 | tail -10
 ```
 Esperado: PASS (3 testes).
 
@@ -1701,7 +1701,7 @@ Esperado: zero erros.
 
 - [ ] **Step 6: Testar manualmente o fluxo de login**
 
-1. Iniciar o backend: `cd backend && ./mvnw spring-boot:run`
+1. Iniciar o backend: `cd backend && mvn spring-boot:run`
 2. Iniciar o frontend: `cd frontend && npm run dev`
 3. Abrir `http://localhost:5173/login`
 4. Preencher: slug = `personal-studio`, email e senha de um usuário existente
@@ -1804,7 +1804,7 @@ class SaasPlanControllerTest {
 
 ```bash
 cd backend
-./mvnw test -pl . -Dtest=SaasPlanControllerTest -q 2>&1 | tail -15
+mvn test -pl . -Dtest=SaasPlanControllerTest -q 2>&1 | tail -15
 ```
 Esperado: FAIL — pacote `saas` e `CreateSaasPlanRequest` não existem ainda.
 
@@ -2041,7 +2041,7 @@ public class SaasPlanController {
 - [ ] **Step 6: Rodar os testes**
 
 ```bash
-./mvnw test -pl . -Dtest=SaasPlanControllerTest -q 2>&1 | tail -15
+mvn test -pl . -Dtest=SaasPlanControllerTest -q 2>&1 | tail -15
 ```
 Esperado: PASS (3 testes).
 
@@ -2135,7 +2135,7 @@ class TenantSubscriptionRepositoryTest {
 
 ```bash
 cd backend
-./mvnw test -pl . -Dtest=TenantSubscriptionRepositoryTest -q 2>&1 | tail -15
+mvn test -pl . -Dtest=TenantSubscriptionRepositoryTest -q 2>&1 | tail -15
 ```
 Esperado: FAIL — `TenantSubscription`/`TenantCharge` não existem ainda.
 
@@ -2345,7 +2345,7 @@ public void setPhone(String v)    { this.phone = v; }
 - [ ] **Step 8: Rodar os testes**
 
 ```bash
-./mvnw test -pl . -Dtest=TenantSubscriptionRepositoryTest -q 2>&1 | tail -15
+mvn test -pl . -Dtest=TenantSubscriptionRepositoryTest -q 2>&1 | tail -15
 ```
 Esperado: PASS (1 teste).
 
@@ -2424,7 +2424,7 @@ class CnpjValidatorTest {
 
 ```bash
 cd backend
-./mvnw test -pl . -Dtest=CnpjValidatorTest -q 2>&1 | tail -10
+mvn test -pl . -Dtest=CnpjValidatorTest -q 2>&1 | tail -10
 ```
 Esperado: FAIL — `CnpjValidator` não existe.
 
@@ -2464,7 +2464,7 @@ public final class CnpjValidator {
 - [ ] **Step 4: Rodar novamente**
 
 ```bash
-./mvnw test -pl . -Dtest=CnpjValidatorTest -q 2>&1 | tail -10
+mvn test -pl . -Dtest=CnpjValidatorTest -q 2>&1 | tail -10
 ```
 Esperado: PASS (5 testes).
 
@@ -2655,7 +2655,7 @@ class SignupServiceTest {
 - [ ] **Step 7: Rodar para confirmar falha**
 
 ```bash
-./mvnw test -pl . -Dtest=SignupServiceTest -q 2>&1 | tail -20
+mvn test -pl . -Dtest=SignupServiceTest -q 2>&1 | tail -20
 ```
 Esperado: FAIL — `SignupService` e `TenantRepository.findByCnpj` não existem.
 
@@ -2796,7 +2796,7 @@ public class SignupService {
 - [ ] **Step 10: Rodar os testes**
 
 ```bash
-./mvnw test -pl . -Dtest=SignupServiceTest -q 2>&1 | tail -20
+mvn test -pl . -Dtest=SignupServiceTest -q 2>&1 | tail -20
 ```
 Esperado: PASS (4 testes).
 
@@ -2904,7 +2904,7 @@ class PublicSignupControllerTest {
 - [ ] **Step 12: Rodar para confirmar falha**
 
 ```bash
-./mvnw test -pl . -Dtest=PublicSignupControllerTest -q 2>&1 | tail -20
+mvn test -pl . -Dtest=PublicSignupControllerTest -q 2>&1 | tail -20
 ```
 Esperado: FAIL — `PublicSignupController` não existe (404) e/ou rotas não liberadas no `SecurityConfig`.
 
@@ -2969,7 +2969,7 @@ Nota: `listActivePlans()` retorna a entidade `SaasPlan` diretamente (sem DTO) po
 - [ ] **Step 15: Rodar os testes**
 
 ```bash
-./mvnw test -pl . -Dtest=PublicSignupControllerTest -q 2>&1 | tail -20
+mvn test -pl . -Dtest=PublicSignupControllerTest -q 2>&1 | tail -20
 ```
 Esperado: PASS (4 testes).
 
@@ -3374,7 +3374,7 @@ Esperado: zero erros.
 
 - [ ] **Step 8: Testar manualmente o fluxo completo**
 
-1. Iniciar o backend: `cd backend && ./mvnw spring-boot:run`
+1. Iniciar o backend: `cd backend && mvn spring-boot:run`
 2. Iniciar o frontend: `cd frontend && npm run dev`
 3. Abrir `http://localhost:5173/signup-academia`
 4. Passo 1: preencher nome, e-mail, senha (8+ caracteres) → clicar "Próximo"
