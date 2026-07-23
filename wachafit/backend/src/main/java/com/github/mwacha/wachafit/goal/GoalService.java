@@ -3,6 +3,7 @@ package com.github.mwacha.wachafit.goal;
 import com.github.mwacha.wachafit.goal.dto.*;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -25,8 +26,9 @@ public class GoalService {
     }
 
     public GoalResponse create(UUID studentId, CreateGoalRequest req, UUID createdById) {
-        userRepo.findById(studentId)
-            .orElseThrow(() -> new NotFoundException("Student not found: " + studentId));
+        if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+            throw new NotFoundException("Student not found: " + studentId);
+        }
 
         StudentGoal goal = new StudentGoal();
         goal.setStudentId(studentId);

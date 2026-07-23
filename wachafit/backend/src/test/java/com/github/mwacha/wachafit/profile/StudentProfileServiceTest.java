@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.profile;
 
 import com.github.mwacha.wachafit.profile.dto.*;
 import com.github.mwacha.wachafit.shared.exception.*;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -44,7 +45,7 @@ class StudentProfileServiceTest {
 
     @Test
     void createProfile_shouldPersist_whenStudentExists() {
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(student));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(profileRepo.findByUserId(studentId)).thenReturn(Optional.empty());
         when(profileRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         CreateStudentProfileRequest req = new CreateStudentProfileRequest(
@@ -57,7 +58,7 @@ class StudentProfileServiceTest {
 
     @Test
     void createProfile_shouldThrowBusiness_whenCpfAlreadyExists() {
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(student));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         StudentProfile existing = new StudentProfile();
         when(profileRepo.findByUserId(studentId)).thenReturn(Optional.of(existing));
         assertThatThrownBy(() -> service.createProfile(studentId,
@@ -65,6 +66,25 @@ class StudentProfileServiceTest {
                 null, null, null, null, null, null, null, null, null, null),
             admin.getId()))
             .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void createProfile_throwsNotFound_whenStudentBelongsToDifferentTenant() {
+        UUID myTenantId = UUID.randomUUID();
+        TenantContext.set(myTenantId);
+        try {
+            when(userRepo.existsByIdAndTenantId(studentId, myTenantId)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.createProfile(studentId,
+                new CreateStudentProfileRequest("123.456.789-00", null, null, null, null, null, "11999999999",
+                    null, null, null, null, null, null, null, null, null, null),
+                admin.getId()))
+                .isInstanceOf(NotFoundException.class);
+
+            verify(profileRepo, never()).save(any());
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     @Test

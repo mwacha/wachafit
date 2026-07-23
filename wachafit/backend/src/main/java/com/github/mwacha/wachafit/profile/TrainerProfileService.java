@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.profile;
 
 import com.github.mwacha.wachafit.profile.dto.*;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,9 @@ public class TrainerProfileService {
     }
 
     public TrainerProfileResponse upsert(UUID trainerId, CreateTrainerProfileRequest req, User requestingUser) {
-        userRepo.findById(trainerId).orElseThrow(() -> new NotFoundException("Trainer not found"));
+        if (!userRepo.existsByIdAndTenantId(trainerId, TenantContext.get())) {
+            throw new NotFoundException("Trainer not found");
+        }
         TrainerProfile p = repo.findByUserId(trainerId).orElse(new TrainerProfile());
         p.setUserId(trainerId);
         p.setCref(req.cref());

@@ -3,6 +3,7 @@ package com.github.mwacha.wachafit.workout;
 import com.github.mwacha.wachafit.notification.event.WorkoutPlanAssignedEvent;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -37,8 +38,9 @@ public class WorkoutService {
     }
 
     public WorkoutPlanResponse createPlan(UUID studentId, CreateWorkoutPlanRequest req, UUID trainerId) {
-        userRepo.findById(studentId)
-            .orElseThrow(() -> new NotFoundException("Student not found"));
+        if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+            throw new NotFoundException("Student not found");
+        }
         WorkoutPlan plan = new WorkoutPlan();
         plan.setStudentId(studentId);
         plan.setTrainerId(trainerId);

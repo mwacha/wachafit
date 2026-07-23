@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.profile;
 
 import com.github.mwacha.wachafit.profile.dto.*;
 import com.github.mwacha.wachafit.shared.exception.*;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -25,7 +26,9 @@ public class StudentProfileService {
     }
 
     public StudentProfileResponse createProfile(UUID studentId, CreateStudentProfileRequest req, UUID createdById) {
-        userRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
+        if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+            throw new NotFoundException("Student not found");
+        }
         if (profileRepo.findByUserId(studentId).isPresent())
             throw new BusinessException("Profile already exists for this student");
         if (profileRepo.existsByCpfAndUserIdNot(req.cpf(), studentId))

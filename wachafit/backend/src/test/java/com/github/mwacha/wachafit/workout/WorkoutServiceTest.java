@@ -3,6 +3,7 @@ package com.github.mwacha.wachafit.workout;
 import com.github.mwacha.wachafit.notification.event.WorkoutPlanAssignedEvent;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -65,7 +66,7 @@ class WorkoutServiceTest {
 
     @Test
     void createPlan_shouldPersistPlanWithItems() {
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(student));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(planRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         CreateWorkoutPlanRequest req = new CreateWorkoutPlanRequest("Plan A", null,
             List.of(new WorkoutPlanItemRequest(UUID.randomUUID(), "A", 3, "12", null, 60, 1, null)));
@@ -76,10 +77,27 @@ class WorkoutServiceTest {
 
     @Test
     void createPlan_shouldThrowNotFound_whenStudentMissing() {
-        when(userRepo.findById(any())).thenReturn(Optional.empty());
+        when(userRepo.existsByIdAndTenantId(any(), any())).thenReturn(false);
         CreateWorkoutPlanRequest req = new CreateWorkoutPlanRequest("Plan A", null, List.of());
         assertThatThrownBy(() -> service.createPlan(studentId, req, trainerId))
             .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void createPlan_throwsNotFound_whenStudentBelongsToDifferentTenant() {
+        UUID myTenantId = UUID.randomUUID();
+        TenantContext.set(myTenantId);
+        try {
+            when(userRepo.existsByIdAndTenantId(studentId, myTenantId)).thenReturn(false);
+            CreateWorkoutPlanRequest req = new CreateWorkoutPlanRequest("Plan A", null, List.of());
+
+            assertThatThrownBy(() -> service.createPlan(studentId, req, trainerId))
+                .isInstanceOf(NotFoundException.class);
+
+            verify(planRepo, never()).save(any());
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     @Test
@@ -183,7 +201,7 @@ class WorkoutServiceTest {
 
     @Test
     void createPlan_shouldPublishWorkoutPlanAssignedEvent() {
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(student));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(planRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         CreateWorkoutPlanRequest req = new CreateWorkoutPlanRequest("Plano Verão", null, List.of());
         service.createPlan(studentId, req, trainerId);

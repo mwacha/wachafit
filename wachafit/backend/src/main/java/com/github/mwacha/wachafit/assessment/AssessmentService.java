@@ -3,6 +3,7 @@ package com.github.mwacha.wachafit.assessment;
 import com.github.mwacha.wachafit.assessment.dto.*;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -25,7 +26,9 @@ public class AssessmentService {
     }
 
     public AssessmentResponse create(UUID studentId, CreateAssessmentRequest req, UUID assessedById) {
-        userRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
+        if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+            throw new NotFoundException("Student not found");
+        }
         PhysicalAssessment a = new PhysicalAssessment();
         a.setStudentId(studentId);
         a.setAssessedBy(assessedById);
