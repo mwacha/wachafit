@@ -19,6 +19,7 @@ import com.github.mwacha.wachafit.schedule.ScheduleType;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -173,8 +174,9 @@ public class BookingService {
     }
 
     public void enrollStudentInClass(UUID classId, UUID studentId) {
-        userRepository.findById(studentId)
-            .orElseThrow(() -> new NotFoundException("Aluno não encontrado"));
+        if (!userRepository.existsByIdAndTenantId(studentId, TenantContext.get())) {
+            throw new NotFoundException("Aluno não encontrado");
+        }
 
         enrollmentRepository.findByGroupClassIdAndStudentId(classId, studentId)
             .filter(e -> "ACTIVE".equals(e.getStatus()))

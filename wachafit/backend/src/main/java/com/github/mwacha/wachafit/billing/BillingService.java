@@ -7,6 +7,7 @@ import com.github.mwacha.wachafit.membership.MemberSubscriptionRepository;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -47,8 +48,9 @@ public class BillingService {
     }
 
     public ChargeResponse createManualCharge(UUID studentId, CreateChargeRequest req, User requestingUser) {
-        userRepo.findById(studentId)
-            .orElseThrow(() -> new NotFoundException("Aluno não encontrado"));
+        if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+            throw new NotFoundException("Aluno não encontrado");
+        }
         var sub = subscriptionRepo.findByStudentIdAndStatus(studentId, "ACTIVE")
             .orElseThrow(() -> new BusinessException("Aluno não possui assinatura ativa"));
         PaymentCharge charge = new PaymentCharge();

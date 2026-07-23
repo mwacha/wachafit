@@ -8,6 +8,7 @@ import com.github.mwacha.wachafit.membership.MemberSubscriptionRepository;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -136,7 +137,7 @@ class BillingServiceTest {
             f.set(sub, UUID.randomUUID());
         } catch (Exception e) { throw new RuntimeException(e); }
 
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(studentUser));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(subscriptionRepo.findByStudentIdAndStatus(studentId, "ACTIVE")).thenReturn(Optional.of(sub));
         when(chargeRepo.save(any())).thenAnswer(inv -> {
             PaymentCharge c = inv.getArgument(0);
@@ -158,11 +159,28 @@ class BillingServiceTest {
 
     @Test
     void createManualCharge_shouldThrowBusiness_whenNoActiveSubscription() {
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(studentUser));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(subscriptionRepo.findByStudentIdAndStatus(studentId, "ACTIVE")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.createManualCharge(studentId,
             new CreateChargeRequest(BigDecimal.TEN, LocalDate.now()), adminUser))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("assinatura ativa");
+    }
+
+    @Test
+    void createManualCharge_throwsNotFound_whenStudentBelongsToDifferentTenant() {
+        UUID myTenantId = UUID.randomUUID();
+        TenantContext.set(myTenantId);
+        try {
+            when(userRepo.existsByIdAndTenantId(studentId, myTenantId)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.createManualCharge(studentId,
+                new CreateChargeRequest(BigDecimal.TEN, LocalDate.now()), adminUser))
+                .isInstanceOf(NotFoundException.class);
+
+            verify(chargeRepo, never()).save(any());
+        } finally {
+            TenantContext.clear();
+        }
     }
 }

@@ -15,6 +15,7 @@ import com.github.mwacha.wachafit.schedule.ScheduleType;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.membership.MemberSubscriptionRepository;
 import com.github.mwacha.wachafit.membership.MembershipPlanRepository;
 import com.github.mwacha.wachafit.user.Role;
@@ -263,5 +264,23 @@ class BookingServiceTest {
         verify(eventPublisher).publishEvent(captor.capture());
         assertThat(captor.getValue()).isInstanceOf(BookingCancelledEvent.class);
         assertThat(((BookingCancelledEvent) captor.getValue()).studentId()).isEqualTo(studentId);
+    }
+
+    @Test
+    void enrollStudentInClass_throwsNotFound_whenStudentBelongsToDifferentTenant() {
+        UUID classId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID myTenantId = UUID.randomUUID();
+        TenantContext.set(myTenantId);
+        try {
+            when(userRepository.existsByIdAndTenantId(studentId, myTenantId)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.enrollStudentInClass(classId, studentId))
+                .isInstanceOf(NotFoundException.class);
+
+            verify(enrollmentRepository, never()).save(any());
+        } finally {
+            TenantContext.clear();
+        }
     }
 }

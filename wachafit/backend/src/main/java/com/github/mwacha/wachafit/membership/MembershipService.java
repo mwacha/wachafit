@@ -7,6 +7,7 @@ import com.github.mwacha.wachafit.membership.dto.SubscriptionResponse;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -36,8 +37,9 @@ public class MembershipService {
     }
 
     public SubscriptionResponse createSubscription(UUID studentId, CreateSubscriptionRequest req, UUID createdBy) {
-        userRepo.findById(studentId)
-            .orElseThrow(() -> new NotFoundException("Aluno não encontrado"));
+        if (!userRepo.existsByIdAndTenantId(studentId, TenantContext.get())) {
+            throw new NotFoundException("Aluno não encontrado");
+        }
 
         if (subscriptionRepo.existsByStudentIdAndStatus(studentId, "ACTIVE")) {
             throw new BusinessException("Aluno já possui uma assinatura ativa");

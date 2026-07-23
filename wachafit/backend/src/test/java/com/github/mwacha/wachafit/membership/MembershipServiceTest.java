@@ -6,6 +6,8 @@ import com.github.mwacha.wachafit.membership.dto.CreateSubscriptionRequest;
 import com.github.mwacha.wachafit.membership.dto.SubscriptionResponse;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
+import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -63,7 +65,7 @@ class MembershipServiceTest {
 
     @Test
     void createSubscription_shouldPersistSubscriptionAndGenerateCharge() {
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(new User()));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(subscriptionRepo.existsByStudentIdAndStatus(studentId, "ACTIVE")).thenReturn(false);
         when(planRepo.findById(plan.getId())).thenReturn(Optional.of(plan));
         when(subscriptionRepo.save(any())).thenAnswer(inv -> {
@@ -87,7 +89,7 @@ class MembershipServiceTest {
 
     @Test
     void createSubscription_shouldThrowBusiness_whenAlreadyHasActiveSubscription() {
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(new User()));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(subscriptionRepo.existsByStudentIdAndStatus(studentId, "ACTIVE")).thenReturn(true);
 
         assertThatThrownBy(() -> service.createSubscription(studentId,
@@ -100,7 +102,7 @@ class MembershipServiceTest {
     @Test
     void createSubscription_shouldThrowBusiness_whenPlanInactive() {
         plan.setActive(false);
-        when(userRepo.findById(studentId)).thenReturn(Optional.of(new User()));
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
         when(subscriptionRepo.existsByStudentIdAndStatus(studentId, "ACTIVE")).thenReturn(false);
         when(planRepo.findById(plan.getId())).thenReturn(Optional.of(plan));
 
@@ -144,5 +146,24 @@ class MembershipServiceTest {
 
         assertThatThrownBy(() -> service.getActiveSubscription(studentId, otherStudent))
             .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void createSubscription_throwsNotFound_whenStudentBelongsToDifferentTenant() {
+        UUID myTenantId = UUID.randomUUID();
+        TenantContext.set(myTenantId);
+        try {
+            when(userRepo.existsByIdAndTenantId(studentId, myTenantId)).thenReturn(false);
+
+            assertThatThrownBy(() ->
+                service.createSubscription(studentId,
+                    new CreateSubscriptionRequest(plan.getId(), LocalDate.now()),
+                    adminUser.getId())
+            ).isInstanceOf(NotFoundException.class);
+
+            verify(subscriptionRepo, never()).save(any());
+        } finally {
+            TenantContext.clear();
+        }
     }
 }
