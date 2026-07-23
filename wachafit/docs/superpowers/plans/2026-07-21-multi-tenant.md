@@ -21,6 +21,7 @@
 - Novos endpoints de gerenciamento de tenants: `POST /api/super/tenants`, `GET /api/super/tenants`, protegidos por `ROLE_SUPER_ADMIN`
 - Package base: `com.github.mwacha.wachafit`
 - Testes: não há wrapper `./mvnw` neste projeto — usar o `mvn` global (ex: `cd backend && mvn test -Dtest=Classe`)
+- `TenantFilterAspect` pointcut: `@Before("target(org.springframework.data.repository.Repository)")` — NUNCA `within(@org.springframework.stereotype.Repository *)`. Os 20 repositórios Spring Data do projeto (`XRepository extends JpaRepository<...>`) são interfaces sem a anotação `@Repository` (Spring Data não exige); `within(@Repository *)` não casa com nada real e deixaria o isolamento de tenant sem efeito algum, silenciosamente. `target(...Repository)` casa pelo tipo em runtime (a interface marker `org.springframework.data.repository.Repository`, herdada por `JpaRepository`), que é como o Spring AOP resolve proxies de interface corretamente. O único `@Repository` manual do projeto, `ReportRepository` (SQL nativo, não JPA), não implementa essa marker interface — correto ele não casar aqui, seu escopo de tenant é feito via predicado SQL direto na Task 7.
 - Colunas `created_at` (`nullable=false, insertable=false`, valor vindo do DEFAULT do banco): sempre incluir `columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"` no `@Column` da entidade JPA. Sem isso, o Hibernate `create-drop` usado pelos testes `@DataJpaTest`/`@SpringBootTest` com H2 puro (sem Testcontainers) cria a coluna sem DEFAULT e todo insert falha com `NULL not allowed`. Isso não afeta produção — lá `ddl-auto` é `validate` e o schema real vem do Flyway. NUNCA usar `TIMESTAMPTZ` no columnDefinition (sintaxe Postgres, H2 puro não entende) nem mudar `ddl-auto`/`application-test.yml` para "consertar" isso.
 
 ---
@@ -914,7 +915,7 @@ public class TenantFilterAspect {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Before("within(@org.springframework.stereotype.Repository *)")
+    @Before("target(org.springframework.data.repository.Repository)")
     public void enableTenantFilter() {
         UUID tenantId = TenantContext.get();
         if (tenantId != null) {
@@ -1532,7 +1533,7 @@ public class TenantController {
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
 
-@Before("within(@org.springframework.stereotype.Repository *)")
+@Before("target(org.springframework.data.repository.Repository)")
 public void enableTenantFilter() {
     // SUPER_ADMIN bypassa o filtro de tenant
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();

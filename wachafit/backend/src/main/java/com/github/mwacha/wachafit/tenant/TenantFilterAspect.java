@@ -16,7 +16,7 @@ public class TenantFilterAspect {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Before("within(@org.springframework.stereotype.Repository *)")
+    @Before("target(org.springframework.data.repository.Repository)")
     public void enableTenantFilter() {
         UUID tenantId = TenantContext.get();
         if (tenantId != null) {
