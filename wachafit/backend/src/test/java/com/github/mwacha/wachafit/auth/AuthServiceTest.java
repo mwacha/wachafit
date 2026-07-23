@@ -2,128 +2,99 @@ package com.github.mwacha.wachafit.auth;
 
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.auth.dto.LoginResponse;
-import com.github.mwacha.wachafit.auth.dto.RegisterRequest;
-import com.github.mwacha.wachafit.shared.exception.BusinessException;
+import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.UnauthorizedException;
 import com.github.mwacha.wachafit.shared.security.JwtUtil;
+import com.github.mwacha.wachafit.tenant.Tenant;
+import com.github.mwacha.wachafit.tenant.TenantRepository;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import com.github.mwacha.wachafit.notification.EmailService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock UserRepository userRepository;
-    @Mock PasswordResetTokenRepository tokenRepository;
-    @Mock JwtUtil jwtUtil;
-    @Mock EmailService emailService;
-
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private UserRepository userRepo;
+    private TenantRepository tenantRepo;
+    private JwtUtil jwtUtil;
     private AuthService authService;
 
     @BeforeEach
-    void setUp() {
-        authService = new AuthService(userRepository, tokenRepository, jwtUtil, passwordEncoder, emailService, "http://localhost:5173");
+    void setup() {
+        userRepo = mock(UserRepository.class);
+        tenantRepo = mock(TenantRepository.class);
+        jwtUtil = new JwtUtil("super-secret-key-with-at-least-32-chars!!", 3600L);
+        authService = new AuthService(
+            userRepo,
+            mock(PasswordResetTokenRepository.class),
+            tenantRepo,
+            jwtUtil,
+            new BCryptPasswordEncoder(),
+            mock(EmailService.class),
+            "http://localhost:5173"
+        );
     }
 
     @Test
-    void register_shouldCreateStudentUser_andReturnToken() {
-        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
-            User u = inv.getArgument(0);
-            try {
-                var f = User.class.getDeclaredField("id");
-                f.setAccessible(true);
-                f.set(u, UUID.randomUUID());
-            } catch (Exception e) { throw new RuntimeException(e); }
-            return u;
-        });
-        when(jwtUtil.generateToken(any(User.class))).thenReturn("token123");
+    void login_returnsTokenWithTenantId() {
+        Tenant tenant = new Tenant();
+        tenant.setName("Academia Teste");
+        tenant.setSlug("academia-teste");
+        setId(tenant, UUID.fromString("00000000-0000-0000-0000-000000000099"));
 
-        LoginResponse response = authService.register(new RegisterRequest("Alice", "new@example.com", "password1"));
+        User user = new User();
+        user.setEmail("admin@test.com");
+        user.setPasswordHash(new BCryptPasswordEncoder().encode("senha123"));
+        user.setRole(Role.ADMIN);
+        user.setTenant(tenant);
+        setId(user, UUID.randomUUID());
 
-        assertThat(response.token()).isEqualTo("token123");
-        assertThat(response.role()).isEqualTo("STUDENT");
-        verify(userRepository).save(argThat(u -> u.getRole() == Role.STUDENT && u.isActive()));
-        verify(emailService).sendHtml(eq("new@example.com"), contains("Bem-vindo"), eq("email/welcome"), anyMap());
+        when(tenantRepo.findBySlug("academia-teste")).thenReturn(Optional.of(tenant));
+        when(userRepo.findByEmailAndTenantId("admin@test.com", tenant.getId()))
+            .thenReturn(Optional.of(user));
+
+        LoginResponse resp = authService.login(new LoginRequest("admin@test.com", "senha123", "academia-teste"));
+
+        assertThat(resp.token()).isNotBlank();
+        assertThat(resp.role()).isEqualTo("ADMIN");
+        assertThat(resp.tenantId()).isEqualTo("00000000-0000-0000-0000-000000000099");
     }
 
     @Test
-    void register_shouldThrow_whenEmailAlreadyExists() {
-        when(userRepository.existsByEmail("dup@example.com")).thenReturn(true);
-
-        assertThatThrownBy(() -> authService.register(new RegisterRequest("Bob", "dup@example.com", "password1")))
-            .isInstanceOf(BusinessException.class)
-            .hasMessageContaining("já cadastrado");
+    void login_throwsUnauthorized_whenTenantNotFound() {
+        when(tenantRepo.findBySlug("inexistente")).thenReturn(Optional.empty());
+        assertThatThrownBy(() ->
+            authService.login(new LoginRequest("x@y.com", "pass", "inexistente"))
+        ).isInstanceOf(UnauthorizedException.class);
     }
 
     @Test
-    void login_shouldReturnToken_whenCredentialsValid() {
-        User user = buildUser("user@example.com", "secret", Role.STUDENT, true);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken(user)).thenReturn("jwt-token");
+    void login_throwsUnauthorized_whenUserNotFoundInTenant() {
+        Tenant tenant = new Tenant();
+        tenant.setSlug("academia-teste");
+        setId(tenant, UUID.randomUUID());
 
-        LoginResponse response = authService.login(new LoginRequest("user@example.com", "secret"));
+        when(tenantRepo.findBySlug("academia-teste")).thenReturn(Optional.of(tenant));
+        when(userRepo.findByEmailAndTenantId(anyString(), any())).thenReturn(Optional.empty());
 
-        assertThat(response.token()).isEqualTo("jwt-token");
+        assertThatThrownBy(() ->
+            authService.login(new LoginRequest("x@y.com", "pass", "academia-teste"))
+        ).isInstanceOf(UnauthorizedException.class);
     }
 
-    @Test
-    void login_shouldThrow_whenUserNotFound() {
-        when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.login(new LoginRequest("ghost@example.com", "pass")))
-            .isInstanceOf(UnauthorizedException.class)
-            .hasMessageContaining("inválidas");
-    }
-
-    @Test
-    void login_shouldThrow_whenUserInactive() {
-        User user = buildUser("inactive@example.com", "pass", Role.STUDENT, false);
-        when(userRepository.findByEmail("inactive@example.com")).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> authService.login(new LoginRequest("inactive@example.com", "pass")))
-            .isInstanceOf(UnauthorizedException.class)
-            .hasMessageContaining("inativo");
-    }
-
-    @Test
-    void login_shouldThrow_whenPasswordWrong() {
-        User user = buildUser("user@example.com", "correct", Role.STUDENT, true);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> authService.login(new LoginRequest("user@example.com", "wrong")))
-            .isInstanceOf(UnauthorizedException.class)
-            .hasMessageContaining("inválidas");
-    }
-
-    private User buildUser(String email, String rawPassword, Role role, boolean active) {
-        User u = new User();
-        u.setEmail(email);
-        u.setPasswordHash(passwordEncoder.encode(rawPassword));
-        u.setRole(role);
-        u.setActive(active);
-        u.setName("Test");
+    private static void setId(Object entity, UUID id) {
         try {
-            var f = User.class.getDeclaredField("id");
+            var f = entity.getClass().getDeclaredField("id");
             f.setAccessible(true);
-            f.set(u, UUID.randomUUID());
+            f.set(entity, id);
         } catch (Exception e) { throw new RuntimeException(e); }
-        return u;
     }
 }

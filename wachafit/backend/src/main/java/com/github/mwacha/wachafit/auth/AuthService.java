@@ -5,6 +5,8 @@ import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.UnauthorizedException;
 import com.github.mwacha.wachafit.shared.security.JwtUtil;
+import com.github.mwacha.wachafit.tenant.Tenant;
+import com.github.mwacha.wachafit.tenant.TenantRepository;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
@@ -24,6 +26,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
+    private final TenantRepository tenantRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -32,6 +35,7 @@ public class AuthService {
     public AuthService(
         UserRepository userRepository,
         PasswordResetTokenRepository tokenRepository,
+        TenantRepository tenantRepository,
         JwtUtil jwtUtil,
         PasswordEncoder passwordEncoder,
         EmailService emailService,
@@ -39,6 +43,7 @@ public class AuthService {
     ) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
+        this.tenantRepository = tenantRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
@@ -46,14 +51,18 @@ public class AuthService {
     }
 
     public LoginResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new BusinessException("E-mail já cadastrado");
+        Tenant tenant = tenantRepository.findBySlug(request.tenantSlug())
+            .filter(Tenant::isActive)
+            .orElseThrow(() -> new UnauthorizedException("Academia não encontrada"));
+        if (userRepository.existsByEmailAndTenantId(request.email(), tenant.getId())) {
+            throw new BusinessException("E-mail já cadastrado nesta academia");
         }
         User user = new User();
         user.setName(request.name());
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(Role.STUDENT);
+        user.setTenant(tenant);
         User saved = userRepository.save(user);
         emailService.sendHtml(
             saved.getEmail(),
@@ -62,11 +71,15 @@ public class AuthService {
             Map.of("name", saved.getName())
         );
         String token = jwtUtil.generateToken(saved);
-        return new LoginResponse(token, saved.getRole().name(), saved.getId().toString());
+        return new LoginResponse(token, saved.getRole().name(), saved.getId().toString(),
+                                 tenant.getId().toString());
     }
 
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        Tenant tenant = tenantRepository.findBySlug(request.tenantSlug())
+            .filter(Tenant::isActive)
+            .orElseThrow(() -> new UnauthorizedException("Academia não encontrada"));
+        User user = userRepository.findByEmailAndTenantId(request.email(), tenant.getId())
             .orElseThrow(() -> new UnauthorizedException("Credenciais inválidas"));
         if (!user.isActive()) {
             throw new UnauthorizedException("Usuário inativo");
@@ -75,7 +88,8 @@ public class AuthService {
             throw new UnauthorizedException("Credenciais inválidas");
         }
         String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.getRole().name(), user.getId().toString());
+        return new LoginResponse(token, user.getRole().name(), user.getId().toString(),
+                                 tenant.getId().toString());
     }
 
     public void forgotPassword(ForgotPasswordRequest request) {

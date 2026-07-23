@@ -4,5 +4,6 @@ import jakarta.validation.constraints.*;
 
 public record LoginRequest(
     @Email @NotBlank String email,
-    @NotBlank String password
+    @NotBlank String password,
+    @NotBlank String tenantSlug
 ) {}

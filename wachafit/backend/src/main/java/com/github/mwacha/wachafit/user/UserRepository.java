@@ -6,6 +6,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
+    Optional<User> findByEmailAndTenantId(String email, UUID tenantId);
+    boolean existsByEmailAndTenantId(String email, UUID tenantId);
+
+    // Mantidos para uso do SUPER_ADMIN (sem filtro de tenant)
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
 }
