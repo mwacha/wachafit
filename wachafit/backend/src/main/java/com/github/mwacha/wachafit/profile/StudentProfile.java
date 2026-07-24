@@ -30,7 +30,8 @@ public class StudentProfile extends TenantAwareEntity {
     @Column(name = "emergency_contact_relationship", length = 50) private String emergencyContactRelationship;
     @Column(name = "profile_photo_key", length = 255) private String profilePhotoKey;
     @Column(name = "document_photo_key", length = 255) private String documentPhotoKey;
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false) private Instant createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP") private Instant createdAt;
 
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }

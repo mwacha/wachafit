@@ -20,7 +20,8 @@ public class TrainerProfile extends TenantAwareEntity {
     @Column(name = "admission_date") private LocalDate admissionDate;
     @Column(name = "commission_type", length = 20) private String commissionType;
     @Column(name = "commission_value", precision = 8, scale = 2) private BigDecimal commissionValue;
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false) private Instant createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP") private Instant createdAt;
 
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }

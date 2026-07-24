@@ -41,7 +41,8 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
 
     @Override public String getUsername() { return email; }

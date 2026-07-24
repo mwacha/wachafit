@@ -37,7 +37,8 @@ public class WorkoutLog extends TenantAwareEntity {
     @Column(length = 200)
     private String notes;
 
-    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
+        columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
 
     public UUID getId() { return id; }
