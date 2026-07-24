@@ -4,6 +4,7 @@ import com.github.mwacha.wachafit.assessment.PhysicalAssessment;
 import com.github.mwacha.wachafit.assessment.PhysicalAssessmentRepository;
 import com.github.mwacha.wachafit.exercise.ExerciseRepository;
 import com.github.mwacha.wachafit.goal.StudentGoalRepository;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.UserRepository;
 import com.github.mwacha.wachafit.workout.PersonalRecord;
 import com.github.mwacha.wachafit.workout.PersonalRecordRepository;
@@ -46,7 +47,7 @@ public class PdfService {
     }
 
     public byte[] generateEvolutionPdf(UUID studentId) {
-        String studentName = userRepo.findById(studentId)
+        String studentName = userRepo.findByIdAndTenantId(studentId, TenantContext.get())
             .map(u -> u.getName())
             .orElse("Aluno");
 
@@ -80,7 +81,7 @@ public class PdfService {
     }
 
     public byte[] generateWorkoutPdf(UUID studentId) {
-        String studentName = userRepo.findById(studentId)
+        String studentName = userRepo.findByIdAndTenantId(studentId, TenantContext.get())
             .map(u -> u.getName())
             .orElse("Aluno");
 
@@ -96,7 +97,7 @@ public class PdfService {
         }
 
         var plan = planOpt.get();
-        String trainerName = userRepo.findById(plan.getTrainerId())
+        String trainerName = userRepo.findByIdAndTenantId(plan.getTrainerId(), TenantContext.get())
             .map(u -> u.getName())
             .orElse("—");
 
