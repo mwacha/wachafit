@@ -113,7 +113,10 @@ public class SignupService {
             charge.setDueDate(LocalDate.ofInstant(dueInstant, ZoneOffset.UTC));
             charge.setStatus("PENDING");
             charge.setPaymentMethod(method.name());
-            chargeRepository.save(charge);
+            // saveAndFlush força o INSERT a rodar aqui, dentro do try — sem isso o Hibernate
+            // pode adiar a escrita até o commit da transação principal (fora deste catch),
+            // e uma falha nesse momento reverteria tenant/admin/subscription também.
+            chargeRepository.saveAndFlush(charge);
         } catch (Exception e) {
             log.error("Falha ao criar cobrança inicial do tenant {}: {}", tenantId, e.getMessage(), e);
         }

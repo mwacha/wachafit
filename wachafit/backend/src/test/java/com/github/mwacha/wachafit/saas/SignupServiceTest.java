@@ -87,7 +87,7 @@ class SignupServiceTest {
         verify(tenantRepository).save(any());
         verify(userRepository).save(any());
         verify(subscriptionRepository).save(any());
-        verify(chargeRepository).save(any());
+        verify(chargeRepository).saveAndFlush(any());
     }
 
     @Test
@@ -114,7 +114,7 @@ class SignupServiceTest {
 
     @Test
     void signup_doesNotRollBack_whenChargeCreationFails() {
-        when(chargeRepository.save(any())).thenThrow(new RuntimeException("falha simulada"));
+        when(chargeRepository.saveAndFlush(any())).thenThrow(new RuntimeException("falha simulada"));
 
         LoginResponse resp = signupService.signup(buildRequest());
 
