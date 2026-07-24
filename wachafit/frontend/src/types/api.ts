@@ -1,9 +1,16 @@
 export type Role = 'ADMIN' | 'MANAGER' | 'RECEPTIONIST' | 'CASHIER' | 'TRAINER' | 'PROFESSOR' | 'STUDENT'
 
+export interface LoginRequest {
+  email: string
+  password: string
+  tenantSlug: string
+}
+
 export interface LoginResponse {
   token: string
   role: Role
   userId: string
+  tenantId: string
 }
 
 export interface ErrorResponse {

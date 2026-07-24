@@ -18,6 +18,11 @@
 
         <div class="form-fields">
           <div class="field">
+            <label class="field-label" for="tenantSlug">Slug da academia</label>
+            <InputText id="tenantSlug" v-model="tenantSlug" placeholder="ex: minha-academia" autocomplete="organization" />
+          </div>
+
+          <div class="field">
             <label class="field-label" for="name">Nome completo</label>
             <InputText id="name" v-model="name" placeholder="Seu nome" autocomplete="name" />
           </div>
@@ -77,6 +82,7 @@ import Button from 'primevue/button'
 
 const auth = useAuthStore()
 const router = useRouter()
+const tenantSlug = ref('')
 const name = ref('')
 const email = ref('')
 const password = ref('')
@@ -90,7 +96,7 @@ const passwordMismatch = computed(() =>
 
 async function handleRegister() {
   errorMessage.value = ''
-  if (!name.value || !email.value || !password.value) {
+  if (!tenantSlug.value || !name.value || !email.value || !password.value) {
     errorMessage.value = 'Preencha todos os campos.'
     return
   }
@@ -104,7 +110,7 @@ async function handleRegister() {
   }
   loading.value = true
   try {
-    const result = await auth.register(name.value, email.value, password.value)
+    const result = await auth.register(name.value, email.value, password.value, tenantSlug.value)
     router.push(roleDashboards[result.role])
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao criar conta. Tente novamente.'

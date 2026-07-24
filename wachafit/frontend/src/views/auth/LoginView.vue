@@ -20,6 +20,17 @@
 
         <div class="form-fields">
           <div class="field">
+            <label class="field-label" for="tenantSlug">Slug da academia</label>
+            <InputText
+              id="tenantSlug"
+              v-model="tenantSlug"
+              placeholder="ex: minha-academia"
+              :invalid="!!errorMessage"
+              autocomplete="organization"
+            />
+          </div>
+
+          <div class="field">
             <label class="field-label" for="email">E-mail</label>
             <InputText
               id="email"
@@ -77,6 +88,7 @@ import Button from 'primevue/button'
 
 const auth = useAuthStore()
 const router = useRouter()
+const tenantSlug = ref('')
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
@@ -84,13 +96,13 @@ const loading = ref(false)
 
 async function handleLogin() {
   errorMessage.value = ''
-  if (!email.value || !password.value) {
+  if (!tenantSlug.value || !email.value || !password.value) {
     errorMessage.value = 'Preencha todos os campos.'
     return
   }
   loading.value = true
   try {
-    const result = await auth.login(email.value, password.value)
+    const result = await auth.login(email.value, password.value, tenantSlug.value)
     router.push(roleDashboards[result.role])
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao fazer login. Tente novamente.'
