@@ -16,6 +16,7 @@ const router = createRouter({
   routes: [
     { path: '/login', component: () => import('@/views/auth/LoginView.vue') },
     { path: '/register', component: () => import('@/views/auth/RegisterView.vue') },
+    { path: '/signup-academia', component: () => import('@/views/auth/SignupView.vue') },
     { path: '/forgot-password', component: () => import('@/views/auth/ForgotPasswordView.vue') },
     { path: '/reset-password', component: () => import('@/views/auth/ResetPasswordView.vue') },
     { path: '/unauthorized', component: () => import('@/views/UnauthorizedView.vue') },

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
-import type { Role, LoginResponse } from '@/types/api'
+import type { Role, LoginResponse, SignupRequest } from '@/types/api'
 
 function decodeJwtPayload(token: string): { sub: string; role: Role } | null {
   try {
@@ -55,6 +55,12 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
+  async function signup(payload: SignupRequest): Promise<LoginResponse> {
+    const { data } = await api.post<LoginResponse>('/api/public/signup', payload)
+    setSession(data)
+    return data
+  }
+
   function logout() {
     clearSession()
   }
@@ -67,5 +73,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, userId, role, tenantId, isAuthenticated, userRole, login, register, logout, clearSession }
+  return { token, userId, role, tenantId, isAuthenticated, userRole, login, register, signup, logout, clearSession }
 })

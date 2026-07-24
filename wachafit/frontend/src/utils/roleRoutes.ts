@@ -10,4 +10,4 @@ export const roleDashboards: Record<Role, string> = {
   STUDENT: '/student',
 }
 
-export const publicAuthPaths = ['/login', '/register', '/forgot-password', '/reset-password']
+export const publicAuthPaths = ['/login', '/register', '/signup-academia', '/forgot-password', '/reset-password']

@@ -370,3 +370,22 @@ export interface Photo {
   fileUrl: string
   createdAt: string
 }
+
+// --- SaaS Signup ---
+export type PaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO'
+
+export interface SaasPlan {
+  id: string
+  name: string
+  description: string
+  price: number
+  billingPeriodMonths: number
+  maxUsers: number | null
+  active: boolean
+}
+
+export interface SignupRequest {
+  admin: { name: string; email: string; password: string }
+  company: { name: string; cnpj: string; phone: string; slug: string }
+  plan: { saasPlanId: string; paymentMethod: PaymentMethod }
+}

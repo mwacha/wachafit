@@ -71,6 +71,8 @@
           <RouterLink to="/forgot-password" class="link">Esqueci minha senha</RouterLink>
           <span class="sep">·</span>
           <span>Não tem conta? <RouterLink to="/register" class="link">Cadastre-se</RouterLink></span>
+          <span class="sep">·</span>
+          <span>É dono de uma academia? <RouterLink to="/signup-academia" class="link">Cadastre sua academia</RouterLink></span>
         </div>
       </div>
     </div>
