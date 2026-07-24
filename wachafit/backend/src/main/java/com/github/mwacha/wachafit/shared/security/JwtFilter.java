@@ -41,15 +41,21 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = extractToken(request);
         if (token != null && jwtUtil.isTokenValid(token)) {
             try {
-                String userId = jwtUtil.extractUserId(token).toString();
-                UserDetails user = userDetailsService.loadUserByUsername(userId);
-                if (user.isEnabled()) {
-                    UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                    UUID tenantId = jwtUtil.extractTenantId(token);
-                    if (tenantId != null) {
+                UUID tenantId = jwtUtil.extractTenantId(token);
+                if (tenantId == null) {
+                    // Token sem claim tenantId: emitido antes da migração multi-tenant (todo
+                    // usuário, incluindo SUPER_ADMIN, tem tenant obrigatório desde então). Não
+                    // autenticar — do contrário o TenantFilterAspect não teria tenantId para
+                    // ativar o filtro Hibernate e o request veria dados de todos os tenants.
+                    log.warn("JWT sem claim tenantId rejeitado (token pré-migração multi-tenant)");
+                } else {
+                    String userId = jwtUtil.extractUserId(token).toString();
+                    UserDetails user = userDetailsService.loadUserByUsername(userId);
+                    if (user.isEnabled()) {
+                        UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(auth);
                         TenantContext.set(tenantId);
                     }
                 }
