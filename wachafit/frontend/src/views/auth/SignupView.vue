@@ -148,9 +148,13 @@ const passwordMismatch = computed(() =>
 )
 
 onMounted(async () => {
-  const { data } = await api.get<SaasPlan[]>('/api/public/saas-plans')
-  plans.value = data
-  if (data.length > 0) selectedPlanId.value = data[0].id
+  try {
+    const { data } = await api.get<SaasPlan[]>('/api/public/saas-plans')
+    plans.value = data
+    if (data.length > 0) selectedPlanId.value = data[0].id
+  } catch {
+    errorMessage.value = 'N\u00e3o foi poss\u00edvel carregar os planos dispon\u00edveis. Recarregue a p\u00e1gina.'
+  }
 })
 
 function suggestSlug() {
@@ -160,6 +164,7 @@ function suggestSlug() {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+  checkSlugAvailability()
 }
 
 let slugDebounce: ReturnType<typeof setTimeout> | undefined
