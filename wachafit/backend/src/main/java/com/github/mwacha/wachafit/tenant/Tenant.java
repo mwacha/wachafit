@@ -29,6 +29,12 @@ public class Tenant {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(length = 14, unique = true)
+    private String cnpj;
+
+    @Column(length = 20)
+    private String phone;
+
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
         columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
@@ -40,5 +46,9 @@ public class Tenant {
     public void setSlug(String s)    { this.slug = s; }
     public boolean isActive()        { return active; }
     public void setActive(boolean a) { this.active = a; }
+    public String getCnpj()          { return cnpj; }
+    public void setCnpj(String v)    { this.cnpj = v; }
+    public String getPhone()         { return phone; }
+    public void setPhone(String v)   { this.phone = v; }
     public Instant getCreatedAt()    { return createdAt; }
 }
