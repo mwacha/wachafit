@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.tenant.Tenant;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,14 +22,9 @@ public class User implements UserDetails {
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(nullable = false, length = 120)
-    private String name;
-
-    @Column(unique = true, nullable = false, length = 160)
-    private String email;
-
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -45,8 +41,8 @@ public class User implements UserDetails {
         columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Instant createdAt;
 
-    @Override public String getUsername() { return email; }
-    @Override @JsonIgnore public String getPassword() { return passwordHash; }
+    @Override public String getUsername() { return account.getEmail(); }
+    @Override @JsonIgnore public String getPassword() { return account.getPasswordHash(); }
     @Override public boolean isEnabled() { return active; }
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
@@ -59,12 +55,10 @@ public class User implements UserDetails {
     }
 
     public UUID getId() { return id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public Account getAccount() { return account; }
+    public void setAccount(Account account) { this.account = account; }
+    public String getName() { return account.getName(); }
+    public String getEmail() { return account.getEmail(); }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     public Tenant getTenant() { return tenant; }
