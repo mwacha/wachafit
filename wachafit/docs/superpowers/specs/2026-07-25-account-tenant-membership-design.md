@@ -29,7 +29,7 @@ Identidade global de login, separada do vínculo com qualquer academia específi
 Hoje aponta para `User` (vínculo). Como a senha passa a ser única por pessoa (não por academia), o reset de senha também precisa ser único por pessoa: `PasswordResetToken.user` (FK para `users.id`) vira `PasswordResetToken.account` (FK para `accounts.id`).
 
 ### Migration de dados existentes
-Para cada `User` de hoje: cria um `Account` com o mesmo `name`/`email`/`password_hash`, e o `User` passa a apontar para esse `Account` recém-criado. Migração 1:1 — ninguém perde acesso, nenhuma senha muda.
+Cria um `Account` por **e-mail distinto** já existente em `users` (não um por `User`) — `accounts.email` é único globalmente, então dois `User`s que hoje já compartilham o mesmo e-mail (em tenants diferentes) precisam necessariamente apontar para o **mesmo** `Account` após a migração; criar dois `Account`s com o mesmo e-mail violaria a constraint. Para cada e-mail distinto, o `Account` herda `name`/`password_hash` de um dos `User`s daquele e-mail (qualquer um — na prática, o mais antigo); todos os `User`s daquele e-mail recebem o `account_id` desse `Account`. Ninguém perde acesso, nenhuma senha muda para quem hoje já tem e-mail único (a esmagadora maioria); quem já dividia e-mail entre tenants passa a logar com a senha de um dos dois registros (a ser resolvido manualmente pelo suporte apenas nesse caso raro, indicado num relatório de migração).
 
 ---
 
@@ -80,4 +80,4 @@ Ao criar um `User` novo (seja por `/register`, seja por um admin/recepcionista c
 
 - Convite por e-mail para uma pessoa se auto-associar a uma academia (hoje, o vínculo é sempre criado por um admin/recepcionista já dentro da academia, ou pelo próprio `/register`).
 - Trocar e-mail/senha da conta a partir de dentro de uma academia específica — ainda não desenhado onde essa tela viveria.
-- Deduplicação retroativa de contas: se hoje já existem `User`s com o mesmo e-mail em tenants diferentes (que hoje são tratados como pessoas não relacionadas), a migração cria um `Account` **por `User`**, não uma conta compartilhada — ou seja, duplicatas existentes de e-mail continuam separadas após a migração. Unificá-las manualmente (se for o caso) fica para um passo futuro, fora deste plano.
+- Aviso manual para os casos (raros) em que dois `User`s hoje já compartilhavam e-mail entre tenants: a migração os une automaticamente num só `Account` (ver seção 1), mas não avisa proativamente a pessoa de que sua senha pode ter mudado para uma das duas contas — isso fica para uma ação manual de suporte, fora deste plano.
