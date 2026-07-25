@@ -41,7 +41,7 @@ backend/src/main/resources/db/migration/
   V36__password_reset_tokens_use_account.sql
 
 frontend/src/
-  views/auth/components/TenantSelectModal.vue  — popup pós-login (Task 8)
+  views/auth/components/TenantSelectModal.vue  — popup pós-login (Task 10)
 ```
 
 ### Arquivos modificados
@@ -50,6 +50,7 @@ backend:
   user/User.java                       — remove email/passwordHash; ganha account (ManyToOne)
   user/UserRepository.java             — remove métodos por email; ganha métodos por account_id
   user/UserService.java                — createUser() vincula a Account existente por e-mail
+  saas/SignupService.java              — cria/vincula Account ao invés de User.setEmail/setPasswordHash (Task 3)
   auth/PasswordResetToken.java         — user (ManyToOne User) vira account (ManyToOne Account)
   auth/AuthService.java                — reescrito: login/selectTenant/switchTenant/myTenants/register/forgotPassword/resetPassword
   auth/AuthController.java             — novos endpoints select-tenant, switch-tenant, my-tenants
@@ -244,8 +245,8 @@ git commit -m "feat(account): entidade Account + migration V34 (seed deduplicado
   - `User.getAccount(): Account`, `User.setAccount(Account)`
   - `User.getEmail(): String` (agora delega para `account.getEmail()`, sem setter)
   - `UserRepository.findByAccountIdAndTenantId(UUID accountId, UUID tenantId): Optional<User>` — usado nas Tasks 5 e 6
-  - `UserRepository.existsByAccountIdAndTenantId(UUID accountId, UUID tenantId): boolean` — usado na Task 6
-  - `UserRepository.findByAccountIdAndActiveTrue(UUID accountId): List<User>` — usado na Task 5
+  - `UserRepository.existsByAccountIdAndTenantId(UUID accountId, UUID tenantId): boolean` — usado na Task 7
+  - `UserRepository.findByAccountIdAndActiveTrue(UUID accountId): List<User>` — usado na Task 6
 
 - [ ] **Step 1: Escrever o teste que falha**
 
@@ -423,14 +424,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 }
 ```
 
-> **Atenção:** os métodos `findByEmailAndTenantId`, `existsByEmailAndTenantId`, `findByEmail`, `existsByEmail` foram REMOVIDOS (não fazem mais sentido — `email` não existe mais em `User`). Isso vai quebrar a compilação de `AuthService.java` e `UserService.java` até as Tasks 5 e 6 serem executadas — **isso é esperado nesta task**; o projeto só volta a compilar por completo ao final da Task 6. Não tente corrigir `AuthService`/`UserService` nesta task.
+> **Atenção:** os métodos `findByEmailAndTenantId`, `existsByEmailAndTenantId`, `findByEmail`, `existsByEmail` foram REMOVIDOS (não fazem mais sentido — `email` não existe mais em `User`). Isso vai quebrar a compilação de `AuthService.java`, `UserService.java`, `SignupService.java` e cerca de 15 arquivos de teste pré-existentes que constroem `User` diretamente — **isso é esperado nesta task**. A Task 3 (a seguir) corrige `SignupService.java` e os arquivos de teste; `AuthService`/`UserService` continuam quebrados até as Tasks 6 e 7. Não tente corrigir `AuthService`/`UserService` nesta task.
 
 - [ ] **Step 6: Confirmar que o teste específico desta task compila e passa (ignorando o resto do projeto)**
 
 ```bash
-mvn test-compile -q 2>&1 | grep -i "AuthService\|UserService" | head -20
+mvn test-compile -q 2>&1 | tail -100
 ```
-Esperado: erros de compilação APENAS em `AuthService.java`/`UserService.java` (referências a `setEmail`, `setPasswordHash`, `findByEmailAndTenantId`, etc.) — nenhum outro arquivo deve aparecer. Isso confirma que o blast radius desta mudança é exatamente o esperado (contido a esses 2 arquivos, que serão corrigidos nas Tasks 5/6).
+Esperado: vários erros de compilação, TODOS relacionados a `setEmail`/`setPasswordHash`/`setName`/`findByEmail`/`existsByEmail` removidos de `User`/`UserRepository` — isso é esperado, cobre `AuthService.java`, `UserService.java`, `SignupService.java`, e um número grande de arquivos de teste pré-existentes. A Task 3 (a seguir) corrige `SignupService.java` e os testes; `AuthService`/`UserService` continuam quebrados até as Tasks 6/7. Não tente corrigir nada disso nesta task — apenas confirme que o teste desta task específica (`UserRepositoryTest`) passa isoladamente com `mvn test -Dtest=UserRepositoryTest`.
 
 - [ ] **Step 7: Commit**
 
@@ -444,7 +445,348 @@ git commit -m "feat(account): User.account_id substitui email/passwordHash (migr
 
 ---
 
-## Task 3: PasswordResetToken passa a apontar para Account + migration V36
+## Task 3: Corrigir SignupService.java + ~15 testes que constroem User diretamente
+
+> **Origem:** achado durante a implementação da Task 2. Remover `email`/`passwordHash`/`setName` de `User` e `findByEmail`/`existsByEmail` de `UserRepository` quebra a compilação de `SignupService.java` (produção, não previsto no arquivo de arquitetura original) e de ~15 arquivos de teste pré-existentes que constroem `new User()` diretamente com esses campos, em vez de passar pela API real.
+>
+> **Bug pré-existente encontrado junto:** nenhum desses ~15 testes chama `user.setTenant(...)` — e `User.tenant` é `NOT NULL` desde a migração multi-tenant já mergeada (`V30__add_tenant_to_users.sql`). Isso significa que esses testes já estão quebrados hoje, independente deste plano — como todos usam `@Testcontainers`/Postgres real, e não há Docker neste ambiente de desenvolvimento, ninguém percebeu (os erros aparecem misturados com os erros genéricos de "Docker indisponível"). Como cada um desses arquivos já vai ser editado nesta task para trocar `email`/`passwordHash` por `Account`, aproveitamos para também adicionar o `setTenant(...)` que faltava — mesmo esforço de edição, corrige os dois problemas de uma vez.
+
+**Files:**
+- Modify: `backend/src/main/java/com/github/mwacha/wachafit/saas/SignupService.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/notification/ReminderSchedulerTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/groupclass/GroupClassServiceTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/goal/GoalServiceTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/schedule/ScheduleControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/groupclass/GroupClassControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/progress/ProgressControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/booking/BookingConcurrencyTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/assessment/AssessmentControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/profile/StudentProfileControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/exercise/ExerciseControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/report/ReportControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/workout/WorkoutControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/billing/BillingControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/membership/MembershipControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/membership/MembershipPlanControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/goal/GoalControllerIntegrationTest.java`
+- Modify: `backend/src/test/java/com/github/mwacha/wachafit/user/UserRepositoryTest.java`
+
+**Interfaces:**
+- Consumes: `Account`/`AccountRepository` (Task 1), `User.setAccount()` (Task 2)
+
+Nenhum destes é um "teste novo" no sentido de TDD (não há comportamento novo sendo introduzido) — é uma correção mecânica de compilação + o bug de tenant ausente. Não há um passo de "escrever teste que falha"; a "falha" já existe (erro de compilação, causado pela Task 2).
+
+- [ ] **Step 1: Corrigir SignupService.java**
+
+`SignupService` já tem `TenantRepository`/`PasswordEncoder` injetados. Adicione `AccountRepository` ao construtor e troque a construção direta do `User admin` por criar (ou reaproveitar, seguindo a mesma regra de "vincular a Account existente" usada no resto do plano) a `Account` primeiro:
+
+```java
+// backend/src/main/java/com/github/mwacha/wachafit/saas/SignupService.java
+// Adicionar o import:
+import com.github.mwacha.wachafit.account.Account;
+import com.github.mwacha.wachafit.account.AccountRepository;
+
+// Adicionar o campo e o parâmetro do construtor (junto aos já existentes tenantRepository/passwordEncoder/etc.):
+private final AccountRepository accountRepository;
+
+// No construtor, adicionar o parâmetro e a atribuição:
+public SignupService(
+    TenantRepository tenantRepository,
+    UserRepository userRepository,
+    AccountRepository accountRepository,
+    SaasPlanRepository saasPlanRepository,
+    TenantSubscriptionRepository subscriptionRepository,
+    TenantChargeRepository chargeRepository,
+    PasswordEncoder passwordEncoder,
+    JwtUtil jwtUtil
+) {
+    this.tenantRepository = tenantRepository;
+    this.userRepository = userRepository;
+    this.accountRepository = accountRepository;
+    this.saasPlanRepository = saasPlanRepository;
+    this.subscriptionRepository = subscriptionRepository;
+    this.chargeRepository = chargeRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.jwtUtil = jwtUtil;
+}
+```
+
+Substitua o bloco de criação do `User admin` (o que hoje faz `admin.setName(...)`/`admin.setEmail(...)`/`admin.setPasswordHash(...)`):
+
+```java
+// SignupService.java — dentro do método signup(), substituir:
+User admin = new User();
+admin.setName(req.admin().name());
+admin.setEmail(req.admin().email());
+admin.setPasswordHash(passwordEncoder.encode(req.admin().password()));
+admin.setRole(Role.ADMIN);
+admin.setTenant(tenant);
+admin = userRepository.save(admin);
+
+// por:
+Account adminAccount = accountRepository.findByEmail(req.admin().email())
+    .orElseGet(() -> {
+        Account a = new Account();
+        a.setName(req.admin().name());
+        a.setEmail(req.admin().email());
+        a.setPasswordHash(passwordEncoder.encode(req.admin().password()));
+        return accountRepository.save(a);
+    });
+User admin = new User();
+admin.setAccount(adminAccount);
+admin.setRole(Role.ADMIN);
+admin.setTenant(tenant);
+admin = userRepository.save(admin);
+```
+
+Note que `PublicSignupControllerTest.java` (teste existente da Task 12 do plano multi-tenant, já mergeado) usa `@SpringBootTest` com H2 puro/Flyway desabilitado e cria seu próprio `SaasPlan` de teste — verifique, ao rodar a suíte no Step 8 deste plano, que ele continua passando; não deve precisar de nenhuma edição (não constrói `User` diretamente, só chama o endpoint `/api/public/signup`).
+
+- [ ] **Step 2: Corrigir os 3 testes puramente Mockito (nunca persistem o User — não precisam de tenant)**
+
+`ReminderSchedulerTest.java`, `GroupClassServiceTest.java` e `GoalServiceTest.java` usam `@Mock`/`@InjectMocks`, nunca gravam no banco de verdade — o `User` construído é só um objeto em memória devolvido por um mock. Não precisam de `Account` salva nem de `Tenant` — só precisam que `user.getEmail()` continue funcionando via um `Account` em memória (não persistido).
+
+Em `ReminderSchedulerTest.java`, localize (dentro de `sendReminders_shouldSendEmail_forBookingsIn4hWindow()`):
+```java
+// ANTES:
+User student = new User();
+student.setName("Maria");
+student.setEmail("maria@test.com");
+
+User trainer = new User();
+trainer.setName("João Personal");
+```
+Substitua por:
+```java
+// DEPOIS:
+Account studentAccount = new Account();
+studentAccount.setName("Maria");
+studentAccount.setEmail("maria@test.com");
+User student = new User();
+student.setAccount(studentAccount);
+
+Account trainerAccount = new Account();
+trainerAccount.setName("João Personal");
+User trainer = new User();
+trainer.setAccount(trainerAccount);
+```
+Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+Em `GroupClassServiceTest.java`, localize o helper `buildTrainer` (usado por praticamente todos os testes da classe):
+```java
+// ANTES:
+private User buildTrainer(UUID id, String name, String email) {
+    User u = new User();
+    u.setName(name);
+    u.setEmail(email);
+    try {
+        var f = User.class.getDeclaredField("id");
+        f.setAccessible(true);
+        f.set(u, id);
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+    return u;
+}
+```
+Substitua por:
+```java
+// DEPOIS:
+private User buildTrainer(UUID id, String name, String email) {
+    Account account = new Account();
+    account.setName(name);
+    account.setEmail(email);
+    User u = new User();
+    u.setAccount(account);
+    try {
+        var f = User.class.getDeclaredField("id");
+        f.setAccessible(true);
+        f.set(u, id);
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+    return u;
+}
+```
+Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+Em `GoalServiceTest.java`, localize o `@BeforeEach setUp()`:
+```java
+// ANTES:
+trainer = new User();
+trainer.setName("Trainer");
+trainer.setEmail("trainer@test.com");
+trainer.setRole(Role.TRAINER);
+
+student = new User();
+student.setName("Student");
+student.setEmail("student@test.com");
+student.setRole(Role.STUDENT);
+```
+Substitua por:
+```java
+// DEPOIS:
+Account trainerAccount = new Account();
+trainerAccount.setName("Trainer");
+trainerAccount.setEmail("trainer@test.com");
+trainer = new User();
+trainer.setAccount(trainerAccount);
+trainer.setRole(Role.TRAINER);
+
+Account studentAccount = new Account();
+studentAccount.setName("Student");
+studentAccount.setEmail("student@test.com");
+student = new User();
+student.setAccount(studentAccount);
+student.setRole(Role.STUDENT);
+```
+Adicione o import `com.github.mwacha.wachafit.account.Account`. O `otherStudent` (em `list_asStudent_shouldOnlySeeOwnGoals_forbidden_whenOtherStudent()`) não usa `email`/`name` — não precisa de nenhuma mudança.
+
+- [ ] **Step 3: Corrigir os 2 testes que usam o padrão "findByEmail após registro real"**
+
+`ScheduleControllerIntegrationTest.java` e `GroupClassControllerIntegrationTest.java` registram um usuário via chamada HTTP real a `/api/auth/register` (que, após a Task 7 deste plano, já cria a `Account` corretamente), depois usam `userRepository.findByEmail(...)` para buscar o `User` criado e promovê-lo a `TRAINER`. Como `findByEmail` sai de `UserRepository`, troque para buscar a `Account` primeiro e depois o vínculo (`User`) daquela conta no tenant "personal-studio".
+
+Ambos os arquivos precisam de dois novos `@Autowired` (adicione junto aos já existentes `MockMvc`/`ObjectMapper`/`UserRepository`):
+```java
+@Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+@Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
+```
+
+Em `ScheduleControllerIntegrationTest.java`, dentro de `setup()`:
+```java
+// ANTES:
+var trainerUser = userRepository.findByEmail(trainerEmail).orElseThrow();
+trainerUser.setRole(Role.TRAINER);
+userRepository.save(trainerUser);
+trainerId = trainerUser.getId();
+```
+Substitua por:
+```java
+// DEPOIS:
+var trainerTenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+var trainerAccount = accountRepository.findByEmail(trainerEmail).orElseThrow();
+var trainerUser = userRepository.findByAccountIdAndTenantId(trainerAccount.getId(), trainerTenant.getId()).orElseThrow();
+trainerUser.setRole(Role.TRAINER);
+userRepository.save(trainerUser);
+trainerId = trainerUser.getId();
+```
+
+Em `GroupClassControllerIntegrationTest.java`, aplique a MESMA substituição nos dois lugares onde aparece (dentro de `setup()`, e dentro do `@Test create_withTrainerToken_shouldReturn201()`):
+```java
+// ANTES (aparece 2x no arquivo):
+var trainerUser = userRepository.findByEmail(trainerEmail).orElseThrow();
+trainerUser.setRole(Role.TRAINER);
+userRepository.save(trainerUser);
+```
+```java
+// DEPOIS (nas 2 ocorrências):
+var trainerTenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+var trainerAccount = accountRepository.findByEmail(trainerEmail).orElseThrow();
+var trainerUser = userRepository.findByAccountIdAndTenantId(trainerAccount.getId(), trainerTenant.getId()).orElseThrow();
+trainerUser.setRole(Role.TRAINER);
+userRepository.save(trainerUser);
+```
+
+- [ ] **Step 4: Corrigir os 10 testes de integração que constroem User diretamente (precisam de Account + Tenant)**
+
+Todos os arquivos abaixo seguem o mesmo padrão: `new User(); setName/setEmail/setPasswordHash/setRole/setActive; save()`, sem nunca chamar `setTenant(...)`. A correção, igual em todos: criar uma `Account` (salva) com `name`/`email`/`passwordHash`, e no `User` chamar `setAccount(account)` + `setTenant(tenant)` (o `tenant` resolvido uma vez via `tenantRepository.findBySlug("personal-studio").orElseThrow()`).
+
+Cada um destes arquivos precisa de dois novos `@Autowired` (junto aos campos já existentes no topo da classe):
+```java
+@Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+@Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
+```
+
+**`ProgressControllerIntegrationTest.java`** — dentro de `setUp()`:
+```java
+// ANTES:
+User trainer = new User(); trainer.setName("T"); trainer.setEmail("t@t.com");
+trainer.setPasswordHash(passwordEncoder.encode("pass")); trainer.setRole(Role.TRAINER); trainer.setActive(true);
+userRepo.save(trainer);
+User student = new User(); student.setName("S"); student.setEmail("s@t.com");
+student.setPasswordHash(passwordEncoder.encode("pass")); student.setRole(Role.STUDENT); student.setActive(true);
+userRepo.save(student);
+```
+```java
+// DEPOIS:
+var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+Account trainerAccount = new Account();
+trainerAccount.setName("T"); trainerAccount.setEmail("t@t.com");
+trainerAccount.setPasswordHash(passwordEncoder.encode("pass"));
+accountRepository.save(trainerAccount);
+User trainer = new User();
+trainer.setAccount(trainerAccount); trainer.setRole(Role.TRAINER);
+trainer.setTenant(tenant); trainer.setActive(true);
+userRepo.save(trainer);
+Account studentAccount = new Account();
+studentAccount.setName("S"); studentAccount.setEmail("s@t.com");
+studentAccount.setPasswordHash(passwordEncoder.encode("pass"));
+accountRepository.save(studentAccount);
+User student = new User();
+student.setAccount(studentAccount); student.setRole(Role.STUDENT);
+student.setTenant(tenant); student.setActive(true);
+userRepo.save(student);
+```
+Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`AssessmentControllerIntegrationTest.java`** — dentro de `setUp()`, aplique o mesmo padrão de tradução (trainer com `"Trainer"`/`"trainer@test.com"`/`"pass123"`, student com `"Student"`/`"student@test.com"`/`"pass123"`), adicionando `var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();` antes das duas construções e `trainer.setTenant(tenant);`/`student.setTenant(tenant);` em cada uma, seguindo exatamente a mesma transformação do exemplo de `ProgressControllerIntegrationTest.java` acima (criar `Account`, salvar, `setAccount`, `setTenant`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`StudentProfileControllerIntegrationTest.java`** — dentro de `setUp()`, mesmo padrão (admin `"Admin"`/`"admin@t.com"`/role `ADMIN`; student `"Student"`/`"student@t.com"`/role `STUDENT`, ambos senha `"pass"`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`ExerciseControllerIntegrationTest.java`** — dentro de `setUp()`, mesmo padrão (apenas um trainer: `"T"`/`"t@t.com"`/senha `"pass"`/role `TRAINER`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`WorkoutControllerIntegrationTest.java`** — dentro de `setUp()`, mesmo padrão (trainer `"T"`/`"t@t.com"` role `TRAINER`; student `"S"`/`"s@t.com"` role `STUDENT`, ambos senha `"pass"`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`BillingControllerIntegrationTest.java`** — dentro de `setUp()`, mesmo padrão (admin `"Admin"`/`"admin@t.com"` role `ADMIN`; student `"Student"`/`"student@t.com"` role `STUDENT`, ambos senha `"pass"`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`MembershipControllerIntegrationTest.java`** — dentro de `setUp()`, mesmo padrão (admin `"Admin"`/`"admin@t.com"` role `ADMIN`; student `"Student"`/`"student@t.com"` role `STUDENT`, ambos senha `"pass"`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`MembershipPlanControllerIntegrationTest.java`** — dentro de `setUp()`, mesmo padrão (apenas admin: `"Admin"`/`"admin@t.com"`/senha `"pass"`/role `ADMIN`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`GoalControllerIntegrationTest.java`** — dentro de `setUp()`, mesmo padrão (trainer `"T"`/`"t@t.com"` role `TRAINER`; student `"S"`/`"s@t.com"` role `STUDENT`, ambos senha `"pass"`). Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`ReportControllerIntegrationTest.java`** — dentro de `setUp()`, MESMO padrão, mas com 3 usuários (admin `"Admin"`/`"admin@r.com"` role `ADMIN`; cashier `"Caixa"`/`"cashier@r.com"` role `CASHIER`; student `"Aluno"`/`"student@r.com"` role `STUDENT`, todos senha `"pass"`). Aplique a mesma transformação (Account + Tenant) às 3 construções. Adicione o import `com.github.mwacha.wachafit.account.Account`.
+
+**`BookingConcurrencyTest.java`** — dentro do único `@Test rn03_onlyOneBookingSucceeds_whenTwoStudentsRaceForLastSlot()` (não há `@BeforeEach` neste arquivo), aplique o mesmo padrão às 3 construções (`trainer`, `s1`, `s2`), com `var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();` uma vez no início do método. Adicione os 2 `@Autowired` (`AccountRepository`, `TenantRepository`) e o import `com.github.mwacha.wachafit.account.Account`.
+
+- [ ] **Step 5: Corrigir UserRepositoryTest.java — remover os 2 testes que cobriam funcionalidade removida**
+
+`shouldSaveAndFindUserByEmail` e `existsByEmail_shouldReturnTrueIfExists` testam `userRepository.findByEmail`/`existsByEmail`, que não existem mais (a Task 1 já cobre o equivalente em `AccountRepositoryTest.savesAndFindsByEmail`/`findByEmailReturnsEmpty_whenNotFound`). Delete os dois métodos de teste inteiros de `UserRepositoryTest.java` (mantenha o `findByAccountIdAndTenantId_returnsMembership` adicionado na Task 2, e qualquer outro teste pré-existente do arquivo que não use `setEmail`/`setPasswordHash`/`findByEmail`/`existsByEmail`).
+
+- [ ] **Step 6: Confirmar que a compilação de testes agora só falha em AuthService/UserService**
+
+```bash
+cd backend
+mvn test-compile -q 2>&1 | tail -100
+```
+Esperado: os únicos erros restantes mencionam `AuthService.java` ou `UserService.java` (`setEmail`, `setPasswordHash`, `findByEmailAndTenantId`, `resetToken.setUser`, etc.) — nenhum outro arquivo deve aparecer. Se aparecer qualquer outro arquivo, ele ficou de fora desta correção e precisa ser adicionado antes de prosseguir.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add backend/src/main/java/com/github/mwacha/wachafit/saas/SignupService.java \
+        backend/src/test/java/com/github/mwacha/wachafit/notification/ReminderSchedulerTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/groupclass/GroupClassServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/goal/GoalServiceTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/schedule/ScheduleControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/groupclass/GroupClassControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/progress/ProgressControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/booking/BookingConcurrencyTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/assessment/AssessmentControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/profile/StudentProfileControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/exercise/ExerciseControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/report/ReportControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/workout/WorkoutControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/billing/BillingControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/membership/MembershipControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/membership/MembershipPlanControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/goal/GoalControllerIntegrationTest.java \
+        backend/src/test/java/com/github/mwacha/wachafit/user/UserRepositoryTest.java
+git commit -m "fix(account): SignupService + testes pre-existentes usam Account; corrige tenant ausente (bug pre-existente)"
+```
+
+---
+
+## Task 4: PasswordResetToken passa a apontar para Account + migration V36
 
 **Files:**
 - Create: `backend/src/main/resources/db/migration/V36__password_reset_tokens_use_account.sql`
@@ -577,7 +919,7 @@ public class PasswordResetToken {
 ```bash
 mvn test -Dtest=PasswordResetTokenRepositoryTest -q 2>&1 | tail -10
 ```
-Esperado: PASS (1 teste). Compilação de `AuthService.java` continua quebrada nesta task (usa `resetToken.setUser(user)`/`resetToken.getUser()`) — será corrigida na Task 5.
+Esperado: PASS (1 teste). Compilação de `AuthService.java` continua quebrada nesta task (usa `resetToken.setUser(user)`/`resetToken.getUser()`) — será corrigida na Task 6.
 
 - [ ] **Step 6: Commit**
 
@@ -590,7 +932,7 @@ git commit -m "feat(account): PasswordResetToken aponta para Account (migration 
 
 ---
 
-## Task 4: JwtUtil ganha claim accountId + JwtFilter valida (fail-closed)
+## Task 5: JwtUtil ganha claim accountId + JwtFilter valida (fail-closed)
 
 **Files:**
 - Modify: `backend/src/main/java/com/github/mwacha/wachafit/shared/security/JwtUtil.java`
@@ -1048,7 +1390,7 @@ git commit -m "feat(account): JWT ganha claim accountId + token de selecao de te
 
 ---
 
-## Task 5: Novos DTOs + AuthService reescrito + AuthController
+## Task 6: Novos DTOs + AuthService reescrito + AuthController
 
 **Files:**
 - Create: `backend/src/main/java/com/github/mwacha/wachafit/auth/dto/SelectTenantRequest.java`
@@ -1062,7 +1404,7 @@ git commit -m "feat(account): JWT ganha claim accountId + token de selecao de te
 - Modify (mecânico, ver Step 7): 14 arquivos de teste de integração pré-existentes que constroem `new LoginRequest(email, password, "personal-studio")` e precisam perder o 3º argumento — lista completa no Step 7.
 
 **Interfaces:**
-- Consumes: `AccountRepository` (Task 1), `User.getAccount()`/`UserRepository.findByAccountIdAndTenantId`/`findByAccountIdAndActiveTrue` (Task 2), `PasswordResetToken.getAccount()`/`setAccount()` (Task 3), `JwtUtil.generateSelectTenantToken`/`isSelectTenantToken`/`extractAccountId` (Task 4)
+- Consumes: `AccountRepository` (Task 1), `User.getAccount()`/`UserRepository.findByAccountIdAndTenantId`/`findByAccountIdAndActiveTrue` (Task 2), `PasswordResetToken.getAccount()`/`setAccount()` (Task 4), `JwtUtil.generateSelectTenantToken`/`isSelectTenantToken`/`extractAccountId` (Task 5)
 - Produces:
   - `POST /api/auth/login` — sem `tenantSlug`; devolve token completo OU `{selectTenantToken, memberships}`
   - `POST /api/auth/select-tenant`, `POST /api/auth/switch-tenant`, `GET /api/auth/my-tenants`
@@ -1663,7 +2005,7 @@ new LoginRequest("bob@test.com", "password123"))))
 cd backend
 mvn test-compile -q 2>&1 | tail -60
 ```
-Esperado: zero erros relacionados a `LoginRequest`. (Erros relacionados a `UserService`/`setEmail`/`setPasswordHash` ainda são esperados até a Task 6 — ver nota da Task 2, Step 6.)
+Esperado: zero erros relacionados a `LoginRequest`. (Erros relacionados a `UserService`/`setEmail`/`setPasswordHash` ainda são esperados até a Task 7 — ver nota da Task 2, Step 6.)
 
 - [ ] **Step 9: Rodar os testes**
 
@@ -1694,7 +2036,7 @@ git commit -m "feat(account): login sem tenantSlug + selecao/troca de academia (
 
 ---
 
-## Task 6: UserService.createUser() vincula a Account existente
+## Task 7: UserService.createUser() vincula a Account existente
 
 **Files:**
 - Modify: `backend/src/main/java/com/github/mwacha/wachafit/user/UserService.java`
@@ -2064,7 +2406,7 @@ git commit -m "feat(account): UserService.createUser vincula a Account existente
 
 ---
 
-## Task 7: Rodar a suíte completa e confirmar ausência de regressão
+## Task 8: Rodar a suíte completa e confirmar ausência de regressão
 
 **Files:** nenhum arquivo novo — apenas validação.
 
@@ -2092,14 +2434,14 @@ Nenhum commit esperado neste passo isoladamente — é apenas checkpoint de veri
 
 ---
 
-## Task 8: Frontend — types/api.ts + auth.store.ts
+## Task 9: Frontend — types/api.ts + auth.store.ts
 
 **Files:**
 - Modify: `frontend/src/types/api.ts`
 - Modify: `frontend/src/stores/auth.store.ts`
 
 **Interfaces:**
-- Consumes: `POST /api/auth/login` (sem tenantSlug), `POST /api/auth/select-tenant`, `POST /api/auth/switch-tenant`, `GET /api/auth/my-tenants` (Task 5)
+- Consumes: `POST /api/auth/login` (sem tenantSlug), `POST /api/auth/select-tenant`, `POST /api/auth/switch-tenant`, `GET /api/auth/my-tenants` (Task 6)
 - Produces:
   - `LoginRequest { email, password }` — SEM `tenantSlug` (tipo já existe no arquivo, apenas remover o campo)
   - `TenantMembershipSummary { tenantId, tenantName, tenantSlug, role }`
@@ -2259,14 +2601,14 @@ git commit -m "feat(account): frontend — auth store sem tenantSlug no login + 
 
 ---
 
-## Task 9: Frontend — LoginView.vue sem slug + popup de seleção de academia
+## Task 10: Frontend — LoginView.vue sem slug + popup de seleção de academia
 
 **Files:**
 - Modify: `frontend/src/views/auth/LoginView.vue`
 - Create: `frontend/src/views/auth/components/TenantSelectModal.vue`
 
 **Interfaces:**
-- Consumes: `auth.login()`/`auth.selectTenant()` retornando `LoginResult` (Task 8)
+- Consumes: `auth.login()`/`auth.selectTenant()` retornando `LoginResult` (Task 9)
 
 - [ ] **Step 1: Criar o componente TenantSelectModal.vue**
 
@@ -2462,13 +2804,13 @@ git commit -m "feat(account): frontend — login sem slug + popup de selecao de 
 
 ---
 
-## Task 10: Frontend — seletor de academia sempre visível no header
+## Task 11: Frontend — seletor de academia sempre visível no header
 
 **Files:**
 - Modify: `frontend/src/components/AppLayout.vue`
 
 **Interfaces:**
-- Consumes: `auth.myTenants()`/`auth.switchTenant()` (Task 8)
+- Consumes: `auth.myTenants()`/`auth.switchTenant()` (Task 9)
 
 - [ ] **Step 1: Adicionar o seletor ao template, entre a busca e o botão de sair**
 
@@ -2580,8 +2922,8 @@ Ver seção 5 do spec (`docs/superpowers/specs/2026-07-25-account-tenant-members
 1. Convite por e-mail para auto-associação a uma academia.
 2. Tela de trocar e-mail/senha da conta a partir de dentro de uma academia específica.
 3. Aviso manual para os casos raros em que dois `User`s hoje já compartilhavam e-mail entre tenants (a migração os une automaticamente, mas não avisa a pessoa).
-4. `UserService.updateUser()` não atualiza mais o nome (ver nota na Task 6) — editar nome/e-mail da conta fica para um design futuro.
+4. `UserService.updateUser()` não atualiza mais o nome (ver nota na Task 7) — editar nome/e-mail da conta fica para um design futuro.
 
 ### Ordem de execução obrigatória
 
-Tasks 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 (todas sequenciais — sem paralelismo possível; Tasks 2-6 deixam o backend temporariamente sem compilar por completo até a Task 6 terminar, isso é esperado e documentado em cada task).
+Tasks 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 (todas sequenciais — sem paralelismo possível; Tasks 2-7 deixam o backend temporariamente sem compilar por completo até a Task 7 terminar, isso é esperado e documentado em cada task).
