@@ -69,6 +69,7 @@ class AssessmentControllerIntegrationTest {
     void setUp() throws Exception {
         assessmentRepo.deleteAll();
         userRepo.deleteAll();
+        accountRepository.deleteAll();
 
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
 

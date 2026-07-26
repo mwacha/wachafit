@@ -64,6 +64,7 @@ class GoalControllerIntegrationTest {
     void setUp() throws Exception {
         goalRepo.deleteAll();
         userRepo.deleteAll();
+        accountRepository.deleteAll();
 
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
 

@@ -61,6 +61,7 @@ class StudentProfileControllerIntegrationTest {
         healthRepo.deleteAll();
         profileRepo.deleteAll();
         userRepo.deleteAll();
+        accountRepository.deleteAll();
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
         Account adminAccount = new Account();
         adminAccount.setName("Admin"); adminAccount.setEmail("admin@t.com");

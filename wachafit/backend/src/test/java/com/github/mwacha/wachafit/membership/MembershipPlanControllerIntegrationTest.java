@@ -61,6 +61,7 @@ class MembershipPlanControllerIntegrationTest {
     void setUp() throws Exception {
         planRepo.deleteAll();
         userRepo.deleteAll();
+        accountRepository.deleteAll();
 
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
         Account adminAccount = new Account();

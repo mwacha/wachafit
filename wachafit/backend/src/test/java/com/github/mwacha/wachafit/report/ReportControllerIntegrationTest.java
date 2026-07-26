@@ -76,6 +76,7 @@ class ReportControllerIntegrationTest {
         subscriptionRepo.deleteAll();
         planRepo.deleteAll();
         userRepo.deleteAll();
+        accountRepository.deleteAll();
 
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
 

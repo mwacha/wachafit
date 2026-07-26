@@ -60,6 +60,7 @@ class ProgressControllerIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         userRepo.deleteAll();
+        accountRepository.deleteAll();
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
         Account trainerAccount = new Account();
         trainerAccount.setName("T"); trainerAccount.setEmail("t@t.com");

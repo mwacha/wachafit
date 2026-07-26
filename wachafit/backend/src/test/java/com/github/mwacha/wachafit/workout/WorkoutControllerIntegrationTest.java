@@ -78,6 +78,7 @@ class WorkoutControllerIntegrationTest {
         planRepo.deleteAll();
         exerciseRepo.deleteAll();
         userRepo.deleteAll();
+        accountRepository.deleteAll();
 
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
 
