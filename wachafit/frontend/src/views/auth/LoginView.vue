@@ -20,17 +20,6 @@
 
         <div class="form-fields">
           <div class="field">
-            <label class="field-label" for="tenantSlug">Slug da academia</label>
-            <InputText
-              id="tenantSlug"
-              v-model="tenantSlug"
-              placeholder="ex: minha-academia"
-              :invalid="!!errorMessage"
-              autocomplete="organization"
-            />
-          </div>
-
-          <div class="field">
             <label class="field-label" for="email">E-mail</label>
             <InputText
               id="email"
@@ -76,6 +65,13 @@
         </div>
       </div>
     </div>
+
+    <TenantSelectModal
+      v-if="pendingSelection"
+      :select-tenant-token="pendingSelection.selectTenantToken"
+      :memberships="pendingSelection.memberships"
+      @selected="onTenantSelected"
+    />
   </div>
 </template>
 
@@ -87,30 +83,40 @@ import { roleDashboards } from '@/utils/roleRoutes'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
+import TenantSelectModal from './components/TenantSelectModal.vue'
+import type { LoginNeedsTenantSelection } from '@/types/api'
 
 const auth = useAuthStore()
 const router = useRouter()
-const tenantSlug = ref('')
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
 const loading = ref(false)
+const pendingSelection = ref<LoginNeedsTenantSelection | null>(null)
 
 async function handleLogin() {
   errorMessage.value = ''
-  if (!tenantSlug.value || !email.value || !password.value) {
+  if (!email.value || !password.value) {
     errorMessage.value = 'Preencha todos os campos.'
     return
   }
   loading.value = true
   try {
-    const result = await auth.login(email.value, password.value, tenantSlug.value)
+    const result = await auth.login(email.value, password.value)
+    if ('selectTenantToken' in result) {
+      pendingSelection.value = result
+      return
+    }
     router.push(roleDashboards[result.role])
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao fazer login. Tente novamente.'
   } finally {
     loading.value = false
   }
+}
+
+function onTenantSelected(role: string) {
+  router.push(roleDashboards[role as keyof typeof roleDashboards])
 }
 </script>
 
