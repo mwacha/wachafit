@@ -52,6 +52,8 @@ class GroupClassControllerIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @Autowired UserRepository userRepository;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String studentToken;
     private UUID trainerId;
@@ -67,7 +69,9 @@ class GroupClassControllerIntegrationTest {
             .andReturn();
 
         // Promote to TRAINER role directly via repository
-        var trainerUser = userRepository.findByEmail(trainerEmail).orElseThrow();
+        var trainerTenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        var trainerAccount = accountRepository.findByEmail(trainerEmail).orElseThrow();
+        var trainerUser = userRepository.findByAccountIdAndTenantId(trainerAccount.getId(), trainerTenant.getId()).orElseThrow();
         trainerUser.setRole(Role.TRAINER);
         userRepository.save(trainerUser);
         trainerId = trainerUser.getId();
@@ -122,7 +126,9 @@ class GroupClassControllerIntegrationTest {
                 new RegisterRequest("Trainer User", trainerEmail, "password123", "personal-studio"))))
             .andReturn();
 
-        var trainerUser = userRepository.findByEmail(trainerEmail).orElseThrow();
+        var trainerTenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        var trainerAccount = accountRepository.findByEmail(trainerEmail).orElseThrow();
+        var trainerUser = userRepository.findByAccountIdAndTenantId(trainerAccount.getId(), trainerTenant.getId()).orElseThrow();
         trainerUser.setRole(Role.TRAINER);
         userRepository.save(trainerUser);
 

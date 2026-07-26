@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.exercise;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.exercise.dto.CreateExerciseRequest;
 import com.github.mwacha.wachafit.user.Role;
@@ -51,17 +52,24 @@ class ExerciseControllerIntegrationTest {
     @Autowired ObjectMapper mapper;
     @Autowired UserRepository userRepo;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String trainerToken;
 
     @BeforeEach
     void setUp() throws Exception {
         userRepo.deleteAll();
+        var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        Account trainerAccount = new Account();
+        trainerAccount.setName("T");
+        trainerAccount.setEmail("t@t.com");
+        trainerAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(trainerAccount);
         User trainer = new User();
-        trainer.setName("T");
-        trainer.setEmail("t@t.com");
-        trainer.setPasswordHash(passwordEncoder.encode("pass"));
+        trainer.setAccount(trainerAccount);
         trainer.setRole(Role.TRAINER);
+        trainer.setTenant(tenant);
         trainer.setActive(true);
         userRepo.save(trainer);
 

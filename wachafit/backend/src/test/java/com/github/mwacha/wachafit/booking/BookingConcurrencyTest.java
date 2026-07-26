@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.booking;
 
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.booking.dto.CreateBookingRequest;
 import com.github.mwacha.wachafit.groupclass.GroupClass;
 import com.github.mwacha.wachafit.groupclass.GroupClassRepository;
@@ -57,13 +58,21 @@ class BookingConcurrencyTest {
     @Autowired GroupClassRepository groupClassRepository;
     @Autowired ScheduleRepository scheduleRepository;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     @Test
     void rn03_onlyOneBookingSucceeds_whenTwoStudentsRaceForLastSlot() throws Exception {
+        var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+
         // Create a trainer
+        Account trainerAccount = new Account();
+        trainerAccount.setName("Trainer"); trainerAccount.setEmail("trainer-c-" + UUID.randomUUID() + "@test.com");
+        trainerAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(trainerAccount);
         User trainer = new User();
-        trainer.setName("Trainer"); trainer.setEmail("trainer-c-" + UUID.randomUUID() + "@test.com");
-        trainer.setPasswordHash(passwordEncoder.encode("pass")); trainer.setRole(Role.TRAINER);
+        trainer.setAccount(trainerAccount);
+        trainer.setRole(Role.TRAINER); trainer.setTenant(tenant);
         trainer = userRepository.save(trainer);
 
         // Create group class with capacity = 1
@@ -83,12 +92,18 @@ class BookingConcurrencyTest {
         final UUID scheduleId = schedule.getId();
 
         // Create 2 students
-        User s1 = new User(); s1.setName("S1"); s1.setEmail("s1-c-" + UUID.randomUUID() + "@test.com");
-        s1.setPasswordHash(passwordEncoder.encode("pass")); s1.setRole(Role.STUDENT);
+        Account s1Account = new Account(); s1Account.setName("S1"); s1Account.setEmail("s1-c-" + UUID.randomUUID() + "@test.com");
+        s1Account.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(s1Account);
+        User s1 = new User();
+        s1.setAccount(s1Account); s1.setRole(Role.STUDENT); s1.setTenant(tenant);
         s1 = userRepository.save(s1);
 
-        User s2 = new User(); s2.setName("S2"); s2.setEmail("s2-c-" + UUID.randomUUID() + "@test.com");
-        s2.setPasswordHash(passwordEncoder.encode("pass")); s2.setRole(Role.STUDENT);
+        Account s2Account = new Account(); s2Account.setName("S2"); s2Account.setEmail("s2-c-" + UUID.randomUUID() + "@test.com");
+        s2Account.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(s2Account);
+        User s2 = new User();
+        s2.setAccount(s2Account); s2.setRole(Role.STUDENT); s2.setTenant(tenant);
         s2 = userRepository.save(s2);
 
         final UUID student1Id = s1.getId();

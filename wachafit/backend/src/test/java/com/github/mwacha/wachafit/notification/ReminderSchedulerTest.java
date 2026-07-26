@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.notification;
 
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.booking.Booking;
 import com.github.mwacha.wachafit.booking.BookingRepository;
 import com.github.mwacha.wachafit.groupclass.GroupClass;
@@ -49,12 +50,16 @@ class ReminderSchedulerTest {
         booking.setStudentId(studentId);
         booking.setSchedule(schedule);
 
+        Account studentAccount = new Account();
+        studentAccount.setName("Maria");
+        studentAccount.setEmail("maria@test.com");
         User student = new User();
-        student.setName("Maria");
-        student.setEmail("maria@test.com");
+        student.setAccount(studentAccount);
 
+        Account trainerAccount = new Account();
+        trainerAccount.setName("João Personal");
         User trainer = new User();
-        trainer.setName("João Personal");
+        trainer.setAccount(trainerAccount);
 
         when(bookingRepository.findConfirmedBetween(any(), any())).thenReturn(List.of(booking));
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student));

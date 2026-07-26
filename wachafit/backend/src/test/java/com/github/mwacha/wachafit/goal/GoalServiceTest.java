@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.goal;
 
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.goal.dto.*;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
@@ -42,14 +43,18 @@ class GoalServiceTest {
         trainerId = UUID.randomUUID();
         studentId = UUID.randomUUID();
 
+        Account trainerAccount = new Account();
+        trainerAccount.setName("Trainer");
+        trainerAccount.setEmail("trainer@test.com");
         trainer = new User();
-        trainer.setName("Trainer");
-        trainer.setEmail("trainer@test.com");
+        trainer.setAccount(trainerAccount);
         trainer.setRole(Role.TRAINER);
 
+        Account studentAccount = new Account();
+        studentAccount.setName("Student");
+        studentAccount.setEmail("student@test.com");
         student = new User();
-        student.setName("Student");
-        student.setEmail("student@test.com");
+        student.setAccount(studentAccount);
         student.setRole(Role.STUDENT);
     }
 

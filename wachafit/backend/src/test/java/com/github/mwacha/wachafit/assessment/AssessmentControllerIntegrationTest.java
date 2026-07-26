@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.assessment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.assessment.dto.CreateAssessmentRequest;
 import com.github.mwacha.wachafit.assessment.dto.MeasurementRequest;
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
@@ -58,6 +59,8 @@ class AssessmentControllerIntegrationTest {
     @Autowired UserRepository userRepo;
     @Autowired PhysicalAssessmentRepository assessmentRepo;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String trainerToken;
     private UUID studentId;
@@ -67,19 +70,29 @@ class AssessmentControllerIntegrationTest {
         assessmentRepo.deleteAll();
         userRepo.deleteAll();
 
+        var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+
+        Account trainerAccount = new Account();
+        trainerAccount.setName("Trainer");
+        trainerAccount.setEmail("trainer@test.com");
+        trainerAccount.setPasswordHash(passwordEncoder.encode("pass123"));
+        accountRepository.save(trainerAccount);
         User trainer = new User();
-        trainer.setName("Trainer");
-        trainer.setEmail("trainer@test.com");
-        trainer.setPasswordHash(passwordEncoder.encode("pass123"));
+        trainer.setAccount(trainerAccount);
         trainer.setRole(Role.TRAINER);
+        trainer.setTenant(tenant);
         trainer.setActive(true);
         userRepo.save(trainer);
 
+        Account studentAccount = new Account();
+        studentAccount.setName("Student");
+        studentAccount.setEmail("student@test.com");
+        studentAccount.setPasswordHash(passwordEncoder.encode("pass123"));
+        accountRepository.save(studentAccount);
         User student = new User();
-        student.setName("Student");
-        student.setEmail("student@test.com");
-        student.setPasswordHash(passwordEncoder.encode("pass123"));
+        student.setAccount(studentAccount);
         student.setRole(Role.STUDENT);
+        student.setTenant(tenant);
         student.setActive(true);
         userRepo.save(student);
         studentId = student.getId();

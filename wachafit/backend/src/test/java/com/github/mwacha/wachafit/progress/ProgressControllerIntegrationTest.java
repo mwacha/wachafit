@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.progress;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
@@ -50,6 +51,8 @@ class ProgressControllerIntegrationTest {
     @Autowired ObjectMapper mapper;
     @Autowired UserRepository userRepo;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String studentToken;
     private UUID studentId;
@@ -57,11 +60,22 @@ class ProgressControllerIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         userRepo.deleteAll();
-        User trainer = new User(); trainer.setName("T"); trainer.setEmail("t@t.com");
-        trainer.setPasswordHash(passwordEncoder.encode("pass")); trainer.setRole(Role.TRAINER); trainer.setActive(true);
+        var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        Account trainerAccount = new Account();
+        trainerAccount.setName("T"); trainerAccount.setEmail("t@t.com");
+        trainerAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(trainerAccount);
+        User trainer = new User();
+        trainer.setAccount(trainerAccount); trainer.setRole(Role.TRAINER);
+        trainer.setTenant(tenant); trainer.setActive(true);
         userRepo.save(trainer);
-        User student = new User(); student.setName("S"); student.setEmail("s@t.com");
-        student.setPasswordHash(passwordEncoder.encode("pass")); student.setRole(Role.STUDENT); student.setActive(true);
+        Account studentAccount = new Account();
+        studentAccount.setName("S"); studentAccount.setEmail("s@t.com");
+        studentAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(studentAccount);
+        User student = new User();
+        student.setAccount(studentAccount); student.setRole(Role.STUDENT);
+        student.setTenant(tenant); student.setActive(true);
         userRepo.save(student);
         studentId = student.getId();
         var r = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)

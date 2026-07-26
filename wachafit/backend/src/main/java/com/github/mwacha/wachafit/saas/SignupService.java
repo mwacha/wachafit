@@ -1,5 +1,7 @@
 package com.github.mwacha.wachafit.saas;
 
+import com.github.mwacha.wachafit.account.Account;
+import com.github.mwacha.wachafit.account.AccountRepository;
 import com.github.mwacha.wachafit.auth.dto.LoginResponse;
 import com.github.mwacha.wachafit.saas.dto.SignupRequest;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
@@ -30,6 +32,7 @@ public class SignupService {
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final SaasPlanRepository saasPlanRepository;
     private final TenantSubscriptionRepository subscriptionRepository;
     private final TenantChargeRepository chargeRepository;
@@ -39,6 +42,7 @@ public class SignupService {
     public SignupService(
         TenantRepository tenantRepository,
         UserRepository userRepository,
+        AccountRepository accountRepository,
         SaasPlanRepository saasPlanRepository,
         TenantSubscriptionRepository subscriptionRepository,
         TenantChargeRepository chargeRepository,
@@ -47,6 +51,7 @@ public class SignupService {
     ) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
+        this.accountRepository = accountRepository;
         this.saasPlanRepository = saasPlanRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.chargeRepository = chargeRepository;
@@ -77,10 +82,16 @@ public class SignupService {
         tenant.setActive(true);
         tenant = tenantRepository.save(tenant);
 
+        Account adminAccount = accountRepository.findByEmail(req.admin().email())
+            .orElseGet(() -> {
+                Account a = new Account();
+                a.setName(req.admin().name());
+                a.setEmail(req.admin().email());
+                a.setPasswordHash(passwordEncoder.encode(req.admin().password()));
+                return accountRepository.save(a);
+            });
         User admin = new User();
-        admin.setName(req.admin().name());
-        admin.setEmail(req.admin().email());
-        admin.setPasswordHash(passwordEncoder.encode(req.admin().password()));
+        admin.setAccount(adminAccount);
         admin.setRole(Role.ADMIN);
         admin.setTenant(tenant);
         admin = userRepository.save(admin);

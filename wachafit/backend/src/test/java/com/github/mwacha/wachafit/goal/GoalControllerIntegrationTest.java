@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.goal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.goal.dto.CreateGoalRequest;
 import com.github.mwacha.wachafit.goal.dto.UpdateGoalStatusRequest;
@@ -52,6 +53,8 @@ class GoalControllerIntegrationTest {
     @Autowired UserRepository userRepo;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired StudentGoalRepository goalRepo;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String trainerToken;
     private String studentToken;
@@ -62,19 +65,29 @@ class GoalControllerIntegrationTest {
         goalRepo.deleteAll();
         userRepo.deleteAll();
 
+        var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+
+        Account trainerAccount = new Account();
+        trainerAccount.setName("T");
+        trainerAccount.setEmail("t@t.com");
+        trainerAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(trainerAccount);
         User trainer = new User();
-        trainer.setName("T");
-        trainer.setEmail("t@t.com");
-        trainer.setPasswordHash(passwordEncoder.encode("pass"));
+        trainer.setAccount(trainerAccount);
         trainer.setRole(Role.TRAINER);
+        trainer.setTenant(tenant);
         trainer.setActive(true);
         userRepo.save(trainer);
 
+        Account studentAccount = new Account();
+        studentAccount.setName("S");
+        studentAccount.setEmail("s@t.com");
+        studentAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(studentAccount);
         User student = new User();
-        student.setName("S");
-        student.setEmail("s@t.com");
-        student.setPasswordHash(passwordEncoder.encode("pass"));
+        student.setAccount(studentAccount);
         student.setRole(Role.STUDENT);
+        student.setTenant(tenant);
         student.setActive(true);
         userRepo.save(student);
         studentId = student.getId();

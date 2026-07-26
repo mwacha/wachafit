@@ -10,8 +10,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
@@ -39,36 +37,6 @@ class UserRepositoryTest {
 
     @Autowired
     com.github.mwacha.wachafit.account.AccountRepository accountRepository;
-
-    @Test
-    void shouldSaveAndFindUserByEmail() {
-        User user = new User();
-        user.setName("Test User");
-        user.setEmail("test@example.com");
-        user.setPasswordHash("hashed");
-        user.setRole(Role.STUDENT);
-
-        User saved = userRepository.save(user);
-
-        Optional<User> found = userRepository.findByEmail("test@example.com");
-        assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(saved.getId());
-        assertThat(found.get().getRole()).isEqualTo(Role.STUDENT);
-        assertThat(found.get().isActive()).isTrue();
-    }
-
-    @Test
-    void existsByEmail_shouldReturnTrueIfExists() {
-        User user = new User();
-        user.setName("Another");
-        user.setEmail("another@example.com");
-        user.setPasswordHash("hashed");
-        user.setRole(Role.TRAINER);
-        userRepository.save(user);
-
-        assertThat(userRepository.existsByEmail("another@example.com")).isTrue();
-        assertThat(userRepository.existsByEmail("nobody@example.com")).isFalse();
-    }
 
     @Test
     void findByAccountIdAndTenantId_returnsMembership() {

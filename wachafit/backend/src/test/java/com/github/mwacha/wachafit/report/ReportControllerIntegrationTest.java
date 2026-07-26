@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.billing.PaymentCharge;
 import com.github.mwacha.wachafit.billing.PaymentChargeRepository;
@@ -63,6 +64,8 @@ class ReportControllerIntegrationTest {
     @Autowired MemberSubscriptionRepository subscriptionRepo;
     @Autowired PaymentChargeRepository chargeRepo;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String adminToken;
     private String cashierToken;
@@ -74,22 +77,33 @@ class ReportControllerIntegrationTest {
         planRepo.deleteAll();
         userRepo.deleteAll();
 
+        var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+
+        Account adminAccount = new Account();
+        adminAccount.setName("Admin"); adminAccount.setEmail("admin@r.com");
+        adminAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(adminAccount);
         User admin = new User();
-        admin.setName("Admin"); admin.setEmail("admin@r.com");
-        admin.setPasswordHash(passwordEncoder.encode("pass"));
-        admin.setRole(Role.ADMIN); admin.setActive(true);
+        admin.setAccount(adminAccount);
+        admin.setRole(Role.ADMIN); admin.setTenant(tenant); admin.setActive(true);
         userRepo.save(admin);
 
+        Account cashierAccount = new Account();
+        cashierAccount.setName("Caixa"); cashierAccount.setEmail("cashier@r.com");
+        cashierAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(cashierAccount);
         User cashier = new User();
-        cashier.setName("Caixa"); cashier.setEmail("cashier@r.com");
-        cashier.setPasswordHash(passwordEncoder.encode("pass"));
-        cashier.setRole(Role.CASHIER); cashier.setActive(true);
+        cashier.setAccount(cashierAccount);
+        cashier.setRole(Role.CASHIER); cashier.setTenant(tenant); cashier.setActive(true);
         userRepo.save(cashier);
 
+        Account studentAccount = new Account();
+        studentAccount.setName("Aluno"); studentAccount.setEmail("student@r.com");
+        studentAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(studentAccount);
         User student = new User();
-        student.setName("Aluno"); student.setEmail("student@r.com");
-        student.setPasswordHash(passwordEncoder.encode("pass"));
-        student.setRole(Role.STUDENT); student.setActive(true);
+        student.setAccount(studentAccount);
+        student.setRole(Role.STUDENT); student.setTenant(tenant); student.setActive(true);
         userRepo.save(student);
 
         MembershipPlan plan = new MembershipPlan();

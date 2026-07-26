@@ -1,6 +1,7 @@
 package com.github.mwacha.wachafit.membership;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.auth.dto.LoginRequest;
 import com.github.mwacha.wachafit.membership.dto.CreatePlanRequest;
 import com.github.mwacha.wachafit.user.Role;
@@ -51,6 +52,8 @@ class MembershipPlanControllerIntegrationTest {
     @Autowired UserRepository userRepo;
     @Autowired MembershipPlanRepository planRepo;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
+    @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String adminToken;
 
@@ -59,10 +62,14 @@ class MembershipPlanControllerIntegrationTest {
         planRepo.deleteAll();
         userRepo.deleteAll();
 
+        var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        Account adminAccount = new Account();
+        adminAccount.setName("Admin"); adminAccount.setEmail("admin@t.com");
+        adminAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(adminAccount);
         User admin = new User();
-        admin.setName("Admin"); admin.setEmail("admin@t.com");
-        admin.setPasswordHash(passwordEncoder.encode("pass"));
-        admin.setRole(Role.ADMIN); admin.setActive(true);
+        admin.setAccount(adminAccount);
+        admin.setRole(Role.ADMIN); admin.setTenant(tenant); admin.setActive(true);
         userRepo.save(admin);
 
         var r = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)

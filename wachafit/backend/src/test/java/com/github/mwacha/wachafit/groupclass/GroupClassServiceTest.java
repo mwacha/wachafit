@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.groupclass;
 
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.groupclass.dto.CreateGroupClassRequest;
 import com.github.mwacha.wachafit.groupclass.dto.GroupClassResponse;
 import com.github.mwacha.wachafit.groupclass.dto.UpdateGroupClassRequest;
@@ -216,9 +217,11 @@ class GroupClassServiceTest {
     // --- helpers ---
 
     private User buildTrainer(UUID id, String name, String email) {
+        Account account = new Account();
+        account.setName(name);
+        account.setEmail(email);
         User u = new User();
-        u.setName(name);
-        u.setEmail(email);
+        u.setAccount(account);
         try {
             var f = User.class.getDeclaredField("id");
             f.setAccessible(true);
