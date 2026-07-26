@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.shared.security;
 
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.tenant.Tenant;
 import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
@@ -95,17 +96,60 @@ class JwtFilterTest {
         verify(chain).doFilter(request, response);
     }
 
+    @Test
+    void validTokenWithAccountId_authenticates() throws Exception {
+        User user = buildUser(UUID.randomUUID());
+        String token = jwtUtil.generateToken(user);
+        when(userDetailsService.loadUserByUsername(user.getId().toString())).thenReturn(user);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+
+        jwtFilter.doFilter(request, response, chain);
+
+        verify(chain).doFilter(request, response);
+        verify(userDetailsService).loadUserByUsername(user.getId().toString());
+    }
+
+    @Test
+    void validTokenWithoutAccountId_doesNotAuthenticate() throws Exception {
+        // Token assinado com a mesma chave, com tenantId mas SEM accountId -- simula um token
+        // emitido antes desta migração (antes da claim accountId existir).
+        String legacyToken = Jwts.builder()
+            .subject(UUID.randomUUID().toString())
+            .claim("role", "ADMIN")
+            .claim("tenantId", UUID.randomUUID().toString())
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + 3600_000))
+            .signWith(key)
+            .compact();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + legacyToken);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+
+        jwtFilter.doFilter(request, response, chain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verifyNoInteractions(userDetailsService);
+        verify(chain).doFilter(request, response);
+    }
+
     private User buildUser(UUID tenantId) throws Exception {
         Tenant tenant = new Tenant();
         setId(tenant, tenantId);
 
+        Account account = new Account();
+        setId(account, UUID.randomUUID());
+
         User user = new User();
         setId(user, UUID.randomUUID());
-        user.setName("Admin Teste");
-        user.setEmail("admin@teste.com");
-        user.setPasswordHash("hash");
         user.setRole(Role.ADMIN);
         user.setTenant(tenant);
+        user.setAccount(account);
         user.setActive(true);
         return user;
     }

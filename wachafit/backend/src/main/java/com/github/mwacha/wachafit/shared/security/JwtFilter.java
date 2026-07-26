@@ -42,12 +42,12 @@ public class JwtFilter extends OncePerRequestFilter {
         if (token != null && jwtUtil.isTokenValid(token)) {
             try {
                 UUID tenantId = jwtUtil.extractTenantId(token);
-                if (tenantId == null) {
-                    // Token sem claim tenantId: emitido antes da migração multi-tenant (todo
-                    // usuário, incluindo SUPER_ADMIN, tem tenant obrigatório desde então). Não
-                    // autenticar — do contrário o TenantFilterAspect não teria tenantId para
-                    // ativar o filtro Hibernate e o request veria dados de todos os tenants.
-                    log.warn("JWT sem claim tenantId rejeitado (token pré-migração multi-tenant)");
+                UUID accountId = jwtUtil.extractAccountId(token);
+                if (tenantId == null || accountId == null) {
+                    // Token sem claim tenantId ou accountId: emitido antes de uma das migrações
+                    // multi-tenant/conta-única. Não autenticar -- do contrário o
+                    // TenantFilterAspect/fluxo de troca de academia não teriam o que precisam.
+                    log.warn("JWT sem claim tenantId/accountId rejeitado (token de versão anterior)");
                 } else {
                     String userId = jwtUtil.extractUserId(token).toString();
                     UserDetails user = userDetailsService.loadUserByUsername(userId);

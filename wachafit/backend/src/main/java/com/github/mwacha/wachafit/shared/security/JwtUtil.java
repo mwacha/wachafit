@@ -1,5 +1,6 @@
 package com.github.mwacha.wachafit.shared.security;
 
+import com.github.mwacha.wachafit.account.Account;
 import com.github.mwacha.wachafit.user.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -13,6 +14,8 @@ import java.util.UUID;
 
 @Component
 public class JwtUtil {
+
+    private static final long SELECT_TENANT_TOKEN_TTL_SECONDS = 5 * 60;
 
     private final SecretKey key;
     private final long expirationSeconds;
@@ -33,10 +36,29 @@ public class JwtUtil {
             .subject(user.getId().toString())
             .claim("role", user.getRole().name())
             .claim("tenantId", user.getTenant().getId().toString())
+            .claim("accountId", user.getAccount().getId().toString())
             .issuedAt(new Date())
             .expiration(new Date(System.currentTimeMillis() + expirationSeconds * 1000))
             .signWith(key)
             .compact();
+    }
+
+    public String generateSelectTenantToken(Account account) {
+        return Jwts.builder()
+            .subject(account.getId().toString())
+            .claim("purpose", "select-tenant")
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + SELECT_TENANT_TOKEN_TTL_SECONDS * 1000))
+            .signWith(key)
+            .compact();
+    }
+
+    public boolean isSelectTenantToken(String token) {
+        try {
+            return "select-tenant".equals(parseClaims(token).get("purpose", String.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public UUID extractUserId(String token) {
@@ -49,6 +71,11 @@ public class JwtUtil {
 
     public UUID extractTenantId(String token) {
         String raw = parseClaims(token).get("tenantId", String.class);
+        return raw != null ? UUID.fromString(raw) : null;
+    }
+
+    public UUID extractAccountId(String token) {
+        String raw = parseClaims(token).get("accountId", String.class);
         return raw != null ? UUID.fromString(raw) : null;
     }
 
