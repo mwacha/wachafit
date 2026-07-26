@@ -1,5 +1,7 @@
 package com.github.mwacha.wachafit.saas;
 
+import com.github.mwacha.wachafit.account.Account;
+import com.github.mwacha.wachafit.account.AccountRepository;
 import com.github.mwacha.wachafit.auth.dto.LoginResponse;
 import com.github.mwacha.wachafit.saas.dto.SignupRequest;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
@@ -23,6 +25,7 @@ class SignupServiceTest {
 
     private TenantRepository tenantRepository;
     private UserRepository userRepository;
+    private AccountRepository accountRepository;
     private SaasPlanRepository saasPlanRepository;
     private TenantSubscriptionRepository subscriptionRepository;
     private TenantChargeRepository chargeRepository;
@@ -34,13 +37,14 @@ class SignupServiceTest {
     void setup() {
         tenantRepository = mock(TenantRepository.class);
         userRepository = mock(UserRepository.class);
+        accountRepository = mock(AccountRepository.class);
         saasPlanRepository = mock(SaasPlanRepository.class);
         subscriptionRepository = mock(TenantSubscriptionRepository.class);
         chargeRepository = mock(TenantChargeRepository.class);
         JwtUtil jwtUtil = new JwtUtil("super-secret-key-with-at-least-32-chars!!", 3600L);
 
         signupService = new SignupService(
-            tenantRepository, userRepository, saasPlanRepository,
+            tenantRepository, userRepository, accountRepository, saasPlanRepository,
             subscriptionRepository, chargeRepository,
             new BCryptPasswordEncoder(), jwtUtil
         );
@@ -51,6 +55,12 @@ class SignupServiceTest {
             Tenant t = inv.getArgument(0);
             setId(t, UUID.randomUUID());
             return t;
+        });
+        when(accountRepository.findByEmail(any())).thenReturn(Optional.empty());
+        when(accountRepository.save(any())).thenAnswer(inv -> {
+            Account a = inv.getArgument(0);
+            setId(a, UUID.randomUUID());
+            return a;
         });
         when(userRepository.save(any())).thenAnswer(inv -> {
             var u = inv.getArgument(0, com.github.mwacha.wachafit.user.User.class);
