@@ -315,10 +315,15 @@ WHERE a.email = u.email;
 -- 3. Tornar NOT NULL após o backfill
 ALTER TABLE users ALTER COLUMN account_id SET NOT NULL;
 
--- 4. Remover email e password_hash de users (migraram para accounts).
+-- 4. Remover name, email e password_hash de users (migraram para accounts).
 --    Postgres remove automaticamente a constraint users_email_tenant_unique (V30) e
 --    qualquer índice que dependa exclusivamente da coluna email ao dropá-la — não é
 --    necessário (nem seguro, sem saber o nome exato gerado) fazer DROP CONSTRAINT antes.
+--    DROP COLUMN name é obrigatório aqui: User.java (Step 4 abaixo) não mapeia mais
+--    nenhum campo "name" (getName() delega para account.getName()), então o Hibernate
+--    nunca inclui essa coluna no INSERT — a coluna antiga, ainda NOT NULL, quebraria
+--    toda inserção de User se não for removida.
+ALTER TABLE users DROP COLUMN name;
 ALTER TABLE users DROP COLUMN email;
 ALTER TABLE users DROP COLUMN password_hash;
 ```
@@ -689,6 +694,8 @@ userRepository.save(trainerUser);
 - [ ] **Step 4: Corrigir os 10 testes de integração que constroem User diretamente (precisam de Account + Tenant)**
 
 Todos os arquivos abaixo seguem o mesmo padrão: `new User(); setName/setEmail/setPasswordHash/setRole/setActive; save()`, sem nunca chamar `setTenant(...)`. A correção, igual em todos: criar uma `Account` (salva) com `name`/`email`/`passwordHash`, e no `User` chamar `setAccount(account)` + `setTenant(tenant)` (o `tenant` resolvido uma vez via `tenantRepository.findBySlug("personal-studio").orElseThrow()`).
+
+> **Atenção — limpeza entre testes:** cada um destes arquivos já tem um `userRepo.deleteAll()` (ou `userRepository.deleteAll()`) no `@BeforeEach`, para começar cada teste com a tabela `users` vazia. Adicione **logo depois** dessa linha (ordem FK-safe: `users` referencia `accounts`) um `accountRepository.deleteAll();`. Sem isso, como `accounts.email` é `UNIQUE` e cada teste recria a `Account` com o mesmo e-mail fixo (ex: `"t@t.com"`), o primeiro `@Test` da classe passa e todos os seguintes falham no `@BeforeEach` por violação de constraint única — só `userRepo.deleteAll()` limpa `users`, nunca `accounts`.
 
 Cada um destes arquivos precisa de dois novos `@Autowired` (junto aos campos já existentes no topo da classe):
 ```java
