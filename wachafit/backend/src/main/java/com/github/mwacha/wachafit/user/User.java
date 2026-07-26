@@ -22,7 +22,13 @@ public class User implements UserDetails {
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // EAGER: User.getUsername()/getPassword() (UserDetails contract) delegate to account.getX(),
+    // and the security principal is read by Spring's own request-completion logging hook
+    // (FrameworkServlet.publishRequestHandledEvent -> Authentication.getName()) after the
+    // request's Hibernate session has already closed (open-in-view: false). A LAZY proxy here
+    // throws LazyInitializationException at that point regardless of transaction boundaries
+    // inside the controller/service layer.
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 

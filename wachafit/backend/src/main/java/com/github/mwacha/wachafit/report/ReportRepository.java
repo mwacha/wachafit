@@ -37,13 +37,14 @@ public class ReportRepository {
     @SuppressWarnings("unchecked")
     public List<Object[]> getOverdueStudentRows() {
         return em.createNativeQuery("""
-            SELECT c.student_id::text, u.name,
+            SELECT c.student_id::text, a.name,
                    SUM(c.amount) AS total_due, MIN(c.due_date) AS oldest_due
             FROM payment_charges c
             JOIN users u ON u.id = c.student_id
+            JOIN accounts a ON a.id = u.account_id
             WHERE c.status = 'OVERDUE'
               AND c.tenant_id = :tenantId
-            GROUP BY c.student_id, u.name
+            GROUP BY c.student_id, a.name
             ORDER BY MIN(c.due_date) ASC
             """)
             .setParameter("tenantId", tenantId())
@@ -76,17 +77,18 @@ public class ReportRepository {
     @SuppressWarnings("unchecked")
     public List<Object[]> getTrainerCommissionRows(LocalDate from, LocalDate to) {
         return em.createNativeQuery("""
-            SELECT u.id::text, u.name, tp.commission_type, tp.commission_value,
+            SELECT u.id::text, a.name, tp.commission_type, tp.commission_value,
                    COUNT(b.id) AS classes_count
             FROM users u
+            JOIN accounts a ON a.id = u.account_id
             JOIN trainer_profiles tp ON tp.user_id = u.id AND tp.tenant_id = :tenantId
             LEFT JOIN schedules s ON s.trainer_id = u.id AND s.tenant_id = :tenantId
                 AND s.starts_at::date BETWEEN :from AND :to
             LEFT JOIN bookings b ON b.schedule_id = s.id AND b.status = 'CONFIRMED'
                 AND b.tenant_id = :tenantId
             WHERE u.role IN ('TRAINER','PROFESSOR') AND u.tenant_id = :tenantId
-            GROUP BY u.id, u.name, tp.commission_type, tp.commission_value
-            ORDER BY u.name
+            GROUP BY u.id, a.name, tp.commission_type, tp.commission_value
+            ORDER BY a.name
             """)
             .setParameter("tenantId", tenantId())
             .setParameter("from", from)
@@ -111,13 +113,14 @@ public class ReportRepository {
     @SuppressWarnings("unchecked")
     public List<Object[]> getAttendanceRankingRows(LocalDate from, int limit) {
         return em.createNativeQuery("""
-            SELECT u.name, COUNT(b.id) AS cnt
+            SELECT a.name, COUNT(b.id) AS cnt
             FROM bookings b
             JOIN users u ON u.id = b.student_id
+            JOIN accounts a ON a.id = u.account_id
             WHERE b.status = 'CONFIRMED'
               AND b.tenant_id = :tenantId
               AND b.booked_at >= :from
-            GROUP BY u.id, u.name
+            GROUP BY u.id, a.name
             ORDER BY cnt DESC
             LIMIT :limit
             """)
