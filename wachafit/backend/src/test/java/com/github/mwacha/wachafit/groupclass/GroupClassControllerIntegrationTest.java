@@ -87,7 +87,7 @@ class GroupClassControllerIntegrationTest {
         var result = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new LoginRequest(studentEmail, "password123", "personal-studio"))))
+                new LoginRequest(studentEmail, "password123"))))
             .andReturn();
         var body = objectMapper.readTree(result.getResponse().getContentAsString());
         studentToken = body.get("token").asText();
@@ -135,7 +135,7 @@ class GroupClassControllerIntegrationTest {
         var result = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new LoginRequest(trainerEmail, "password123", "personal-studio"))))
+                new LoginRequest(trainerEmail, "password123"))))
             .andReturn();
         var body = objectMapper.readTree(result.getResponse().getContentAsString());
         String trainerToken = body.get("token").asText();

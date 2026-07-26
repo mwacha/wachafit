@@ -60,7 +60,7 @@ class UserControllerIntegrationTest {
         var result = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(
-                new LoginRequest("user@test.com", "password123", "personal-studio"))))
+                new LoginRequest("user@test.com", "password123"))))
             .andReturn();
         var body = objectMapper.readTree(result.getResponse().getContentAsString());
         studentToken = body.get("token").asText();

@@ -68,7 +68,7 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                    new LoginRequest("bob@test.com", "password123", "personal-studio"))))
+                    new LoginRequest("bob@test.com", "password123"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isNotEmpty());
     }
@@ -84,7 +84,7 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                    new LoginRequest("carol@test.com", "wrongpassword", "personal-studio"))))
+                    new LoginRequest("carol@test.com", "wrongpassword"))))
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.message").value("Credenciais inválidas"));
     }

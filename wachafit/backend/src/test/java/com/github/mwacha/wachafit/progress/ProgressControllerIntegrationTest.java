@@ -80,7 +80,7 @@ class ProgressControllerIntegrationTest {
         userRepo.save(student);
         studentId = student.getId();
         var r = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(new LoginRequest("s@t.com", "pass", "personal-studio")))).andReturn();
+            .content(mapper.writeValueAsString(new LoginRequest("s@t.com", "pass")))).andReturn();
         studentToken = mapper.readTree(r.getResponse().getContentAsString()).get("token").asText();
     }
 

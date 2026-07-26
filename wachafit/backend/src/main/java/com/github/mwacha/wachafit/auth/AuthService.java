@@ -1,5 +1,7 @@
 package com.github.mwacha.wachafit.auth;
 
+import com.github.mwacha.wachafit.account.Account;
+import com.github.mwacha.wachafit.account.AccountRepository;
 import com.github.mwacha.wachafit.auth.dto.*;
 import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,6 +28,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final TenantRepository tenantRepository;
     private final JwtUtil jwtUtil;
@@ -34,6 +38,7 @@ public class AuthService {
 
     public AuthService(
         UserRepository userRepository,
+        AccountRepository accountRepository,
         PasswordResetTokenRepository tokenRepository,
         TenantRepository tenantRepository,
         JwtUtil jwtUtil,
@@ -42,6 +47,7 @@ public class AuthService {
         @Value("${app.frontend-url}") String frontendUrl
     ) {
         this.userRepository = userRepository;
+        this.accountRepository = accountRepository;
         this.tokenRepository = tokenRepository;
         this.tenantRepository = tenantRepository;
         this.jwtUtil = jwtUtil;
@@ -54,57 +60,92 @@ public class AuthService {
         Tenant tenant = tenantRepository.findBySlug(request.tenantSlug())
             .filter(Tenant::isActive)
             .orElseThrow(() -> new UnauthorizedException("Academia não encontrada"));
-        if (userRepository.existsByEmailAndTenantId(request.email(), tenant.getId())) {
+
+        Account account = accountRepository.findByEmail(request.email())
+            .orElseGet(() -> createAccount(request.name(), request.email(), request.password()));
+
+        if (userRepository.existsByAccountIdAndTenantId(account.getId(), tenant.getId())) {
             throw new BusinessException("E-mail já cadastrado nesta academia");
         }
+
         User user = new User();
-        user.setName(request.name());
-        user.setEmail(request.email());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setAccount(account);
         user.setRole(Role.STUDENT);
         user.setTenant(tenant);
         User saved = userRepository.save(user);
         emailService.sendHtml(
-            saved.getEmail(),
+            account.getEmail(),
             "Bem-vindo ao WachaFit!",
             "email/welcome",
-            Map.of("name", saved.getName())
+            Map.of("name", account.getName())
         );
-        String token = jwtUtil.generateToken(saved);
-        return new LoginResponse(token, saved.getRole().name(), saved.getId().toString(),
-                                 tenant.getId().toString());
+        return issueFullLogin(saved);
     }
 
     public LoginResponse login(LoginRequest request) {
-        Tenant tenant = tenantRepository.findBySlug(request.tenantSlug())
-            .filter(Tenant::isActive)
-            .orElseThrow(() -> new UnauthorizedException("Academia não encontrada"));
-        User user = userRepository.findByEmailAndTenantId(request.email(), tenant.getId())
+        Account account = accountRepository.findByEmail(request.email())
+            .filter(Account::isActive)
             .orElseThrow(() -> new UnauthorizedException("Credenciais inválidas"));
-        if (!user.isActive()) {
-            throw new UnauthorizedException("Usuário inativo");
-        }
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.password(), account.getPasswordHash())) {
             throw new UnauthorizedException("Credenciais inválidas");
         }
-        String token = jwtUtil.generateToken(user);
-        return new LoginResponse(token, user.getRole().name(), user.getId().toString(),
-                                 tenant.getId().toString());
+
+        List<User> memberships = userRepository.findByAccountIdAndActiveTrue(account.getId());
+        if (memberships.isEmpty()) {
+            throw new UnauthorizedException("Credenciais inválidas");
+        }
+        if (memberships.size() == 1) {
+            return issueFullLogin(memberships.get(0));
+        }
+
+        String selectToken = jwtUtil.generateSelectTenantToken(account);
+        List<TenantMembershipSummary> summaries = memberships.stream()
+            .map(this::toSummary)
+            .toList();
+        return new LoginResponse(null, null, null, null, selectToken, summaries);
+    }
+
+    public LoginResponse selectTenant(SelectTenantRequest request) {
+        if (!jwtUtil.isSelectTenantToken(request.selectTenantToken())) {
+            throw new UnauthorizedException("Token inválido");
+        }
+        UUID accountId = jwtUtil.extractUserId(request.selectTenantToken());
+        UUID tenantId = UUID.fromString(request.tenantId());
+        User membership = userRepository.findByAccountIdAndTenantId(accountId, tenantId)
+            .filter(User::isActive)
+            .orElseThrow(() -> new UnauthorizedException("Academia inválida para esta conta"));
+        return issueFullLogin(membership);
+    }
+
+    public LoginResponse switchTenant(SwitchTenantRequest request, User currentUser) {
+        UUID accountId = currentUser.getAccount().getId();
+        UUID tenantId = UUID.fromString(request.tenantId());
+        User membership = userRepository.findByAccountIdAndTenantId(accountId, tenantId)
+            .filter(User::isActive)
+            .orElseThrow(() -> new UnauthorizedException("Academia inválida para esta conta"));
+        return issueFullLogin(membership);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TenantMembershipSummary> myTenants(User currentUser) {
+        return userRepository.findByAccountIdAndActiveTrue(currentUser.getAccount().getId()).stream()
+            .map(this::toSummary)
+            .toList();
     }
 
     public void forgotPassword(ForgotPasswordRequest request) {
-        userRepository.findByEmail(request.email()).ifPresent(user -> {
+        accountRepository.findByEmail(request.email()).ifPresent(account -> {
             PasswordResetToken resetToken = new PasswordResetToken();
-            resetToken.setUser(user);
+            resetToken.setAccount(account);
             resetToken.setToken(UUID.randomUUID().toString());
             resetToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.MINUTES));
             tokenRepository.save(resetToken);
             String resetLink = frontendUrl + "/reset-password?token=" + resetToken.getToken();
             emailService.sendHtml(
-                user.getEmail(),
+                account.getEmail(),
                 "Redefinição de senha — WachaFit",
                 "email/password-reset",
-                Map.of("name", user.getName(), "resetLink", resetLink)
+                Map.of("name", account.getName(), "resetLink", resetLink)
             );
         });
     }
@@ -118,9 +159,29 @@ public class AuthService {
         if (resetToken.getExpiresAt().isBefore(Instant.now())) {
             throw new BusinessException("Token expirado");
         }
-        User user = resetToken.getUser();
-        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        Account account = resetToken.getAccount();
+        account.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         resetToken.setUsed(true);
         // Both entities are managed within this transaction; Hibernate dirty-checks flush at commit.
+    }
+
+    private Account createAccount(String name, String email, String rawPassword) {
+        Account a = new Account();
+        a.setName(name);
+        a.setEmail(email);
+        a.setPasswordHash(passwordEncoder.encode(rawPassword));
+        return accountRepository.save(a);
+    }
+
+    private LoginResponse issueFullLogin(User membership) {
+        String token = jwtUtil.generateToken(membership);
+        return new LoginResponse(token, membership.getRole().name(), membership.getId().toString(),
+            membership.getTenant().getId().toString());
+    }
+
+    private TenantMembershipSummary toSummary(User membership) {
+        Tenant tenant = membership.getTenant();
+        return new TenantMembershipSummary(
+            tenant.getId().toString(), tenant.getName(), tenant.getSlug(), membership.getRole().name());
     }
 }
