@@ -162,6 +162,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Select from 'primevue/select'
+import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth.store'
 import { useBillingStore } from '@/stores/billing.store'
 import { roleDashboards } from '@/utils/roleRoutes'
@@ -169,6 +170,7 @@ import type { TenantMembershipSummary } from '@/types/api'
 
 const auth = useAuthStore()
 const billing = useBillingStore()
+const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 const currentTime = ref('')
@@ -218,8 +220,9 @@ async function loadMyTenants() {
   try {
     myTenants.value = await auth.myTenants()
     selectedTenantId.value = auth.tenantId ?? ''
-  } catch {
+  } catch (e: any) {
     myTenants.value = []
+    toast.add({ severity: 'error', summary: 'Erro', detail: e?.response?.data?.message ?? 'Não foi possível carregar suas academias', life: 4000 })
   }
 }
 
@@ -231,8 +234,9 @@ async function handleTenantSwitch() {
     // academia anterior e não há um jeito centralizado de resetá-las todas hoje —
     // uma navegação dura garante que tudo recarregue do zero para o tenant novo.
     window.location.href = roleDashboards[result.role]
-  } catch {
+  } catch (e: any) {
     selectedTenantId.value = auth.tenantId ?? ''
+    toast.add({ severity: 'error', summary: 'Erro', detail: e?.response?.data?.message ?? 'Não foi possível trocar de academia', life: 4000 })
   }
 }
 
