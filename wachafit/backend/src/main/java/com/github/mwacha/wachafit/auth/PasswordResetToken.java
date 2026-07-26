@@ -1,6 +1,6 @@
 package com.github.mwacha.wachafit.auth;
 
-import com.github.mwacha.wachafit.user.User;
+import com.github.mwacha.wachafit.account.Account;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -16,8 +16,8 @@ public class PasswordResetToken {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     @Column(nullable = false, unique = true, length = 255)
     private String token;
@@ -29,8 +29,8 @@ public class PasswordResetToken {
     private boolean used = false;
 
     public UUID getId() { return id; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public Account getAccount() { return account; }
+    public void setAccount(Account account) { this.account = account; }
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
     public Instant getExpiresAt() { return expiresAt; }
