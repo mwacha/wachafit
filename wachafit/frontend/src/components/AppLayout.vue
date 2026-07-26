@@ -135,6 +135,16 @@
             <i class="pi pi-search search-icon" aria-hidden="true" />
             <input class="search-input" type="search" placeholder="Buscar..." aria-label="Buscar" />
           </div>
+          <Select
+            v-if="myTenants.length > 0"
+            v-model="selectedTenantId"
+            :options="myTenants"
+            optionLabel="tenantName"
+            optionValue="tenantId"
+            class="tenant-switcher"
+            :disabled="myTenants.length <= 1"
+            @change="handleTenantSwitch"
+          />
           <button class="logout-btn" title="Sair" aria-label="Sair" @click="handleLogout">
             <i class="pi pi-sign-out" />
           </button>
@@ -151,9 +161,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Select from 'primevue/select'
 import { useAuthStore } from '@/stores/auth.store'
 import { useBillingStore } from '@/stores/billing.store'
 import { roleDashboards } from '@/utils/roleRoutes'
+import type { TenantMembershipSummary } from '@/types/api'
 
 const auth = useAuthStore()
 const billing = useBillingStore()
@@ -162,6 +174,8 @@ const route = useRoute()
 const currentTime = ref('')
 const mobileOpen = ref(false)
 const adminGroups = reactive({ cadastros: false, financeiro: false })
+const myTenants = ref<TenantMembershipSummary[]>([])
+const selectedTenantId = ref(auth.tenantId ?? '')
 
 const CADASTROS_PATHS = ['/admin/users', '/trainer/students', '/admin/classes', '/admin/schedule-grid', '/admin/schedules', '/admin/membership-plans', '/exercises']
 const FINANCEIRO_PATHS = ['/cashier/charges', '/cashier/cash-flow', '/admin/reports']
@@ -200,9 +214,32 @@ function tick() {
   })
 }
 
+async function loadMyTenants() {
+  try {
+    myTenants.value = await auth.myTenants()
+    selectedTenantId.value = auth.tenantId ?? ''
+  } catch {
+    myTenants.value = []
+  }
+}
+
+async function handleTenantSwitch() {
+  if (!selectedTenantId.value || selectedTenantId.value === auth.tenantId) return
+  try {
+    const result = await auth.switchTenant(selectedTenantId.value)
+    // Recarrega a página inteira: várias stores (billing, etc.) guardam estado da
+    // academia anterior e não há um jeito centralizado de resetá-las todas hoje —
+    // uma navegação dura garante que tudo recarregue do zero para o tenant novo.
+    window.location.href = roleDashboards[result.role]
+  } catch {
+    selectedTenantId.value = auth.tenantId ?? ''
+  }
+}
+
 onMounted(async () => {
   tick()
   timer = setInterval(tick, 60_000)
+  await loadMyTenants()
   if (auth.role === 'STUDENT') {
     await billing.fetchPaymentStatus()
     if (billing.hasOverduePayment && router.currentRoute.value.path !== '/student/charges') {
@@ -415,6 +452,13 @@ function handleLogout() { auth.logout(); router.push('/login') }
 }
 .search-input:focus { border-color: var(--blue-500); box-shadow: var(--shadow-focus); }
 .search-input::placeholder { color: var(--neutral-500); }
+
+.tenant-switcher {
+  max-width: 180px;
+}
+@media (max-width: 640px) {
+  .tenant-switcher { display: none; }
+}
 
 .logout-btn {
   width: 38px; height: 38px;
