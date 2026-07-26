@@ -1,5 +1,7 @@
 package com.github.mwacha.wachafit.user;
 
+import com.github.mwacha.wachafit.account.Account;
+import com.github.mwacha.wachafit.account.AccountRepository;
 import com.github.mwacha.wachafit.notification.EmailService;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.tenant.Tenant;
@@ -17,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +31,7 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock UserRepository userRepository;
+    @Mock AccountRepository accountRepository;
     @Mock TenantRepository tenantRepository;
     @Mock EmailService emailService;
     private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -36,7 +40,8 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, tenantRepository, passwordEncoder, emailService);
+        userService = new UserService(userRepository, accountRepository, tenantRepository,
+            passwordEncoder, emailService);
         TenantContext.set(tenantId);
     }
 
@@ -45,19 +50,25 @@ class UserServiceTest {
         TenantContext.clear();
     }
 
+    private Tenant buildTenant() throws Exception {
+        Tenant t = new Tenant();
+        setId(t, tenantId);
+        return t;
+    }
+
     @Test
-    void createUser_shouldCreateTrainer() {
-        when(userRepository.existsByEmailAndTenantId("trainer@example.com", tenantId)).thenReturn(false);
-        when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(new Tenant()));
+    void createUser_createsNewAccount_whenEmailNotFound() throws Exception {
+        when(accountRepository.findByEmail("trainer@example.com")).thenReturn(Optional.empty());
+        when(accountRepository.save(any())).thenAnswer(inv -> {
+            Account a = inv.getArgument(0);
+            setId(a, UUID.randomUUID());
+            return a;
+        });
+        when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(buildTenant()));
+        when(userRepository.existsByAccountIdAndTenantId(any(), eq(tenantId))).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
-            try {
-                var f = User.class.getDeclaredField("id");
-                f.setAccessible(true);
-                f.set(u, UUID.randomUUID());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            setId(u, UUID.randomUUID());
             return u;
         });
 
@@ -65,9 +76,34 @@ class UserServiceTest {
             new CreateUserRequest("João Trainer", "trainer@example.com", "senha123", Role.TRAINER));
 
         assertThat(result.role()).isEqualTo("TRAINER");
-        assertThat(result.active()).isTrue();
+        verify(accountRepository).save(argThat(a -> a.getEmail().equals("trainer@example.com")));
         verify(userRepository).save(argThat(u -> u.getRole() == Role.TRAINER));
         verify(emailService).sendHtml(eq("trainer@example.com"), contains("Bem-vindo"), eq("email/welcome"), anyMap());
+    }
+
+    @Test
+    void createUser_linksToExistingAccount_ignoringSubmittedPassword() throws Exception {
+        Account existing = new Account();
+        existing.setName("Pessoa Já Cadastrada");
+        existing.setEmail("ja-existe@example.com");
+        existing.setPasswordHash("hash-antigo-nao-deve-mudar");
+        setId(existing, UUID.randomUUID());
+
+        when(accountRepository.findByEmail("ja-existe@example.com")).thenReturn(Optional.of(existing));
+        when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(buildTenant()));
+        when(userRepository.existsByAccountIdAndTenantId(existing.getId(), tenantId)).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            setId(u, UUID.randomUUID());
+            return u;
+        });
+
+        UserResponse result = userService.createUser(
+            new CreateUserRequest("Nome Ignorado", "ja-existe@example.com", "senhaQualquerDigitada", Role.TRAINER));
+
+        verify(accountRepository, never()).save(any());
+        assertThat(existing.getPasswordHash()).isEqualTo("hash-antigo-nao-deve-mudar");
+        verify(userRepository).save(argThat(u -> u.getAccount() == existing));
     }
 
     @Test
@@ -79,18 +115,23 @@ class UserServiceTest {
     }
 
     @Test
-    void createUser_shouldRejectDuplicateEmail() {
-        when(userRepository.existsByEmailAndTenantId("dup@example.com", tenantId)).thenReturn(true);
+    void createUser_shouldRejectDuplicateMembership() throws Exception {
+        Account existing = new Account();
+        setId(existing, UUID.randomUUID());
+        when(accountRepository.findByEmail("dup@example.com")).thenReturn(Optional.of(existing));
+        when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(buildTenant()));
+        when(userRepository.existsByAccountIdAndTenantId(existing.getId(), tenantId)).thenReturn(true);
+
         assertThatThrownBy(() -> userService.createUser(
             new CreateUserRequest("Dup", "dup@example.com", "senha123", Role.TRAINER)))
             .isInstanceOf(BusinessException.class);
     }
 
     @Test
-    void deactivateUser_shouldSetActiveFalse() {
+    void deactivateUser_shouldSetActiveFalse() throws Exception {
         UUID userId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID(); // different user
-        User user = buildUser(userId, "target@example.com", Role.TRAINER, true);
+        UUID currentUserId = UUID.randomUUID();
+        User user = buildUser(userId, Role.TRAINER, true);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenReturn(user);
 
@@ -100,9 +141,9 @@ class UserServiceTest {
     }
 
     @Test
-    void deactivateUser_shouldRejectSelfDeactivation() {
+    void deactivateUser_shouldRejectSelfDeactivation() throws Exception {
         UUID userId = UUID.randomUUID();
-        User user = buildUser(userId, "admin@example.com", Role.ADMIN, true);
+        User user = buildUser(userId, Role.ADMIN, true);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.deactivateUser(userId, userId))
@@ -111,10 +152,10 @@ class UserServiceTest {
     }
 
     @Test
-    void deactivateUser_shouldRejectStudentRole() {
+    void deactivateUser_shouldRejectStudentRole() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
-        User user = buildUser(userId, "student@example.com", Role.STUDENT, true);
+        User user = buildUser(userId, Role.STUDENT, true);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.deactivateUser(userId, currentUserId))
@@ -122,20 +163,24 @@ class UserServiceTest {
             .hasMessageContaining("Cannot deactivate a student user");
     }
 
-    private User buildUser(UUID id, String email, Role role, boolean active) {
+    private User buildUser(UUID id, Role role, boolean active) throws Exception {
+        Account account = new Account();
+        account.setName("Test");
+        account.setEmail("test-" + id + "@example.com");
+        account.setPasswordHash("hash");
+        setId(account, UUID.randomUUID());
+
         User u = new User();
-        u.setEmail(email);
+        u.setAccount(account);
         u.setRole(role);
         u.setActive(active);
-        u.setName("Test");
-        u.setPasswordHash("hash");
-        try {
-            var f = User.class.getDeclaredField("id");
-            f.setAccessible(true);
-            f.set(u, id);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        setId(u, id);
         return u;
+    }
+
+    private static void setId(Object entity, UUID id) throws Exception {
+        Field f = entity.getClass().getDeclaredField("id");
+        f.setAccessible(true);
+        f.set(entity, id);
     }
 }
