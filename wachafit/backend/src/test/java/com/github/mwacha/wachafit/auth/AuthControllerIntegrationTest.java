@@ -113,6 +113,13 @@ class AuthControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(
                     new LoginRequest("bob@test.com", "password123"))))
             .andExpect(status().isOk())
+            // O frontend distingue as 2 formas de resposta pela PRESENÇA da chave no JSON
+            // (não só pelo valor) -- por isso selectTenantToken/memberships precisam estar
+            // genuinamente ausentes aqui, não apenas null (regressão: bug real encontrado em
+            // produção onde o popup de seleção de academia aparecia mesmo com 1 vínculo só,
+            // porque a chave "selectTenantToken": null ainda aparecia no JSON).
+            .andExpect(jsonPath("$.selectTenantToken").doesNotExist())
+            .andExpect(jsonPath("$.memberships").doesNotExist())
             .andExpect(jsonPath("$.token").isNotEmpty());
     }
 
