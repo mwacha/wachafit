@@ -12,6 +12,7 @@ import com.github.mwacha.wachafit.membership.MembershipPlanRepository;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,10 @@ class ReportControllerIntegrationTest {
         accountRepository.deleteAll();
 
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        // Testes que persistem entidades TenantAware diretamente (fora de uma requisição HTTP
+        // autenticada, que é quem normalmente define isso via JwtFilter) precisam setar o
+        // TenantContext manualmente antes de qualquer save() abaixo.
+        com.github.mwacha.wachafit.tenant.TenantContext.set(tenant.getId());
 
         Account adminAccount = new Account();
         adminAccount.setName("Admin"); adminAccount.setEmail("admin@r.com");
@@ -127,6 +132,11 @@ class ReportControllerIntegrationTest {
 
         adminToken = extractToken("admin@r.com");
         cashierToken = extractToken("cashier@r.com");
+    }
+
+    @AfterEach
+    void tearDown() {
+        com.github.mwacha.wachafit.tenant.TenantContext.clear();
     }
 
     private String extractToken(String email) throws Exception {

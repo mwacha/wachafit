@@ -11,6 +11,7 @@ import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -61,9 +62,18 @@ class BookingConcurrencyTest {
     @Autowired com.github.mwacha.wachafit.account.AccountRepository accountRepository;
     @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
+    @AfterEach
+    void tearDown() {
+        com.github.mwacha.wachafit.tenant.TenantContext.clear();
+    }
+
     @Test
     void rn03_onlyOneBookingSucceeds_whenTwoStudentsRaceForLastSlot() throws Exception {
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        // O código abaixo persiste entidades TenantAware fora de uma requisição HTTP autenticada
+        // (que é quem normalmente define isso via JwtFilter), então precisa setar o TenantContext
+        // manualmente antes de qualquer save() nesta thread de teste.
+        com.github.mwacha.wachafit.tenant.TenantContext.set(tenant.getId());
 
         // Create a trainer
         Account trainerAccount = new Account();
@@ -114,19 +124,25 @@ class BookingConcurrencyTest {
         List<Future<Boolean>> futures = new ArrayList<>();
         AtomicInteger successCount = new AtomicInteger(0);
 
+        // TenantContext é um ThreadLocal — não se propaga automaticamente para as threads do
+        // pool, então cada tarefa precisa setá-lo antes de chamar o service e limpá-lo ao final.
         futures.add(exec.submit(() -> {
+            com.github.mwacha.wachafit.tenant.TenantContext.set(tenant.getId());
             try {
                 bookingService.createBooking(new CreateBookingRequest(scheduleId), student1Id);
                 successCount.incrementAndGet();
                 return true;
             } catch (BusinessException e) { return false; }
+            finally { com.github.mwacha.wachafit.tenant.TenantContext.clear(); }
         }));
         futures.add(exec.submit(() -> {
+            com.github.mwacha.wachafit.tenant.TenantContext.set(tenant.getId());
             try {
                 bookingService.createBooking(new CreateBookingRequest(scheduleId), student2Id);
                 successCount.incrementAndGet();
                 return true;
             } catch (BusinessException e) { return false; }
+            finally { com.github.mwacha.wachafit.tenant.TenantContext.clear(); }
         }));
 
         exec.shutdown();

@@ -12,6 +12,7 @@ import com.github.mwacha.wachafit.membership.MembershipPlanRepository;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.User;
 import com.github.mwacha.wachafit.user.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +83,10 @@ class BillingControllerIntegrationTest {
         accountRepository.deleteAll();
 
         var tenant = tenantRepository.findBySlug("personal-studio").orElseThrow();
+        // Testes que persistem entidades TenantAware diretamente (fora de uma requisição HTTP
+        // autenticada, que é quem normalmente define isso via JwtFilter) precisam setar o
+        // TenantContext manualmente antes de qualquer save() abaixo.
+        com.github.mwacha.wachafit.tenant.TenantContext.set(tenant.getId());
 
         Account adminAccount = new Account();
         adminAccount.setName("Admin"); adminAccount.setEmail("admin@t.com");
@@ -106,6 +111,10 @@ class BillingControllerIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(new LoginRequest("admin@t.com", "pass")))).andReturn();
         adminToken = mapper.readTree(loginResult.getResponse().getContentAsString()).get("token").asText();
+        // JwtFilter limpa o TenantContext incondicionalmente ao fim de QUALQUER requisição
+        // (autenticada ou não) — a chamada de login acima já apagou o valor setado no início
+        // deste método, então precisa ser redefinido antes dos saves diretos abaixo.
+        com.github.mwacha.wachafit.tenant.TenantContext.set(tenant.getId());
 
         MembershipPlan plan = new MembershipPlan();
         plan.setName("Plano Teste"); plan.setDurationMonths(1);
@@ -125,6 +134,11 @@ class BillingControllerIntegrationTest {
         charge.setStatus("PENDING");
         chargeRepo.save(charge);
         chargeId = charge.getId();
+    }
+
+    @AfterEach
+    void tearDown() {
+        com.github.mwacha.wachafit.tenant.TenantContext.clear();
     }
 
     @Test
