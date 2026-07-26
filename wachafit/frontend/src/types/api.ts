@@ -3,7 +3,6 @@ export type Role = 'ADMIN' | 'MANAGER' | 'RECEPTIONIST' | 'CASHIER' | 'TRAINER' 
 export interface LoginRequest {
   email: string
   password: string
-  tenantSlug: string
 }
 
 export interface LoginResponse {
@@ -12,6 +11,20 @@ export interface LoginResponse {
   userId: string
   tenantId: string
 }
+
+export interface TenantMembershipSummary {
+  tenantId: string
+  tenantName: string
+  tenantSlug: string
+  role: Role
+}
+
+export interface LoginNeedsTenantSelection {
+  selectTenantToken: string
+  memberships: TenantMembershipSummary[]
+}
+
+export type LoginResult = LoginResponse | LoginNeedsTenantSelection
 
 export interface ErrorResponse {
   timestamp: string

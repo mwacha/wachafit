@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
-import type { Role, LoginResponse, SignupRequest } from '@/types/api'
+import type { Role, LoginResponse, LoginResult, LoginNeedsTenantSelection, TenantMembershipSummary, SignupRequest } from '@/types/api'
 
 function decodeJwtPayload(token: string): { sub: string; role: Role } | null {
   try {
@@ -43,9 +43,29 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('tenantId')
   }
 
-  async function login(email: string, password: string, tenantSlug: string): Promise<LoginResponse> {
-    const { data } = await api.post<LoginResponse>('/api/auth/login', { email, password, tenantSlug })
+  async function login(email: string, password: string): Promise<LoginResult> {
+    const { data } = await api.post<any>('/api/auth/login', { email, password })
+    if (data.token) {
+      setSession(data as LoginResponse)
+      return data as LoginResponse
+    }
+    return data as LoginNeedsTenantSelection
+  }
+
+  async function selectTenant(selectTenantToken: string, tenantId: string): Promise<LoginResponse> {
+    const { data } = await api.post<LoginResponse>('/api/auth/select-tenant', { selectTenantToken, tenantId })
     setSession(data)
+    return data
+  }
+
+  async function switchTenant(tenantId: string): Promise<LoginResponse> {
+    const { data } = await api.post<LoginResponse>('/api/auth/switch-tenant', { tenantId })
+    setSession(data)
+    return data
+  }
+
+  async function myTenants(): Promise<TenantMembershipSummary[]> {
+    const { data } = await api.get<TenantMembershipSummary[]>('/api/auth/my-tenants')
     return data
   }
 
@@ -73,5 +93,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, userId, role, tenantId, isAuthenticated, userRole, login, register, signup, logout, clearSession }
+  return {
+    token, userId, role, tenantId, isAuthenticated, userRole,
+    login, selectTenant, switchTenant, myTenants, register, signup, logout, clearSession,
+  }
 })
