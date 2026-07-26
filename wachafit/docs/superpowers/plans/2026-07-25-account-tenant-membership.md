@@ -2595,9 +2595,15 @@ export const useAuthStore = defineStore('auth', () => {
 
 ```bash
 cd frontend
-npx vue-tsc --noEmit 2>&1 | head -30
+npx vue-tsc -b 2>&1 | head -30
 ```
 Esperado: zero erros.
+
+> **Atenção (achado no Task 9):** use sempre `vue-tsc -b`, nunca `vue-tsc --noEmit` sozinho —
+> o `tsconfig.json` raiz deste projeto usa o padrão "solution style" (`"files": []` +
+> `references`), e `--noEmit` sem `-b` não resolve as referências, checando ZERO arquivos e
+> retornando exit code 0 mesmo com erros reais no projeto. `-b` é o que o próprio script
+> `"build"` do `package.json` usa e é o único que efetivamente verifica os `.vue`/`.ts`.
 
 - [ ] **Step 4: Commit**
 
@@ -2790,7 +2796,7 @@ function onTenantSelected(role: string) {
 
 ```bash
 cd frontend
-npx vue-tsc --noEmit 2>&1 | head -30
+npx vue-tsc -b 2>&1 | head -30
 ```
 Esperado: zero erros.
 
@@ -2902,7 +2908,7 @@ onMounted(async () => {
 
 ```bash
 cd frontend
-npx vue-tsc --noEmit 2>&1 | head -30
+npx vue-tsc -b 2>&1 | head -30
 ```
 Esperado: zero erros.
 
