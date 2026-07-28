@@ -5,6 +5,7 @@ import com.github.mwacha.wachafit.booking.BookingRepository;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -27,7 +28,13 @@ public class ReminderScheduler {
     }
 
     @Scheduled(fixedDelay = 3_600_000)
+    @Transactional
     public void sendReminders() {
+        // Sem @Transactional aqui, a sessão do Hibernate fecha assim que
+        // bookingRepository.findConfirmedBetween(...) retorna (job agendado não tem sessão de
+        // requisição HTTP como uma view teria) -- e Booking.schedule / Schedule.groupClass são
+        // @ManyToOne LAZY, então o acesso mais abaixo (booking.getSchedule()...) lançaria
+        // LazyInitializationException sem uma transação cobrindo o método inteiro.
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         OffsetDateTime from = now.plusHours(3);
         OffsetDateTime to   = now.plusHours(5);
