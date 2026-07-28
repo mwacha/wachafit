@@ -17,7 +17,7 @@ public class OpenApiConfig {
         final String schemeName = "bearerAuth";
         return new OpenAPI()
             .info(new Info()
-                .title("WachaFit API")
+                .title("M2W Active Suite API")
                 .version("1.0.0")
                 .description("""
                     API REST para gestão de academias e personal trainers.
@@ -28,7 +28,7 @@ public class OpenApiConfig {
                     **Roles:** ADMIN · MANAGER · CASHIER · RECEPTIONIST · TRAINER · STUDENT
                     """)
                 .contact(new Contact()
-                    .name("WachaFit")
+                    .name("M2W Active Suite")
                     .email("mwacha@gmail.com")))
             .addSecurityItem(new SecurityRequirement().addList(schemeName))
             .components(new Components()

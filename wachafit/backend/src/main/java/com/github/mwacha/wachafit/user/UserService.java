@@ -78,7 +78,7 @@ public class UserService {
         User saved = userRepository.save(user);
         emailService.sendHtml(
             account.getEmail(),
-            "Bem-vindo ao WachaFit!",
+            "Bem-vindo ao M2W Active Suite!",
             "email/welcome",
             Map.of("name", account.getName())
         );

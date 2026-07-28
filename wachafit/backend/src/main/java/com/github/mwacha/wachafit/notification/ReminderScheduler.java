@@ -46,7 +46,7 @@ public class ReminderScheduler {
 
             emailService.sendHtml(
                 student.getEmail(),
-                "Lembrete de sessão — WachaFit",
+                "Lembrete de sessão — M2W Active Suite",
                 "email/session-reminder",
                 Map.of(
                     "name",        student.getName(),

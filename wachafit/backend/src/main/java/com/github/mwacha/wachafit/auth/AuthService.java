@@ -75,7 +75,7 @@ public class AuthService {
         User saved = userRepository.save(user);
         emailService.sendHtml(
             account.getEmail(),
-            "Bem-vindo ao WachaFit!",
+            "Bem-vindo ao M2W Active Suite!",
             "email/welcome",
             Map.of("name", account.getName())
         );
@@ -102,7 +102,7 @@ public class AuthService {
         List<TenantMembershipSummary> summaries = memberships.stream()
             .map(this::toSummary)
             .toList();
-        return new LoginResponse(null, null, null, null, selectToken, summaries);
+        return new LoginResponse(null, null, null, null, null, selectToken, summaries);
     }
 
     public LoginResponse selectTenant(SelectTenantRequest request) {
@@ -143,7 +143,7 @@ public class AuthService {
             String resetLink = frontendUrl + "/reset-password?token=" + resetToken.getToken();
             emailService.sendHtml(
                 account.getEmail(),
-                "Redefinição de senha — WachaFit",
+                "Redefinição de senha — M2W Active Suite",
                 "email/password-reset",
                 Map.of("name", account.getName(), "resetLink", resetLink)
             );
@@ -176,7 +176,7 @@ public class AuthService {
     private LoginResponse issueFullLogin(User membership) {
         String token = jwtUtil.generateToken(membership);
         return new LoginResponse(token, membership.getRole().name(), membership.getId().toString(),
-            membership.getTenant().getId().toString());
+            membership.getTenant().getId().toString(), membership.getName(), null, null);
     }
 
     private TenantMembershipSummary toSummary(User membership) {

@@ -3,11 +3,11 @@
   <div class="auth-shell">
     <div class="brand-panel">
       <div class="brand-logo">
-        <span class="brand-logo-w">W</span>
+        <span class="brand-logo-w">M2W</span>
       </div>
       <div class="brand-copy">
         <h1 class="brand-title">Cadastre sua academia</h1>
-        <p class="brand-sub">Leve o WachaFit para sua academia em poucos minutos.</p>
+        <p class="brand-sub">Leve o M2W Active Suite para sua academia em poucos minutos.</p>
       </div>
       <div class="brand-dots" aria-hidden="true" />
     </div>
@@ -249,7 +249,7 @@ async function handleSignup() {
   background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
   box-shadow: var(--shadow-logo); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.brand-logo-w { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: #fff; line-height: 1; }
+.brand-logo-w { font-family: var(--font-display); font-weight: 800; font-size: 13px; letter-spacing: -0.02em; color: #fff; line-height: 1; }
 .brand-copy { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 40px; }
 .brand-title { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: #fff; line-height: 1.15; margin-bottom: 12px; }
 .brand-sub { font-size: 15px; color: var(--neutral-500); line-height: 1.6; max-width: 280px; }

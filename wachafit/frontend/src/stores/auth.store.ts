@@ -17,6 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userId = ref<string | null>(localStorage.getItem('userId'))
   const role = ref<Role | null>((localStorage.getItem('role') as Role) ?? null)
   const tenantId = ref<string | null>(localStorage.getItem('tenantId'))
+  const name = ref<string | null>(localStorage.getItem('name'))
 
   const isAuthenticated = computed(() => token.value !== null)
   const userRole = computed(() => role.value)
@@ -26,10 +27,12 @@ export const useAuthStore = defineStore('auth', () => {
     userId.value = data.userId
     role.value = data.role
     tenantId.value = data.tenantId
+    name.value = data.name
     localStorage.setItem('token', data.token)
     localStorage.setItem('userId', data.userId)
     localStorage.setItem('role', data.role)
     localStorage.setItem('tenantId', data.tenantId)
+    localStorage.setItem('name', data.name)
   }
 
   function clearSession() {
@@ -37,10 +40,12 @@ export const useAuthStore = defineStore('auth', () => {
     userId.value = null
     role.value = null
     tenantId.value = null
+    name.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('userId')
     localStorage.removeItem('role')
     localStorage.removeItem('tenantId')
+    localStorage.removeItem('name')
   }
 
   async function login(email: string, password: string): Promise<LoginResult> {
@@ -94,7 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    token, userId, role, tenantId, isAuthenticated, userRole,
+    token, userId, role, tenantId, name, isAuthenticated, userRole,
     login, selectTenant, switchTenant, myTenants, register, signup, logout, clearSession,
   }
 })

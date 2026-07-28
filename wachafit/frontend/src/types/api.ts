@@ -10,6 +10,7 @@ export interface LoginResponse {
   role: Role
   userId: string
   tenantId: string
+  name: string
 }
 
 export interface TenantMembershipSummary {

@@ -9,9 +9,9 @@
 
       <!-- Logo -->
       <div class="sidebar-top">
-        <button class="sidebar-logo" :title="`WachaFit — ir para dashboard`" @click="goHome">
-          <span class="logo-icon">W</span>
-          <span class="logo-text">WachaFit</span>
+        <button class="sidebar-logo" :title="`M2W Active Suite — ir para dashboard`" @click="goHome">
+          <span class="logo-icon">M2W</span>
+          <span class="logo-text">M2W Active Suite</span>
         </button>
       </div>
 
@@ -113,7 +113,7 @@
 
       <!-- Footer -->
       <div class="sidebar-footer">
-        <button class="nav-item user-btn" :title="`${auth.role} — clique para sair`" @click="handleLogout">
+        <button class="nav-item user-btn" :title="`${auth.name ?? roleLabel} — clique para sair`" @click="handleLogout">
           <span class="user-avatar">{{ userInitial }}</span>
           <span class="nav-label user-logout-label">Sair</span>
         </button>
@@ -200,14 +200,13 @@ let timer: ReturnType<typeof setInterval>
 function dashboardRoute() { return auth.role ? roleDashboards[auth.role] : '/login' }
 function goHome() { router.push(dashboardRoute()); mobileOpen.value = false }
 
-const userInitial = computed(() => auth.role?.charAt(0) ?? 'U')
-const greeting = computed(() => {
-  const labels: Record<string, string> = {
-    ADMIN: 'Admin', MANAGER: 'Gerente', CASHIER: 'Caixa',
-    RECEPTIONIST: 'Recepção', TRAINER: 'Profissional', PROFESSOR: 'Professor', STUDENT: 'Aluno',
-  }
-  return auth.role ? (labels[auth.role] ?? auth.role) : 'Usuário'
-})
+const roleLabels: Record<string, string> = {
+  ADMIN: 'Admin', MANAGER: 'Gerente', CASHIER: 'Caixa',
+  RECEPTIONIST: 'Recepção', TRAINER: 'Profissional', PROFESSOR: 'Professor', STUDENT: 'Aluno',
+}
+const roleLabel = computed(() => (auth.role ? (roleLabels[auth.role] ?? auth.role) : 'Usuário'))
+const userInitial = computed(() => (auth.name?.charAt(0) ?? auth.role?.charAt(0) ?? 'U').toUpperCase())
+const greeting = computed(() => auth.name ?? roleLabel.value)
 
 function tick() {
   currentTime.value = new Date().toLocaleString('pt-BR', {
@@ -304,8 +303,9 @@ function handleLogout() { auth.logout(); router.push('/login') }
   background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
   box-shadow: var(--shadow-logo);
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
   font-family: var(--font-display);
-  font-weight: 800; font-size: 17px; color: #fff;
+  font-weight: 800; font-size: 10px; letter-spacing: -0.02em; color: #fff;
   user-select: none;
 }
 .logo-text {

@@ -25,7 +25,7 @@ public class WorkoutNotificationListener {
             userRepository.findById(event.trainerId()).ifPresent(trainer ->
                 emailService.sendHtml(
                     student.getEmail(),
-                    "Nova ficha de treino — WachaFit",
+                    "Nova ficha de treino — M2W Active Suite",
                     "email/workout-plan-assigned",
                     Map.of(
                         "studentName", student.getName(),

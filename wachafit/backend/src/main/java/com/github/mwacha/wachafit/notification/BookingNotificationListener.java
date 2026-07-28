@@ -26,7 +26,7 @@ public class BookingNotificationListener {
         userRepository.findById(event.studentId()).ifPresent(student ->
             emailService.sendHtml(
                 student.getEmail(),
-                "Agendamento confirmado — WachaFit",
+                "Agendamento confirmado — M2W Active Suite",
                 "email/booking-confirmed",
                 Map.of(
                     "name",        student.getName(),
@@ -45,7 +45,7 @@ public class BookingNotificationListener {
         userRepository.findById(event.studentId()).ifPresent(student ->
             emailService.sendHtml(
                 student.getEmail(),
-                "Agendamento cancelado — WachaFit",
+                "Agendamento cancelado — M2W Active Suite",
                 "email/booking-cancelled",
                 Map.of(
                     "name",      student.getName(),
@@ -63,7 +63,7 @@ public class BookingNotificationListener {
             userRepository.findById(event.studentId()).ifPresent(student ->
                 emailService.sendHtml(
                     trainer.getEmail(),
-                    "Nova solicitação de sessão — WachaFit",
+                    "Nova solicitação de sessão — M2W Active Suite",
                     "email/trainer-personal-request",
                     Map.of(
                         "trainerName", trainer.getName(),

@@ -111,7 +111,7 @@ public class SignupService {
 
         String token = jwtUtil.generateToken(admin);
         return new LoginResponse(token, admin.getRole().name(), admin.getId().toString(),
-            tenant.getId().toString());
+            tenant.getId().toString(), admin.getName(), null, null);
     }
 
     private void createFirstCharge(UUID tenantId, UUID subscriptionId, BigDecimal amount,

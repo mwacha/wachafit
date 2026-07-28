@@ -3,11 +3,11 @@
     <!-- Painel esquerdo — branding -->
     <div class="brand-panel">
       <div class="brand-logo">
-        <span class="brand-logo-w">W</span>
+        <span class="brand-logo-w">M2W</span>
       </div>
       <div class="brand-copy">
-        <h1 class="brand-title">WachaFit</h1>
-        <p class="brand-sub">Gestão completa para academias e personal trainers.</p>
+        <h1 class="brand-title">M2W Active Suite</h1>
+        <p class="brand-sub">Gestão completa para academias, studios e personal trainers.</p>
       </div>
       <div class="brand-dots" aria-hidden="true" />
     </div>
@@ -154,7 +154,8 @@ function onTenantSelected(role: string) {
 .brand-logo-w {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 22px;
+  font-size: 13px;
+  letter-spacing: -0.02em;
   color: #fff;
   line-height: 1;
 }
