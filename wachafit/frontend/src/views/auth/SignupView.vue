@@ -53,7 +53,7 @@
           </div>
           <div class="field">
             <label class="field-label" for="slug">Slug da academia <span class="field-hint">(usado no login)</span></label>
-            <InputText id="slug" v-model="company.slug" placeholder="minha-academia" @input="checkSlugAvailability" />
+            <InputText id="slug" v-model="company.slug" placeholder="minha-academia" @input="onSlugInput" />
             <span v-if="slugStatus === 'taken'" class="field-error">Slug já em uso.</span>
             <span v-if="slugStatus === 'available'" class="field-success">Disponível!</span>
           </div>
@@ -134,6 +134,7 @@ const cardHolderName = ref('')
 
 const plans = ref<SaasPlan[]>([])
 const slugStatus = ref<'idle' | 'checking' | 'available' | 'taken'>('idle')
+const slugManuallyEdited = ref(false)
 const errorMessage = ref('')
 const loading = ref(false)
 
@@ -158,12 +159,17 @@ onMounted(async () => {
 })
 
 function suggestSlug() {
-  if (company.slug) return
+  if (slugManuallyEdited.value) return
   company.slug = company.name
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+  checkSlugAvailability()
+}
+
+function onSlugInput() {
+  slugManuallyEdited.value = true
   checkSlugAvailability()
 }
 
