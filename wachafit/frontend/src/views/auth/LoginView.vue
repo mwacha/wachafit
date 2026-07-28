@@ -77,7 +77,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { roleDashboards } from '@/utils/roleRoutes'
 import InputText from 'primevue/inputtext'
@@ -87,7 +86,6 @@ import TenantSelectModal from './components/TenantSelectModal.vue'
 import type { LoginNeedsTenantSelection } from '@/types/api'
 
 const auth = useAuthStore()
-const router = useRouter()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
@@ -107,7 +105,10 @@ async function handleLogin() {
       pendingSelection.value = result
       return
     }
-    router.push(roleDashboards[result.role])
+    // Navegação dura (não router.push): garante que nenhuma store (billing, etc.) fique com
+    // estado de uma sessão/academia anterior, caso o navegador já tivesse dados carregados de
+    // outro login/tenant.
+    window.location.href = roleDashboards[result.role]
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao fazer login. Tente novamente.'
   } finally {
@@ -116,7 +117,7 @@ async function handleLogin() {
 }
 
 function onTenantSelected(role: string) {
-  router.push(roleDashboards[role as keyof typeof roleDashboards])
+  window.location.href = roleDashboards[role as keyof typeof roleDashboards]
 }
 </script>
 

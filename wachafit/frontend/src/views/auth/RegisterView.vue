@@ -73,7 +73,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { roleDashboards } from '@/utils/roleRoutes'
 import InputText from 'primevue/inputtext'
@@ -81,7 +80,6 @@ import Password from 'primevue/password'
 import Button from 'primevue/button'
 
 const auth = useAuthStore()
-const router = useRouter()
 const tenantSlug = ref('')
 const name = ref('')
 const email = ref('')
@@ -111,7 +109,10 @@ async function handleRegister() {
   loading.value = true
   try {
     const result = await auth.register(name.value, email.value, password.value, tenantSlug.value)
-    router.push(roleDashboards[result.role])
+    // Navegação dura (não router.push): garante que nenhuma store (billing, etc.) fique com
+    // estado de uma sessão/academia anterior, caso o navegador já tivesse dados carregados de
+    // outro login/tenant.
+    window.location.href = roleDashboards[result.role]
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao criar conta. Tente novamente.'
   } finally {

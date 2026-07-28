@@ -109,7 +109,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { roleDashboards } from '@/utils/roleRoutes'
 import api from '@/services/api'
@@ -120,7 +119,6 @@ import Password from 'primevue/password'
 import Button from 'primevue/button'
 
 const auth = useAuthStore()
-const router = useRouter()
 
 const step = ref(1)
 const stepTitles = ['Crie sua conta', 'Dados da sua academia', 'Escolha o plano']
@@ -233,7 +231,10 @@ async function handleSignup() {
       },
       plan: { saasPlanId: selectedPlanId.value, paymentMethod: paymentMethod.value },
     })
-    router.push(roleDashboards[result.role])
+    // Navegação dura (não router.push): garante que nenhuma store (billing, etc.) fique com
+    // estado de uma sessão/academia anterior, caso o navegador já tivesse dados carregados de
+    // outro login/tenant (ex: quem já estava logado numa academia e cadastrou uma nova).
+    window.location.href = roleDashboards[result.role]
   } catch (err: any) {
     errorMessage.value = err.response?.data?.message ?? 'Erro ao criar conta. Tente novamente.'
     step.value = 2
