@@ -132,7 +132,7 @@ class UserServiceTest {
         UUID userId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
         User user = buildUser(userId, Role.TRAINER, true);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndTenantId(userId, tenantId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenReturn(user);
 
         userService.deactivateUser(userId, currentUserId);
@@ -144,7 +144,7 @@ class UserServiceTest {
     void deactivateUser_shouldRejectSelfDeactivation() throws Exception {
         UUID userId = UUID.randomUUID();
         User user = buildUser(userId, Role.ADMIN, true);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndTenantId(userId, tenantId)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.deactivateUser(userId, userId))
             .isInstanceOf(BusinessException.class)
@@ -156,11 +156,38 @@ class UserServiceTest {
         UUID userId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
         User user = buildUser(userId, Role.STUDENT, true);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndTenantId(userId, tenantId)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.deactivateUser(userId, currentUserId))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("Cannot deactivate a student user");
+    }
+
+    // Regressão: User não tem @Filter automático de tenant (proposital, para o login buscar
+    // vínculos de uma Account em vários tenants) -- findOrThrow()/listUsers() precisam filtrar
+    // por tenant EXPLICITAMENTE. Sem isso, um admin de uma academia conseguia ler/editar/
+    // desativar usuários de OUTRA academia só sabendo o UUID.
+    @Test
+    void deactivateUser_shouldThrowNotFound_whenUserBelongsToDifferentTenant() {
+        UUID userId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        // userRepository.findByIdAndTenantId NÃO foi stubado para este userId+tenantId -> retorna
+        // Optional.empty() por padrão (Mockito), simulando um usuário que existe mas é de outro tenant.
+
+        assertThatThrownBy(() -> userService.deactivateUser(userId, currentUserId))
+            .isInstanceOf(com.github.mwacha.wachafit.shared.exception.NotFoundException.class);
+    }
+
+    @Test
+    void listUsers_onlyQueriesCurrentTenant() throws Exception {
+        User u1 = buildUser(UUID.randomUUID(), Role.TRAINER, true);
+        when(userRepository.findByTenantId(tenantId)).thenReturn(java.util.List.of(u1));
+
+        var result = userService.listUsers(null, null);
+
+        assertThat(result).hasSize(1);
+        verify(userRepository).findByTenantId(tenantId);
+        verify(userRepository, never()).findAll();
     }
 
     private User buildUser(UUID id, Role role, boolean active) throws Exception {

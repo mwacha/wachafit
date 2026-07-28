@@ -41,7 +41,12 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<UserResponse> listUsers(String role, Boolean active) {
-        return userRepository.findAll().stream()   // Hibernate filter filtrará por tenant (Task 4 do plano multi-tenant)
+        // User não é TenantAwareEntity (não tem @Filter do Hibernate) -- isso é proposital, pois
+        // o fluxo de login precisa buscar vínculos de uma Account em VÁRIOS tenants ao mesmo
+        // tempo. Por isso aqui, ao contrário da maioria das entidades do sistema, o tenant
+        // precisa ser filtrado explicitamente, nunca via findAll().
+        UUID tenantId = TenantContext.get();
+        return userRepository.findByTenantId(tenantId).stream()
             .filter(u -> role == null || u.getRole().name().equals(role))
             .filter(u -> active == null || u.isActive() == active)
             .map(this::toResponse)
@@ -110,7 +115,10 @@ public class UserService {
     }
 
     private User findOrThrow(UUID id) {
-        return userRepository.findById(id)
+        // Mesmo motivo do comentário em listUsers(): User não tem @Filter automático de tenant,
+        // então findById(id) sozinho deixaria um admin de uma academia editar/desativar/ativar
+        // um usuário de OUTRA academia só sabendo (ou adivinhando) o UUID dele.
+        return userRepository.findByIdAndTenantId(id, TenantContext.get())
             .orElseThrow(() -> new NotFoundException("Usuário não encontrado: " + id));
     }
 
