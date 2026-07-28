@@ -7,6 +7,7 @@ import com.github.mwacha.wachafit.schedule.dto.*;
 import com.github.mwacha.wachafit.shared.exception.BusinessException;
 import com.github.mwacha.wachafit.shared.exception.ForbiddenException;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import com.github.mwacha.wachafit.user.Role;
 import com.github.mwacha.wachafit.user.UserRepository;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class ScheduleService {
 
     @Transactional(readOnly = true)
     public List<ScheduleResponse> list(OffsetDateTime from, OffsetDateTime to, LocalDate date, UUID trainerId, ScheduleType type) {
-        return scheduleRepository.findByFilters(from, to, date, trainerId, type == null ? null : type.name())
+        return scheduleRepository.findByFilters(TenantContext.get(), from, to, date, trainerId, type == null ? null : type.name())
             .stream().map(this::toResponse).toList();
     }
 

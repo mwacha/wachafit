@@ -172,4 +172,50 @@ class ScheduleControllerIntegrationTest {
             .header("Authorization", "Bearer " + studentToken))
             .andExpect(status().isForbidden());
     }
+
+    // Regressão: findByFilters() usa query SQL nativa, que o @Filter automático de tenant do
+    // Hibernate NÃO cobre -- um horário criado no tenant A não podia aparecer para o tenant B.
+    // Bug real reportado pelo usuário: dashboard/agenda mostrava aula agendada de outra academia
+    // numa academia recém-criada, sem nada cadastrado.
+    @Test
+    void list_doesNotReturnSchedulesFromOtherTenant() throws Exception {
+        OffsetDateTime start = OffsetDateTime.of(2026, 11, 1, 8, 0, 0, 0, ZoneOffset.UTC);
+        var req = new ScheduleRequest(null, trainerId, ScheduleType.PERSONAL, start, start.plusHours(1));
+        mockMvc.perform(post("/api/schedules")
+                .header("Authorization", "Bearer " + trainerToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isCreated());
+
+        var tenantB = new com.github.mwacha.wachafit.tenant.Tenant();
+        tenantB.setName("Academia B");
+        tenantB.setSlug("isolation-schedule-" + UUID.randomUUID());
+        tenantB.setActive(true);
+        tenantB = tenantRepository.save(tenantB);
+
+        var tenantBAccount = new com.github.mwacha.wachafit.account.Account();
+        tenantBAccount.setName("Trainer B");
+        tenantBAccount.setEmail("sched-trainer-b-" + UUID.randomUUID() + "@test.com");
+        tenantBAccount.setPasswordHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("pass"));
+        accountRepository.save(tenantBAccount);
+        var trainerB = new com.github.mwacha.wachafit.user.User();
+        trainerB.setAccount(tenantBAccount);
+        trainerB.setRole(Role.TRAINER);
+        trainerB.setTenant(tenantB);
+        trainerB.setActive(true);
+        userRepository.save(trainerB);
+
+        var loginResult = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new LoginRequest(tenantBAccount.getEmail(), "pass"))))
+            .andReturn();
+        var tenantBToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
+            .get("token").asText();
+
+        mockMvc.perform(get("/api/schedules")
+                .header("Authorization", "Bearer " + tenantBToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
 }

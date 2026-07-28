@@ -107,4 +107,49 @@ class ExerciseControllerIntegrationTest {
         mvc.perform(get("/api/exercises"))
                 .andExpect(status().isUnauthorized());
     }
+
+    // Regressão: search() usa query SQL nativa, que o @Filter automático de tenant do Hibernate
+    // NÃO cobre -- um exercício criado no tenant A não podia aparecer para o tenant B. Bug real
+    // reportado pelo usuário: exercícios de outra academia apareciam numa academia recém-criada
+    // sem nenhum exercício próprio.
+    @Test
+    void search_doesNotReturnExercisesFromOtherTenant() throws Exception {
+        mvc.perform(post("/api/exercises")
+                        .header("Authorization", "Bearer " + trainerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(
+                                new CreateExerciseRequest("Deadlift", "back", null, null))))
+                .andExpect(status().isCreated());
+
+        var tenantB = new com.github.mwacha.wachafit.tenant.Tenant();
+        tenantB.setName("Academia B");
+        tenantB.setSlug("isolation-exercise-" + java.util.UUID.randomUUID());
+        tenantB.setActive(true);
+        tenantB = tenantRepository.save(tenantB);
+
+        Account tenantBAccount = new Account();
+        tenantBAccount.setName("Trainer B");
+        tenantBAccount.setEmail("trainer-b-" + java.util.UUID.randomUUID() + "@test.com");
+        tenantBAccount.setPasswordHash(passwordEncoder.encode("pass"));
+        accountRepository.save(tenantBAccount);
+        User trainerB = new User();
+        trainerB.setAccount(tenantBAccount);
+        trainerB.setRole(Role.TRAINER);
+        trainerB.setTenant(tenantB);
+        trainerB.setActive(true);
+        userRepo.save(trainerB);
+
+        var loginResult = mvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(new LoginRequest(tenantBAccount.getEmail(), "pass"))))
+                .andReturn();
+        String trainerBToken = mapper.readTree(loginResult.getResponse().getContentAsString())
+                .get("token").asText();
+
+        mvc.perform(get("/api/exercises")
+                        .header("Authorization", "Bearer " + trainerBToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
 }

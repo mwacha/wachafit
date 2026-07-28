@@ -42,17 +42,41 @@ class ExerciseServiceTest {
 
     @Test
     void search_shouldDelegateToRepository() {
-        Exercise e = new Exercise();
-        e.setName("Bench Press");
-        e.setMuscleGroup("chest");
-        e.setActive(true);
+        UUID tenantId = UUID.randomUUID();
+        com.github.mwacha.wachafit.tenant.TenantContext.set(tenantId);
+        try {
+            Exercise e = new Exercise();
+            e.setName("Bench Press");
+            e.setMuscleGroup("chest");
+            e.setActive(true);
 
-        when(repo.search(null, null)).thenReturn(List.of(e));
+            when(repo.search(tenantId, null, null)).thenReturn(List.of(e));
 
-        List<ExerciseResponse> results = service.search(null, null);
+            List<ExerciseResponse> results = service.search(null, null);
 
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).name()).isEqualTo("Bench Press");
+            assertThat(results).hasSize(1);
+            assertThat(results.get(0).name()).isEqualTo("Bench Press");
+        } finally {
+            com.github.mwacha.wachafit.tenant.TenantContext.clear();
+        }
+    }
+
+    // Regressão: search() usa query SQL nativa, que o @Filter automático de tenant do Hibernate
+    // NÃO cobre -- precisa passar o tenantId explicitamente. Confirma que o service sempre
+    // consulta com o tenant da requisição atual, nunca globalmente.
+    @Test
+    void search_alwaysScopesToCurrentTenant() {
+        UUID tenantId = UUID.randomUUID();
+        com.github.mwacha.wachafit.tenant.TenantContext.set(tenantId);
+        try {
+            when(repo.search(any(), any(), any())).thenReturn(List.of());
+
+            service.search("q", "legs");
+
+            verify(repo).search(tenantId, "q", "legs");
+        } finally {
+            com.github.mwacha.wachafit.tenant.TenantContext.clear();
+        }
     }
 
     @Test

@@ -48,9 +48,14 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     long countByClassIdAndStartsAt(@Param("classId") UUID classId,
                                    @Param("startsAt") OffsetDateTime startsAt);
 
+    // nativeQuery = true: o @Filter automático de tenant do Hibernate só se aplica a consultas
+    // HQL/Criteria contra a entidade mapeada -- queries SQL nativas o ignoram completamente, então
+    // o tenant precisa ser filtrado explicitamente aqui (achado como bug real: agenda/dashboard
+    // mostrava aula agendada de OUTRA academia numa academia recém-criada, sem nada cadastrado).
     @Query(value = """
         SELECT * FROM schedules s
-        WHERE (CAST(:from AS timestamptz) IS NULL OR s.starts_at >= CAST(:from AS timestamptz))
+        WHERE s.tenant_id = CAST(:tenantId AS uuid)
+          AND (CAST(:from AS timestamptz) IS NULL OR s.starts_at >= CAST(:from AS timestamptz))
           AND (CAST(:to AS timestamptz) IS NULL OR s.ends_at <= CAST(:to AS timestamptz))
           AND (CAST(:date AS date) IS NULL OR CAST(s.starts_at AS date) = CAST(:date AS date))
           AND (CAST(:trainerId AS uuid) IS NULL OR s.trainer_id = CAST(:trainerId AS uuid))
@@ -59,6 +64,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
         ORDER BY s.starts_at
     """, nativeQuery = true)
     List<Schedule> findByFilters(
+        @Param("tenantId") UUID tenantId,
         @Param("from") OffsetDateTime from,
         @Param("to") OffsetDateTime to,
         @Param("date") LocalDate date,

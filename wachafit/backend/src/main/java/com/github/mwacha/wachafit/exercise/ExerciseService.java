@@ -2,6 +2,7 @@ package com.github.mwacha.wachafit.exercise;
 
 import com.github.mwacha.wachafit.exercise.dto.*;
 import com.github.mwacha.wachafit.shared.exception.NotFoundException;
+import com.github.mwacha.wachafit.tenant.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +20,7 @@ public class ExerciseService {
     }
 
     public List<ExerciseResponse> search(String q, String muscleGroup) {
-        return repo.search(q, muscleGroup).stream()
+        return repo.search(TenantContext.get(), q, muscleGroup).stream()
                 .map(this::toResponse)
                 .toList();
     }

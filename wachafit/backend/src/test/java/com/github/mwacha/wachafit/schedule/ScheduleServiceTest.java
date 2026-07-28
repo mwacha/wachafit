@@ -69,6 +69,26 @@ class ScheduleServiceTest {
         assertThat(res).isNotNull();
     }
 
+    // Regressão: findByFilters() usa query SQL nativa, que o @Filter automático de tenant do
+    // Hibernate NÃO cobre -- precisa passar o tenantId explicitamente. Confirma que list() sempre
+    // consulta com o tenant da requisição atual (achado como bug real: dashboard/agenda mostrava
+    // aula agendada de OUTRA academia numa academia recém-criada, sem nada cadastrado).
+    @Test
+    void list_alwaysScopesToCurrentTenant() {
+        UUID tenantId = UUID.randomUUID();
+        com.github.mwacha.wachafit.tenant.TenantContext.set(tenantId);
+        try {
+            when(scheduleRepository.findByFilters(any(), any(), any(), any(), any(), any()))
+                .thenReturn(java.util.List.of());
+
+            service.list(null, null, null, null, null);
+
+            verify(scheduleRepository).findByFilters(eq(tenantId), any(), any(), any(), any(), any());
+        } finally {
+            com.github.mwacha.wachafit.tenant.TenantContext.clear();
+        }
+    }
+
     @Test
     void create_shouldThrow_whenTrainerHasOverlap() {
         UUID trainerId = UUID.randomUUID();
