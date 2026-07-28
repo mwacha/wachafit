@@ -52,3 +52,8 @@ export const payMethodLabel: Record<string, string> = {
 }
 
 export const payMethodOptions = Object.entries(payMethodLabel).map(([value, label]) => ({ value, label }))
+
+// Auto-pagamento pelo próprio aluno: só PIX ou cartão de crédito (ver BillingService.payCharge
+// no backend, que aplica a mesma restrição). Telas de caixa/recepção continuam usando
+// payMethodOptions completo, já que ali é a equipe registrando o pagamento presencialmente.
+export const studentPayMethodOptions = payMethodOptions.filter(o => o.value === 'PIX' || o.value === 'CREDIT_CARD')

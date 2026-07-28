@@ -96,7 +96,7 @@ class BillingServiceTest {
     void payCharge_shouldSetPaidAndMethod() {
         when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
         when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        ChargeResponse res = service.payCharge(chargeId, new ManualPaymentRequest("CASH"));
+        ChargeResponse res = service.payCharge(chargeId, new ManualPaymentRequest("CASH"), adminUser);
         assertThat(res.status()).isEqualTo("PAID");
         assertThat(res.paymentMethod()).isEqualTo("CASH");
         assertThat(res.paidAt()).isNotNull();
@@ -106,8 +106,51 @@ class BillingServiceTest {
     void payCharge_shouldThrowBusiness_whenAlreadyPaid() {
         pendingCharge.setStatus("PAID");
         when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
-        assertThatThrownBy(() -> service.payCharge(chargeId, new ManualPaymentRequest("CASH")))
+        assertThatThrownBy(() -> service.payCharge(chargeId, new ManualPaymentRequest("CASH"), adminUser))
             .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void payCharge_withStudentRole_allowsPix() {
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        ChargeResponse res = service.payCharge(chargeId, new ManualPaymentRequest("PIX"), studentUser);
+        assertThat(res.status()).isEqualTo("PAID");
+        assertThat(res.paymentMethod()).isEqualTo("PIX");
+    }
+
+    @Test
+    void payCharge_withStudentRole_allowsCreditCard() {
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        ChargeResponse res = service.payCharge(chargeId, new ManualPaymentRequest("CREDIT_CARD"), studentUser);
+        assertThat(res.status()).isEqualTo("PAID");
+        assertThat(res.paymentMethod()).isEqualTo("CREDIT_CARD");
+    }
+
+    @Test
+    void payCharge_withStudentRole_rejectsCash() {
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        assertThatThrownBy(() -> service.payCharge(chargeId, new ManualPaymentRequest("CASH"), studentUser))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("PIX ou cartão de crédito");
+        verify(chargeRepo, never()).save(any());
+    }
+
+    @Test
+    void payCharge_withStudentRole_rejectsOtherStudentsCharge() {
+        User otherStudent = new User();
+        otherStudent.setRole(Role.STUDENT);
+        try {
+            var f = User.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(otherStudent, UUID.randomUUID());
+        } catch (Exception e) { throw new RuntimeException(e); }
+
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        assertThatThrownBy(() -> service.payCharge(chargeId, new ManualPaymentRequest("PIX"), otherStudent))
+            .isInstanceOf(ForbiddenException.class);
+        verify(chargeRepo, never()).save(any());
     }
 
     @Test

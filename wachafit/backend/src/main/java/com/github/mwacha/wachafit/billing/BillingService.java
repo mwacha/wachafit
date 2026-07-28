@@ -17,11 +17,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Transactional
 public class BillingService {
+
+    // Auto-pagamento pelo próprio aluno: só PIX ou cartão de crédito. Staff (recepção/caixa/
+    // admin) registrando pagamento em nome do aluno (ex: dinheiro no balcão) não tem essa
+    // restrição -- ver payCharge().
+    private static final Set<String> STUDENT_ALLOWED_PAYMENT_METHODS = Set.of("PIX", "CREDIT_CARD");
 
     private final PaymentChargeRepository chargeRepo;
     private final MemberSubscriptionRepository subscriptionRepo;
@@ -62,9 +68,17 @@ public class BillingService {
         return toResponse(chargeRepo.save(charge));
     }
 
-    public ChargeResponse payCharge(UUID chargeId, ManualPaymentRequest req) {
+    public ChargeResponse payCharge(UUID chargeId, ManualPaymentRequest req, User requestingUser) {
         PaymentCharge charge = chargeRepo.findById(chargeId)
             .orElseThrow(() -> new NotFoundException("Cobrança não encontrada"));
+        if (requestingUser.getRole() == Role.STUDENT) {
+            if (!charge.getStudentId().equals(requestingUser.getId())) {
+                throw new ForbiddenException("Access denied");
+            }
+            if (!STUDENT_ALLOWED_PAYMENT_METHODS.contains(req.paymentMethod())) {
+                throw new BusinessException("Alunos só podem pagar via PIX ou cartão de crédito");
+            }
+        }
         if ("PAID".equals(charge.getStatus()) || "CANCELLED".equals(charge.getStatus())) {
             throw new BusinessException("Cobrança já " + charge.getStatus().toLowerCase());
         }

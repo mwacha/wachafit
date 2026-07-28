@@ -71,6 +71,7 @@ class BillingControllerIntegrationTest {
     @Autowired com.github.mwacha.wachafit.tenant.TenantRepository tenantRepository;
 
     private String adminToken;
+    private String studentToken;
     private UUID studentId;
     private UUID chargeId;
 
@@ -111,8 +112,13 @@ class BillingControllerIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(new LoginRequest("admin@t.com", "pass")))).andReturn();
         adminToken = mapper.readTree(loginResult.getResponse().getContentAsString()).get("token").asText();
+
+        var studentLoginResult = mvc.perform(post("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(new LoginRequest("student@t.com", "pass")))).andReturn();
+        studentToken = mapper.readTree(studentLoginResult.getResponse().getContentAsString()).get("token").asText();
         // JwtFilter limpa o TenantContext incondicionalmente ao fim de QUALQUER requisição
-        // (autenticada ou não) — a chamada de login acima já apagou o valor setado no início
+        // (autenticada ou não) — as chamadas de login acima já apagaram o valor setado no início
         // deste método, então precisa ser redefinido antes dos saves diretos abaixo.
         com.github.mwacha.wachafit.tenant.TenantContext.set(tenant.getId());
 
@@ -172,6 +178,28 @@ class BillingControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("PAID"))
             .andExpect(jsonPath("$.paymentMethod").value("CASH"));
+    }
+
+    @Test
+    void payCharge_withStudentTokenAndPix_shouldReturn200() throws Exception {
+        ManualPaymentRequest req = new ManualPaymentRequest("PIX");
+        mvc.perform(patch("/api/charges/" + chargeId + "/pay")
+                .header("Authorization", "Bearer " + studentToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(req)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("PAID"))
+            .andExpect(jsonPath("$.paymentMethod").value("PIX"));
+    }
+
+    @Test
+    void payCharge_withStudentTokenAndCash_shouldReturn409() throws Exception {
+        ManualPaymentRequest req = new ManualPaymentRequest("CASH");
+        mvc.perform(patch("/api/charges/" + chargeId + "/pay")
+                .header("Authorization", "Bearer " + studentToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(req)))
+            .andExpect(status().isConflict());
     }
 
     @Test

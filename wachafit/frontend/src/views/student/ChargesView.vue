@@ -54,7 +54,7 @@
         </div>
         <div class="form-field">
           <label class="form-label">Forma de pagamento *</label>
-          <Select v-model="payMethod" :options="payMethodOptions" optionLabel="label" optionValue="value"
+          <Select v-model="payMethod" :options="studentPayMethodOptions" optionLabel="label" optionValue="value"
             placeholder="Selecione a forma de pagamento" style="width:100%" />
         </div>
         <div class="form-actions">
@@ -79,7 +79,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useBillingStore } from '@/stores/billing.store'
 import billingService from '@/services/billing.service'
 import type { PaymentCharge } from '@/types/api'
-import { chargeStatusLabel, chargeStatusSeverity, payMethodLabel as payMethodLabelMap, payMethodOptions } from '@/utils/labels'
+import { chargeStatusLabel, chargeStatusSeverity, payMethodLabel as payMethodLabelMap, studentPayMethodOptions } from '@/utils/labels'
 import { useToast } from 'primevue/usetoast'
 
 const auth = useAuthStore()
