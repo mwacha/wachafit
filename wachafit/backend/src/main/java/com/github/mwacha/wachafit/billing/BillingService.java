@@ -98,7 +98,9 @@ public class BillingService {
         charge.setPaidAt(OffsetDateTime.now());
         charge.setPaymentMethod(req.paymentMethod());
         charge.setGateway("MANUAL");
-        return toResponse(chargeRepo.save(charge));
+        charge = chargeRepo.save(charge);
+        reactivateSubscriptionIfNoLongerOverdue(charge.getStudentId());
+        return toResponse(charge);
     }
 
     public void cancelCharge(UUID chargeId) {
@@ -121,11 +123,22 @@ public class BillingService {
                 charge.setPaidAt(OffsetDateTime.now());
                 charge.setExternalChargeId(externalPaymentId);
                 chargeRepo.save(charge);
+                reactivateSubscriptionIfNoLongerOverdue(charge.getStudentId());
             } else if ("CANCELLED".equals(newStatus) && !"PAID".equals(charge.getStatus())) {
                 charge.setStatus("CANCELLED");
                 charge.setExternalChargeId(externalPaymentId);
                 chargeRepo.save(charge);
             }
+        });
+    }
+
+    private void reactivateSubscriptionIfNoLongerOverdue(UUID studentId) {
+        if (chargeRepo.existsUnpaidOverdueByStudentId(studentId, LocalDate.now())) {
+            return;
+        }
+        subscriptionRepo.findByStudentIdAndStatus(studentId, "SUSPENDED").ifPresent(sub -> {
+            sub.setStatus("ACTIVE");
+            subscriptionRepo.save(sub);
         });
     }
 

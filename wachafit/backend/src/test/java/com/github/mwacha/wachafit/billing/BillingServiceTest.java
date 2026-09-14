@@ -160,6 +160,39 @@ class BillingServiceTest {
     }
 
     @Test
+    void payCharge_reactivatesSuspendedSubscription_whenNoMoreOverdueCharges() {
+        MemberSubscription suspended = new MemberSubscription();
+        suspended.setStudentId(studentId);
+        suspended.setStatus("SUSPENDED");
+
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(chargeRepo.existsUnpaidOverdueByStudentId(eq(studentId), any())).thenReturn(false);
+        when(subscriptionRepo.findByStudentIdAndStatus(studentId, "SUSPENDED")).thenReturn(Optional.of(suspended));
+
+        service.payCharge(chargeId, new ManualPaymentRequest("CASH"), adminUser);
+
+        assertThat(suspended.getStatus()).isEqualTo("ACTIVE");
+        verify(subscriptionRepo).save(suspended);
+    }
+
+    @Test
+    void payCharge_doesNotReactivateSubscription_whenOtherOverdueChargeRemains() {
+        MemberSubscription suspended = new MemberSubscription();
+        suspended.setStudentId(studentId);
+        suspended.setStatus("SUSPENDED");
+
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(chargeRepo.existsUnpaidOverdueByStudentId(eq(studentId), any())).thenReturn(true);
+
+        service.payCharge(chargeId, new ManualPaymentRequest("CASH"), adminUser);
+
+        assertThat(suspended.getStatus()).isEqualTo("SUSPENDED");
+        verify(subscriptionRepo, never()).save(any());
+    }
+
+    @Test
     void cancelCharge_shouldSetCancelled() {
         when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
         when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -278,6 +311,23 @@ class BillingServiceTest {
         assertThat(pendingCharge.getStatus()).isEqualTo("PAID");
         assertThat(pendingCharge.getPaidAt()).isNotNull();
         assertThat(pendingCharge.getExternalChargeId()).isEqualTo("mp-payment-1");
+    }
+
+    @Test
+    void processWebhookCharge_reactivatesSuspendedSubscription_whenNoMoreOverdueCharges() {
+        MemberSubscription suspended = new MemberSubscription();
+        suspended.setStudentId(studentId);
+        suspended.setStatus("SUSPENDED");
+
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(chargeRepo.existsUnpaidOverdueByStudentId(eq(studentId), any())).thenReturn(false);
+        when(subscriptionRepo.findByStudentIdAndStatus(studentId, "SUSPENDED")).thenReturn(Optional.of(suspended));
+
+        service.processWebhookCharge(chargeId, "mp-payment-1", "PAID");
+
+        assertThat(suspended.getStatus()).isEqualTo("ACTIVE");
+        verify(subscriptionRepo).save(suspended);
     }
 
     @Test
