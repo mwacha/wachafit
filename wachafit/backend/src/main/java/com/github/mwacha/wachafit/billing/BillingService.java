@@ -32,13 +32,16 @@ public class BillingService {
     private final PaymentChargeRepository chargeRepo;
     private final MemberSubscriptionRepository subscriptionRepo;
     private final UserRepository userRepo;
+    private final PaymentGatewayService gatewayService;
 
     public BillingService(PaymentChargeRepository chargeRepo,
                           MemberSubscriptionRepository subscriptionRepo,
-                          UserRepository userRepo) {
+                          UserRepository userRepo,
+                          PaymentGatewayService gatewayService) {
         this.chargeRepo = chargeRepo;
         this.subscriptionRepo = subscriptionRepo;
         this.userRepo = userRepo;
+        this.gatewayService = gatewayService;
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +68,16 @@ public class BillingService {
         charge.setAmount(req.amount());
         charge.setDueDate(req.dueDate());
         charge.setStatus("PENDING");
-        return toResponse(chargeRepo.save(charge));
+        charge = chargeRepo.save(charge);
+
+        CheckoutResult checkout = gatewayService.createCheckout(charge);
+        if (checkout.hasCheckout()) {
+            charge.setGateway(checkout.gateway());
+            charge.setExternalChargeId(checkout.externalId());
+            charge.setExternalPaymentUrl(checkout.checkoutUrl());
+            charge = chargeRepo.save(charge);
+        }
+        return toResponse(charge);
     }
 
     public ChargeResponse payCharge(UUID chargeId, ManualPaymentRequest req, User requestingUser) {
@@ -102,14 +114,16 @@ public class BillingService {
         chargeRepo.save(charge);
     }
 
-    public void processWebhookCharge(String externalChargeId, String newStatus) {
-        chargeRepo.findByExternalChargeId(externalChargeId).ifPresent(charge -> {
+    public void processWebhookCharge(UUID chargeId, String externalPaymentId, String newStatus) {
+        chargeRepo.findById(chargeId).ifPresent(charge -> {
             if ("PAID".equals(newStatus) && !"PAID".equals(charge.getStatus())) {
                 charge.setStatus("PAID");
                 charge.setPaidAt(OffsetDateTime.now());
+                charge.setExternalChargeId(externalPaymentId);
                 chargeRepo.save(charge);
             } else if ("CANCELLED".equals(newStatus) && !"PAID".equals(charge.getStatus())) {
                 charge.setStatus("CANCELLED");
+                charge.setExternalChargeId(externalPaymentId);
                 chargeRepo.save(charge);
             }
         });

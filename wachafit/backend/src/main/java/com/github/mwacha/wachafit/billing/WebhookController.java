@@ -1,7 +1,5 @@
 package com.github.mwacha.wachafit.billing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.mwacha.wachafit.billing.dto.WebhookPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -14,33 +12,31 @@ public class WebhookController {
 
     private final PaymentGatewayService gatewayService;
     private final BillingService billingService;
-    private final ObjectMapper objectMapper;
 
-    public WebhookController(PaymentGatewayService gatewayService,
-                             BillingService billingService,
-                             ObjectMapper objectMapper) {
+    public WebhookController(PaymentGatewayService gatewayService, BillingService billingService) {
         this.gatewayService = gatewayService;
         this.billingService = billingService;
-        this.objectMapper = objectMapper;
     }
 
+    // Contrato de notificação do Mercado Pago: ?type=payment&data.id=<id>, headers x-signature/x-request-id.
+    // O corpo não participa da validação de assinatura nem é confiável por si só -- o status real do
+    // pagamento é sempre buscado na API do gateway (gatewayService.fetchPaymentUpdate).
     @PostMapping("/api/payments/webhook")
     public ResponseEntity<Void> handleWebhook(
-            @RequestBody String payload,
-            @RequestHeader(value = "x-signature", required = false, defaultValue = "") String signature) {
-        if (!gatewayService.validateWebhookSignature(payload, signature)) {
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "data.id", required = false) String dataId,
+            @RequestHeader(value = "x-signature", required = false, defaultValue = "") String signature,
+            @RequestHeader(value = "x-request-id", required = false, defaultValue = "") String requestId) {
+        if (!"payment".equals(type) || dataId == null) {
+            return ResponseEntity.ok().build();
+        }
+        if (!gatewayService.validateWebhookSignature(new WebhookVerificationRequest(dataId, requestId, signature))) {
+            log.warn("Assinatura de webhook inválida para payment {}", dataId);
             return ResponseEntity.badRequest().build();
         }
-        try {
-            WebhookPayload parsed = objectMapper.readValue(payload, WebhookPayload.class);
-            if (parsed.externalChargeId() == null || parsed.status() == null) {
-                return ResponseEntity.badRequest().build();
-            }
-            billingService.processWebhookCharge(parsed.externalChargeId(), parsed.status());
-        } catch (Exception e) {
-            log.warn("Erro ao processar webhook: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        gatewayService.fetchPaymentUpdate(dataId)
+            .ifPresent(update -> billingService.processWebhookCharge(
+                update.chargeId(), update.externalPaymentId(), update.status()));
         return ResponseEntity.ok().build();
     }
 }

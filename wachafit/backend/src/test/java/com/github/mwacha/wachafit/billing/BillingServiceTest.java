@@ -18,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,11 +32,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BillingServiceTest {
 
     @Mock PaymentChargeRepository chargeRepo;
     @Mock MemberSubscriptionRepository subscriptionRepo;
     @Mock UserRepository userRepo;
+    @Mock PaymentGatewayService gatewayService;
     @InjectMocks BillingService service;
 
     private UUID studentId;
@@ -75,6 +79,8 @@ class BillingServiceTest {
             f.setAccessible(true);
             f.set(pendingCharge, chargeId);
         } catch (Exception e) { throw new RuntimeException(e); }
+
+        when(gatewayService.createCheckout(any())).thenReturn(CheckoutResult.none());
     }
 
     @Test
@@ -225,5 +231,82 @@ class BillingServiceTest {
         } finally {
             TenantContext.clear();
         }
+    }
+
+    @Test
+    void createManualCharge_shouldPersistCheckoutDetails_whenGatewayReturnsCheckout() {
+        MemberSubscription sub = new MemberSubscription();
+        sub.setStudentId(studentId);
+        sub.setStatus("ACTIVE");
+        try {
+            var f = MemberSubscription.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(sub, UUID.randomUUID());
+        } catch (Exception e) { throw new RuntimeException(e); }
+
+        when(userRepo.existsByIdAndTenantId(eq(studentId), any())).thenReturn(true);
+        when(subscriptionRepo.findByStudentIdAndStatus(studentId, "ACTIVE")).thenReturn(Optional.of(sub));
+        when(chargeRepo.save(any())).thenAnswer(inv -> {
+            PaymentCharge c = inv.getArgument(0);
+            if (c.getId() == null) {
+                try {
+                    var f = PaymentCharge.class.getDeclaredField("id");
+                    f.setAccessible(true);
+                    f.set(c, chargeId);
+                } catch (Exception e) { throw new RuntimeException(e); }
+            }
+            return c;
+        });
+        when(gatewayService.createCheckout(any()))
+            .thenReturn(new CheckoutResult("MERCADOPAGO", "pref-1", "https://mp.test/pay/pref-1"));
+
+        ChargeResponse res = service.createManualCharge(studentId,
+            new CreateChargeRequest(new BigDecimal("150.00"), LocalDate.of(2026, 8, 1)),
+            adminUser);
+
+        assertThat(res.externalPaymentUrl()).isEqualTo("https://mp.test/pay/pref-1");
+        verify(chargeRepo, times(2)).save(any());
+    }
+
+    @Test
+    void processWebhookCharge_marksPaid_whenChargeExistsAndStatusPaid() {
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.processWebhookCharge(chargeId, "mp-payment-1", "PAID");
+
+        assertThat(pendingCharge.getStatus()).isEqualTo("PAID");
+        assertThat(pendingCharge.getPaidAt()).isNotNull();
+        assertThat(pendingCharge.getExternalChargeId()).isEqualTo("mp-payment-1");
+    }
+
+    @Test
+    void processWebhookCharge_marksCancelled_whenStatusCancelled() {
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+        when(chargeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.processWebhookCharge(chargeId, "mp-payment-1", "CANCELLED");
+
+        assertThat(pendingCharge.getStatus()).isEqualTo("CANCELLED");
+    }
+
+    @Test
+    void processWebhookCharge_isIdempotent_whenChargeAlreadyPaid() {
+        pendingCharge.setStatus("PAID");
+        when(chargeRepo.findById(chargeId)).thenReturn(Optional.of(pendingCharge));
+
+        service.processWebhookCharge(chargeId, "mp-payment-1", "PAID");
+
+        verify(chargeRepo, never()).save(any());
+    }
+
+    @Test
+    void processWebhookCharge_doesNothing_whenChargeNotFound() {
+        UUID unknownId = UUID.randomUUID();
+        when(chargeRepo.findById(unknownId)).thenReturn(Optional.empty());
+
+        service.processWebhookCharge(unknownId, "mp-payment-1", "PAID");
+
+        verify(chargeRepo, never()).save(any());
     }
 }

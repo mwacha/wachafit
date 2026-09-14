@@ -11,6 +11,7 @@ public class PaymentProperties {
     private String accessToken;
     private String webhookSecret;
     private int suspendAfterDays = 5;
+    private String notificationUrl;
 
     public String getGateway() { return gateway; }
     public void setGateway(String v) { this.gateway = v; }
@@ -20,4 +21,6 @@ public class PaymentProperties {
     public void setWebhookSecret(String v) { this.webhookSecret = v; }
     public int getSuspendAfterDays() { return suspendAfterDays; }
     public void setSuspendAfterDays(int v) { this.suspendAfterDays = v; }
+    public String getNotificationUrl() { return notificationUrl; }
+    public void setNotificationUrl(String v) { this.notificationUrl = v; }
 }

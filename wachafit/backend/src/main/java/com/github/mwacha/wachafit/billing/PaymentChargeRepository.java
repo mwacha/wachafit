@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface PaymentChargeRepository extends JpaRepository<PaymentCharge, UUID> {
@@ -17,8 +16,6 @@ public interface PaymentChargeRepository extends JpaRepository<PaymentCharge, UU
     void cancelPendingBySubscriptionId(@Param("subscriptionId") UUID subscriptionId);
 
     List<PaymentCharge> findByStudentIdOrderByCreatedAtDesc(UUID studentId);
-
-    Optional<PaymentCharge> findByExternalChargeId(String externalChargeId);
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE PaymentCharge c SET c.status = 'OVERDUE' WHERE c.status = 'PENDING' AND c.dueDate < :today")

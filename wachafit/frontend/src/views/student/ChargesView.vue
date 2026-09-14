@@ -27,12 +27,17 @@
           <Column header="Forma" style="min-width:110px">
             <template #body="{ data }">{{ payMethodLabel(data.paymentMethod) }}</template>
           </Column>
-          <Column header="Ações" style="min-width:100px">
+          <Column header="Ações" style="min-width:180px">
             <template #body="{ data }">
-              <Button
-                v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'"
-                icon="pi pi-credit-card" text size="small" label="Pagar"
-                @click="openPay(data)" />
+              <div v-if="data.status !== 'PAID' && data.status !== 'CANCELLED'" class="charge-actions">
+                <Button
+                  v-if="data.externalPaymentUrl"
+                  icon="pi pi-external-link" text size="small" label="Pagar com Mercado Pago"
+                  @click="payWithGateway(data)" />
+                <Button
+                  icon="pi pi-credit-card" text size="small" label="Pagar"
+                  @click="openPay(data)" />
+              </div>
             </template>
           </Column>
         </DataTable>
@@ -105,6 +110,10 @@ function openPay(charge: PaymentCharge) {
   showPayDialog.value = true
 }
 
+function payWithGateway(charge: PaymentCharge) {
+  if (charge.externalPaymentUrl) window.open(charge.externalPaymentUrl, '_blank')
+}
+
 async function confirmPay() {
   if (!selectedCharge.value || !payMethod.value) return
   paying.value = true
@@ -131,6 +140,7 @@ function payMethodLabel(m: string | null) { return m ? (payMethodLabelMap[m] ?? 
 .view-wrap { display: flex; flex-direction: column; gap: 20px }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--neutral-900); }
 .table-scroll { overflow-x: auto; border-radius: var(--radius-lg); }
+.charge-actions { display: flex; flex-wrap: wrap; gap: 4px; }
 .empty-state { text-align: center; padding: 40px; color: var(--neutral-500); font-size: 14px; }
 .text-muted { color: var(--neutral-400); font-size: 13px; }
 
