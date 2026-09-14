@@ -15,5 +15,8 @@ app:
   frontend-url: http://localhost:5180
   upload-dir: uploads
   payment:
-    gateway: manual
+    gateway: ${PAYMENT_GATEWAY:manual}
+    access-token: ${PAYMENT_ACCESS_TOKEN:}
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
+    notification-url: ${PAYMENT_NOTIFICATION_URL:}
     suspend-after-days: 5
